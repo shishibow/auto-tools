@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>履歴書・入学卒業年計算機 - 生年月日から学歴を自動作成</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      margin-bottom: 14px;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    .timeline-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .timeline-table th, .timeline-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .timeline-table th {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .timeline-table td.year-col {
+      font-weight: 700;
+      color: var(--primary-dark);
+      width: 45%;
+    }
+
+    .timeline-table tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>履歴書・入学卒業年計算機</h1>
+      <p class="subtitle">生年月日を選ぶだけ！履歴書用の学歴を自動作成</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label>生まれ年</label>
+        <select id="birthYear"></select>
+      </div>
+      <div class="form-group">
+        <label>早生まれの確認</label>
+        <select id="birthPeriod">
+          <option value="late">4月2日 〜 12月31日生まれ（通常）</option>
+          <option value="early">1月1日 〜 4月1日生まれ（早生まれ）</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="generateTimeline()">学歴一覧を生成する</button>
+
+    <div class="card" id="result-area" style="display:none; padding: 8px 16px;">
+      <table class="timeline-table" id="timelineTable">
+        <thead>
+          <tr>
+            <th>年月（西暦 / 和暦）</th>
+            <th>学歴</th>
+          </tr>
+        </thead>
+        <tbody id="timelineBody">
+          <!-- JSで自動生成 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    // 和暦変換ロジック
+    function getWareki(year) {
+      if (year >= 2019) {
+        const ey = year - 2018;
+        return `令和${ey === 1 ? '元' : ey}年`;
+      } else if (year >= 1989) {
+        const ey = year - 1988;
+        return `平成${ey === 1 ? '元' : ey}年`;
+      } else if (year >= 1926) {
+        const ey = year - 1925;
+        return `昭和${ey === 1 ? '元' : ey}年`;
+      }
+      return `${year}年`;
+    }
+
+    // プルダウンの年を初期化 (1950〜現在)
+    const selectYear = document.getElementById('birthYear');
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear; y >= 1950; y--) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = `${y}年（${getWareki(y)}）`;
+      if (y === 2000) opt.selected = true; // デフォルト2000年
+      selectYear.appendChild(opt);
+    }
+
+    function generateTimeline() {
+      const birthYear = parseInt(document.getElementById('birthYear').value);
+      const isEarly = document.getElementById('birthPeriod').value === 'early';
+      
+      // 学年コホートの基準年（早生まれの場合は前年と同じ学年になる）
+      const cohortYear = isEarly ? birthYear - 1 : birthYear;
+
+      const events = [
+        { label: '小学校 入学', offset: 7, month: 4 },
+        { label: '小学校 卒業', offset: 13, month: 3 },
+        { label: '中学校 入学', offset: 13, month: 4 },
+        { label: '中学校 卒業', offset: 16, month: 3 },
+        { label: '高等学校 入学', offset: 16, month: 4 },
+        { label: '高等学校 卒業', offset: 19, month: 3 },
+        { label: '大学・専門学校 入学', offset: 19, month: 4 },
+        { label: '大学 卒業', offset: 23, month: 3 }
+      ];
+
+      const tbody = document.getElementById('timelineBody');
+      tbody.innerHTML = '';
+
+      events.forEach(ev => {
+        const eventYear = cohortYear + ev.offset;
+        const wareki = getWareki(eventYear);
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="year-col">${eventYear}年 ${ev.month}月<br><span style="font-size:0.75rem; color:#64748b; font-weight:normal;">${wareki}</span></td>
+          <td>${ev.label}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('result-area').style.display = 'block';
+    }
+
+    // 初期表示
+    window.addEventListener('DOMContentLoaded', generateTimeline);
+  </script>
+</body>
+</html>
