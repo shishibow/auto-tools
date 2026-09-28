@@ -31,7 +31,7 @@
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding-bottom: 90px; /* 広告枠のスペース確保 */
+      padding-bottom: 90px; /* 広告が被らないように一番下の余白はキープ */
     }
 
     .container {
@@ -161,7 +161,6 @@
       opacity: 0.9;
     }
 
-    /* 結果表示エリア */
     #result-area {
       display: none;
       scroll-margin-top: 10px;
@@ -268,45 +267,6 @@
       margin-top: 12px;
       color: #334155;
     }
-
-    /* 広告コンテナ（画面下部固定） */
-    .ad-fixed-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
-      border-top: 1px solid var(--border);
-      z-index: 999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 0 6px;
-      min-height: 60px;
-    }
-
-    .ad-label {
-      font-size: 9px;
-      color: #94a3b8;
-      margin-bottom: 2px;
-      letter-spacing: 0.5px;
-    }
-
-    .ad-slot {
-      width: 100%;
-      max-width: 320px;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f1f5f9;
-      border-radius: 4px;
-      overflow: hidden;
-    }
   </style>
 </head>
 <body>
@@ -317,7 +277,6 @@
       <p class="subtitle">通勤・残業・自腹出費を含めた「本当の労働対価」を判定</p>
     </header>
 
-    <!-- 入力セクション1: 収入 -->
     <div class="card">
       <div class="card-title">1. 手取り収入を入力</div>
       <div class="form-group">
@@ -338,7 +297,6 @@
       </div>
     </div>
 
-    <!-- 入力セクション2: 拘束時間 -->
     <div class="card">
       <div class="card-title">2. 月間の拘束時間を入力</div>
       
@@ -394,7 +352,6 @@
       </div>
     </div>
 
-    <!-- 入力セクション3: 仕事のための支出 -->
     <div class="card">
       <div class="card-title">3. 仕事のための自己負担（月額）</div>
       
@@ -427,7 +384,6 @@
 
     <button type="button" class="btn-calc" onclick="calculateWage()">実質時給を計算する</button>
 
-    <!-- 結果表示エリア -->
     <div id="result-area" class="card" style="margin-top: 20px;">
       <span class="result-badge">計算結果</span>
       
@@ -479,33 +435,21 @@
       </table>
 
       <div class="commentary" id="resComment">
-        <!-- JSで判定コメント挿入 -->
       </div>
     </div>
   </div>
 
-  <!-- 画面下部固定 忍者AdMax 広告枠 -->
-  <div class="ad-fixed-footer">
-    <div class="ad-label">SPONSORED</div>
-    <div class="ad-slot">
-      <!-- 忍者AdMax広告コード ここから -->
-      <div style="font-size: 11px; color: #94a3b8; text-align: center;">
-        <!-- admax -->
-          <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
-        <!-- admax -->
-      </div>
-      <!-- 忍者AdMax広告コード ここまで -->
-    </div>
-  </div>
+  <!-- 忍者AdMax広告コード（単独配置） -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
 
   <script>
     function calculateWage() {
-      // 収入
       const monthlyNet = parseFloat(document.getElementById('monthlyNetPay').value) || 0;
       const bonusNet = parseFloat(document.getElementById('bonusNetPay').value) || 0;
       const monthlyIncome = monthlyNet + (bonusNet / 12);
 
-      // 時間関連
       const workDays = parseFloat(document.getElementById('workDays').value) || 0;
       const dailyHours = parseFloat(document.getElementById('dailyHours').value) || 0;
       const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
@@ -513,30 +457,24 @@
       const prepTimeDaily = parseFloat(document.getElementById('prepTimeDaily').value) || 0;
       const unpaidWorkHours = parseFloat(document.getElementById('unpaidWorkHours').value) || 0;
 
-      // 経費
       const clothes = parseFloat(document.getElementById('clothesCost').value) || 0;
       const social = parseFloat(document.getElementById('socialCost').value) || 0;
       const lunch = parseFloat(document.getElementById('lunchCost').value) || 0;
       const totalExpense = clothes + social + lunch;
 
-      // 計算
       const baseContractHours = workDays * dailyHours;
       const extraCommute = workDays * commuteHoursDaily;
       const extraPrep = workDays * prepTimeDaily;
       const totalExtraHours = overtimeHours + extraCommute + extraPrep + unpaidWorkHours;
       const totalConstrainedHours = baseContractHours + totalExtraHours;
 
-      // 純手取り
       const pureIncome = Math.max(0, monthlyIncome - totalExpense);
 
-      // 名目時給（基本労働時間のみに対する時給）
       const nominalWage = baseContractHours > 0 ? Math.round(monthlyIncome / baseContractHours) : 0;
 
-      // 実質時給
       const realWage = totalConstrainedHours > 0 ? Math.round(pureIncome / totalConstrainedHours) : 0;
       const diffWage = nominalWage - realWage;
 
-      // UIに反映
       document.getElementById('resRealWage').innerHTML = `${realWage.toLocaleString()} <span>円/時間</span>`;
       document.getElementById('resNominalWage').textContent = `${nominalWage.toLocaleString()} 円`;
       document.getElementById('resDiffWage').textContent = `-${diffWage.toLocaleString()} 円`;
@@ -549,9 +487,8 @@
       document.getElementById('resExtraHours').textContent = `+${totalExtraHours.toFixed(1)} 時間`;
       document.getElementById('resTotalHours').textContent = `${totalConstrainedHours.toFixed(1)} 時間`;
 
-      // コメント判定
       let comment = "";
-      const tokyoMinWage = 1113; // 参考: 東京都最低賃金レベル
+      const tokyoMinWage = 1113;
 
       if (realWage < tokyoMinWage) {
         comment = `⚠️ <strong>要注意:</strong> あなたの実質時給は地域最低賃金（約1,100円前後）を下回っている可能性があります。通勤時間や自腹出費が大きな負担になっています。働き方の見直しやリモート化の検討が有効です。`;
@@ -563,13 +500,11 @@
 
       document.getElementById('resComment').innerHTML = comment;
 
-      // 表示とスクロール
       const resultArea = document.getElementById('result-area');
       resultArea.style.display = 'block';
       resultArea.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 初回自動計算
     window.addEventListener('DOMContentLoaded', () => {
       calculateWage();
     });
