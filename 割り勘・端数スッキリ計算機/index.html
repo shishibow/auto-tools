@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>端数スッキリ割り勘計算機 - 幹事・傾斜配分対応</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #f59e0b;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .help-text {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"] {
+      padding-right: 36px;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    #result-area {
+      display: none;
+      scroll-margin-top: 10px;
+    }
+
+    .result-badge {
+      display: inline-block;
+      background: #fef3c7;
+      color: #b45309;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 12px 0 16px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 6px 0;
+    }
+
+    .main-box .value span {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .comp-item {
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .comp-item .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .comp-item .val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+
+    .breakdown-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-table td {
+      padding: 8px 0;
+    }
+
+    .breakdown-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>端数スッキリ割り勘計算機</h1>
+      <p class="subtitle">小銭が出ないキリのいい金額＆傾斜配分をサクッと算出</p>
+    </header>
+
+    <div class="card">
+      <div class="card-title">会計内容を入力</div>
+      
+      <div class="form-group">
+        <label for="totalAmount">合計会計金額</label>
+        <div class="input-wrapper">
+          <input type="number" id="totalAmount" placeholder="例: 14850" value="14850">
+          <span class="unit">円</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="headCount">参加人数（合計）</label>
+          <div class="input-wrapper">
+            <input type="number" id="headCount" min="2" value="4">
+            <span class="unit">人</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="roundUnit">端数の丸め単位</label>
+          <select id="roundUnit">
+            <option value="100" selected>100円単位</option>
+            <option value="500">500円単位</option>
+            <option value="1000">1000円単位</option>
+            <option value="1">端数なし（1円単位）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="organizerExtra">幹事・多めに出す人の負担割増</label>
+        <div class="input-wrapper">
+          <input type="number" id="organizerExtra" step="100" value="1000">
+          <span class="unit">円</span>
+        </div>
+        <div class="help-text">均等の場合は「0」を入力</div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calculateSplit()">割り勘を計算する</button>
+
+    <div id="result-area" class="card" style="margin-top: 20px;">
+      <span class="result-badge">計算結果</span>
+      
+      <div class="main-box">
+        <div class="label" id="resGeneralLabel">一般メンバーの支払い</div>
+        <div class="value" id="resGeneralAmount">0 <span>円/人</span></div>
+      </div>
+
+      <div class="comparison-grid" id="organizerBox" style="display:none;">
+        <div class="comp-item" style="grid-column: span 2; background:#eff6ff; border:1px solid #bfdbfe;">
+          <div class="title" style="color:var(--primary);">幹事（1名）の支払い</div>
+          <div class="val" id="resOrganizerAmount" style="color:var(--primary); font-size:1.3rem;">0円</div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top: 15px; font-size: 0.85rem;">集金・端数の内訳</div>
+      <table class="breakdown-table">
+        <tbody>
+          <tr>
+            <td>集金合計額</td>
+            <td id="resTotalCollected">0 円</td>
+          </tr>
+          <tr>
+            <td>お会計との差額（余り/不足）</td>
+            <td id="resDifference">0 円</td>
+          </tr>
+          <tr style="border-top: 1.5px solid var(--border);">
+            <td><strong>単純均等割り（端数切捨前）</strong></td>
+            <td id="resExactPerPerson">0 円</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    function calculateSplit() {
+      const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+      const headCount = parseInt(document.getElementById('headCount').value) || 0;
+      const roundUnit = parseInt(document.getElementById('roundUnit').value) || 1;
+      const organizerExtra = parseFloat(document.getElementById('organizerExtra').value) || 0;
+      const resultArea = document.getElementById('result-area');
+
+      if (totalAmount <= 0 || headCount < 2) {
+        alert('正しい金額と2名以上の人数を入力してください。');
+        return;
+      }
+
+      const exactPerPerson = Math.round(totalAmount / headCount);
+      document.getElementById('resExactPerPerson').textContent = `${exactPerPerson.toLocaleString()} 円`;
+
+      let generalAmount = 0;
+      let organizerAmount = 0;
+      let totalCollected = 0;
+
+      if (organizerExtra > 0) {
+        document.getElementById('organizerBox').style.display = 'grid';
+        document.getElementById('resGeneralLabel').textContent = `一般メンバー（${headCount - 1}名）の支払い`;
+
+        const baseAmount = (totalAmount - organizerExtra) / headCount;
+        generalAmount = Math.ceil(baseAmount / roundUnit) * roundUnit;
+        organizerAmount = totalAmount - (generalAmount * (headCount - 1));
+
+        if (organizerAmount < 0) {
+          organizerAmount = 0;
+        }
+
+        totalCollected = (generalAmount * (headCount - 1)) + organizerAmount;
+        document.getElementById('resOrganizerAmount').textContent = `${organizerAmount.toLocaleString()} 円`;
+      } else {
+        document.getElementById('organizerBox').style.display = 'none';
+        document.getElementById('resGeneralLabel').textContent = '1人あたりの支払い';
+
+        generalAmount = Math.ceil((totalAmount / headCount) / roundUnit) * roundUnit;
+        totalCollected = generalAmount * headCount;
+      }
+
+      const diff = totalCollected - totalAmount;
+
+      document.getElementById('resGeneralAmount').innerHTML = `${generalAmount.toLocaleString()} <span>円</span>`;
+      document.getElementById('resTotalCollected').textContent = `${totalCollected.toLocaleString()} 円`;
+
+      if (diff >= 0) {
+        document.getElementById('resDifference').textContent = `+${diff.toLocaleString()} 円（おつり・幹事の余り）`;
+        document.getElementById('resDifference').style.color = 'var(--primary)';
+      } else {
+        document.getElementById('resDifference').textContent = `${diff.toLocaleString()} 円（不足）`;
+        document.getElementById('resDifference').style.color = '#ef4444';
+      }
+
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calculateSplit();
+    });
+  </script>
+</body>
+</html>
