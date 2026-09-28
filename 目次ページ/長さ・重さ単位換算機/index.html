@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>長さ・重さ単位換算機 - インチ・ポンド・尺・坪を即換算</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .tab-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: #f1f5f9;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="number"], select {
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      flex: 1;
+    }
+
+    select {
+      flex: 1;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .result-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .result-item .unit-name {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .result-item .unit-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>長さ・重さ単位換算機</h1>
+      <p class="subtitle">インチ・センチ・ポンド・kgなどをリアルタイム相互換算</p>
+    </header>
+
+    <div class="tab-group">
+      <div class="tab-btn active" id="tabLength" onclick="setMode('length')">📏 長さ</div>
+      <div class="tab-btn" id="tabWeight" onclick="setMode('weight')">⚖️ 重さ</div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label>入力する数値と単位</label>
+        <div class="input-row">
+          <input type="number" id="inputVal" value="1" step="any" oninput="convertUnits()">
+          <select id="inputUnit" onchange="convertUnits()"></select>
+        </div>
+      </div>
+
+      <div class="result-list" id="resultList"></div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let currentMode = 'length';
+
+    // メートル(m)基準の換算率
+    const LENGTH_UNITS = {
+      cm: { name: 'センチメートル (cm)', toBase: 0.01 },
+      m: { name: 'メートル (m)', toBase: 1.0 },
+      km: { name: 'キロメートル (km)', toBase: 1000.0 },
+      inch: { name: 'インチ (in)', toBase: 0.0254 },
+      ft: { name: 'フィート (ft)', toBase: 0.3048 },
+      yard: { name: 'ヤード (yd)', toBase: 0.9144 },
+      shaku: { name: '尺（しゃく）', toBase: 10 / 33 }
+    };
+
+    // グラム(g)基準の換算率
+    const WEIGHT_UNITS = {
+      g: { name: 'グラム (g)', toBase: 1.0 },
+      kg: { name: 'キログラム (kg)', toBase: 1000.0 },
+      lb: { name: 'ポンド (lb)', toBase: 453.59237 },
+      oz: { name: 'オンス (oz)', toBase: 28.349523 }
+    };
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('tabLength').classList.toggle('active', mode === 'length');
+      document.getElementById('tabWeight').classList.toggle('active', mode === 'weight');
+      initSelect();
+      convertUnits();
+    }
+
+    function initSelect() {
+      const select = document.getElementById('inputUnit');
+      select.innerHTML = '';
+      const pool = currentMode === 'length' ? LENGTH_UNITS : WEIGHT_UNITS;
+
+      for (const [key, obj] of Object.entries(pool)) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = obj.name;
+        select.appendChild(opt);
+      }
+    }
+
+    function convertUnits() {
+      const val = parseFloat(document.getElementById('inputVal').value) || 0;
+      const unitKey = document.getElementById('inputUnit').value;
+      const pool = currentMode === 'length' ? LENGTH_UNITS : WEIGHT_UNITS;
+
+      if (!pool[unitKey]) return;
+
+      const baseVal = val * pool[unitKey].toBase;
+      const list = document.getElementById('resultList');
+      list.innerHTML = '';
+
+      for (const [key, obj] of Object.entries(pool)) {
+        const converted = baseVal / obj.toBase;
+        const formatted = converted >= 1000 || (converted < 0.01 && converted > 0)
+          ? converted.toPrecision(5)
+          : parseFloat(converted.toFixed(4)).toString();
+
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.innerHTML = `
+          <span class="unit-name">${obj.name}</span>
+          <span class="unit-val">${formatted}</span>
+        `;
+        list.appendChild(item);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initSelect();
+      convertUnits();
+    });
+  </script>
+</body>
+</html>
