@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推し活・イベント カウントダウンタイマー - あと何日何秒？</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #f59e0b;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    input[type="text"], input[type="datetime-local"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="datetime-local"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* タイマー表示ボックス */
+    #timer-display {
+      display: none;
+      text-align: center;
+      padding: 20px 16px;
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 2px solid var(--primary);
+      margin-top: 16px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    }
+
+    .target-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+
+    .timer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .timer-item {
+      background: var(--primary-light);
+      padding: 10px 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(37, 99, 235, 0.15);
+    }
+
+    .timer-num {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1;
+    }
+
+    .timer-unit {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .total-seconds {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .btn-share {
+      display: inline-block;
+      width: 100%;
+      background: #000;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>イベント カウントダウンタイマー</h1>
+      <p class="subtitle">ライブ・記念日・締め切りまでの残り時間をリアルタイム計測</p>
+    </header>
+
+    <div class="card">
+      <div class="card-title">イベント設定</div>
+
+      <div class="form-group">
+        <label for="eventName">イベント名・目標</label>
+        <input type="text" id="eventName" placeholder="例: 〇〇推しライブ参戦 / 試験当日" value="楽しみなイベント">
+      </div>
+
+      <div class="form-group">
+        <label for="targetDate">目標の日時</label>
+        <input type="datetime-local" id="targetDate">
+      </div>
+
+      <button type="button" class="btn-calc" onclick="startCountdown()">カウントダウン開始</button>
+    </div>
+
+    <!-- カウントダウン表示 -->
+    <div id="timer-display">
+      <div class="target-title" id="displayTitle">イベント名</div>
+      
+      <div class="timer-grid">
+        <div class="timer-item">
+          <div class="timer-num" id="dDay">0</div>
+          <div class="timer-unit">日</div>
+        </div>
+        <div class="timer-item">
+          <div class="timer-num" id="dHour">00</div>
+          <div class="timer-unit">時間</div>
+        </div>
+        <div class="timer-item">
+          <div class="timer-num" id="dMin">00</div>
+          <div class="timer-unit">分</div>
+        </div>
+        <div class="timer-item">
+          <div class="timer-num" id="dSec">00</div>
+          <div class="timer-unit">秒</div>
+        </div>
+      </div>
+
+      <div class="total-seconds" id="totalSecText">残り 約 0 秒</div>
+
+      <a id="shareBtn" class="btn-share" target="_blank" rel="noopener">X（旧Twitter）で共有する</a>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let timerInterval = null;
+
+    // 初期値として30日後の12:00をセット
+    window.addEventListener('DOMContentLoaded', () => {
+      const now = new Date();
+      now.setDate(now.getDate() + 30);
+      now.setHours(12, 0, 0, 0);
+
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+
+      document.getElementById('targetDate').value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+      startCountdown();
+    });
+
+    function startCountdown() {
+      const name = document.getElementById('eventName').value.trim() || '目標イベント';
+      const targetInput = document.getElementById('targetDate').value;
+
+      if (!targetInput) {
+        alert('日時を選択してください。');
+        return;
+      }
+
+      const targetTime = new Date(targetInput).getTime();
+      const display = document.getElementById('timer-display');
+      document.getElementById('displayTitle').textContent = `「${name}」まであと`;
+
+      display.style.display = 'block';
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      function update() {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          document.getElementById('dDay').textContent = "0";
+          document.getElementById('dHour').textContent = "00";
+          document.getElementById('dMin').textContent = "00";
+          document.getElementById('dSec').textContent = "00";
+          document.getElementById('totalSecText').textContent = "🎉 イベント開始・達成しました！";
+          clearInterval(timerInterval);
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+        const secs = Math.floor((diff / 1000) % 60);
+        const totalSecs = Math.floor(diff / 1000);
+
+        document.getElementById('dDay').textContent = days;
+        document.getElementById('dHour').textContent = String(hours).padStart(2, '0');
+        document.getElementById('dMin').textContent = String(mins).padStart(2, '0');
+        document.getElementById('dSec').textContent = String(secs).padStart(2, '0');
+        document.getElementById('totalSecText').textContent = `（総残り時間: 約 ${totalSecs.toLocaleString()} 秒）`;
+
+        // Xシェアリンク生成
+        const shareText = encodeURIComponent(`「${name}」まであと【${days}日 ${hours}時間${mins}分${secs}秒】！\nカウントダウン中👇\n`);
+        const currentUrl = encodeURIComponent(window.location.href);
+        document.getElementById('shareBtn').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${currentUrl}`;
+      }
+
+      update();
+      timerInterval = setInterval(update, 1000);
+      display.scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
