@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>倍速再生・動画視聴時間計算機 - 1.25倍・1.5倍・2倍の時間を即算出</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .form-group {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .speed-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .speed-btn {
+      background: #f1f5f9;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .speed-btn.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>倍速再生・動画視聴時間計算機</h1>
+      <p class="subtitle">講義・YouTube・映画の倍速視聴時間と短縮分を即算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="hours">時間</label>
+          <div class="input-wrapper">
+            <input type="number" id="hours" value="1" min="0" oninput="calcSpeed()">
+            <span class="unit">時間</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="mins">分</label>
+          <div class="input-wrapper">
+            <input type="number" id="mins" value="30" min="0" max="59" oninput="calcSpeed()">
+            <span class="unit">分</span>
+          </div>
+        </div>
+      </div>
+
+      <label>再生速度</label>
+      <div class="speed-grid">
+        <div class="speed-btn" onclick="setSpeed(1.25)">1.25 倍</div>
+        <div class="speed-btn active" id="btn15" onclick="setSpeed(1.5)">1.5 倍</div>
+        <div class="speed-btn" onclick="setSpeed(1.75)">1.75 倍</div>
+        <div class="speed-btn" onclick="setSpeed(2.0)">2.0 倍</div>
+      </div>
+
+      <div class="main-box">
+        <div class="label" id="speedLabel">1.5倍速での視聴時間</div>
+        <div class="value" id="resPlayTime">1 時間 0 分</div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">節約・短縮できた時間</div>
+          <div class="val" id="resSavedTime" style="color:var(--accent);">30 分短縮</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">元の合計時間</div>
+          <div class="val" id="resTotalOriginal">90 分</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let currentSpeed = 1.5;
+
+    function setSpeed(speed) {
+      currentSpeed = speed;
+      const btns = document.querySelectorAll('.speed-btn');
+      btns.forEach(b => {
+        b.classList.toggle('active', b.textContent.includes(speed.toString()));
+      });
+      calcSpeed();
+    }
+
+    function calcSpeed() {
+      const h = parseInt(document.getElementById('hours').value) || 0;
+      const m = parseInt(document.getElementById('mins').value) || 0;
+
+      const totalMins = h * 60 + m;
+      if (totalMins <= 0) return;
+
+      const newMinsTotal = totalMins / currentSpeed;
+      const savedMinsTotal = totalMins - newMinsTotal;
+
+      const resH = Math.floor(newMinsTotal / 60);
+      const resM = Math.round(newMinsTotal % 60);
+
+      const savedH = Math.floor(savedMinsTotal / 60);
+      const savedM = Math.round(savedMinsTotal % 60);
+
+      document.getElementById('speedLabel').textContent = `${currentSpeed}倍速での視聴時間`;
+      document.getElementById('resPlayTime').textContent = resH > 0 ? `${resH} 時間 ${resM} 分` : `${resM} 分`;
+      
+      let savedText = '';
+      if (savedH > 0) savedText += `${savedH}時間 `;
+      savedText += `${savedM}分 短縮`;
+      document.getElementById('resSavedTime').textContent = savedText;
+      document.getElementById('resTotalOriginal').textContent = `${totalMins} 分`;
+    }
+
+    window.addEventListener('DOMContentLoaded', calcSpeed);
+  </script>
+</body>
+</html>
