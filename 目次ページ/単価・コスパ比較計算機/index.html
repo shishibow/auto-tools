@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>どっちがお得？単価・コスパ比較計算機</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-group {
+      flex: 1;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .result-banner {
+      text-align: center;
+      background: #dcfce7;
+      color: #15803d;
+      padding: 16px;
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      border: 1.5px solid #86efac;
+    }
+
+    .result-banner .banner-sub {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .result-banner .banner-main {
+      font-size: 1.8rem;
+      font-weight: 900;
+      margin: 4px 0;
+    }
+
+    .grid-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .comp-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .comp-box.winner {
+      border: 2px solid var(--accent);
+      background: #f0fdf4;
+    }
+
+    .comp-box .name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .comp-box .unit-price {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>単価・コスパ比較計算機</h1>
+      <p class="subtitle">容量や個数が違う2つの商品、どっちがお得かを即判定</p>
+    </header>
+
+    <div class="card">
+      <div class="card-title">商品 A</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="priceA">価格</label>
+          <div class="input-wrapper">
+            <input type="number" id="priceA" placeholder="例: 398" value="398">
+            <span class="unit">円</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="amountA">容量・個数</label>
+          <div class="input-wrapper">
+            <input type="number" id="amountA" placeholder="例: 450" value="450">
+            <span class="unit">g/個</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">商品 B</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="priceB">価格</label>
+          <div class="input-wrapper">
+            <input type="number" id="priceB" placeholder="例: 680" value="680">
+            <span class="unit">円</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="amountB">容量・個数</label>
+          <div class="input-wrapper">
+            <input type="number" id="amountB" placeholder="例: 800" value="800">
+            <span class="unit">g/個</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="compareItems()">コスパを比較する</button>
+
+    <div id="result-area" class="card">
+      <div class="result-banner">
+        <div class="banner-sub" id="winLabel">判定結果</div>
+        <div class="banner-main" id="winTitle">商品A の方がお得！</div>
+        <div class="banner-sub" id="diffText">約 0% お得です</div>
+      </div>
+
+      <div class="grid-compare">
+        <div class="comp-box" id="boxA">
+          <div class="name">商品 A の単価</div>
+          <div class="unit-price" id="unitA">0.00 <span style="font-size:0.75rem;">円/単位</span></div>
+        </div>
+        <div class="comp-box" id="boxB">
+          <div class="name">商品 B の単価</div>
+          <div class="unit-price" id="unitB">0.00 <span style="font-size:0.75rem;">円/単位</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    function compareItems() {
+      const priceA = parseFloat(document.getElementById('priceA').value) || 0;
+      const amountA = parseFloat(document.getElementById('amountA').value) || 0;
+      const priceB = parseFloat(document.getElementById('priceB').value) || 0;
+      const amountB = parseFloat(document.getElementById('amountB').value) || 0;
+
+      if (priceA <= 0 || amountA <= 0 || priceB <= 0 || amountB <= 0) {
+        alert('すべての項目に0より大きい数値を入力してください。');
+        return;
+      }
+
+      const unitPriceA = priceA / amountA;
+      const unitPriceB = priceB / amountB;
+
+      document.getElementById('unitA').innerHTML = `${unitPriceA.toFixed(2)} <span style="font-size:0.75rem;">円/単位</span>`;
+      document.getElementById('unitB').innerHTML = `${unitPriceB.toFixed(2)} <span style="font-size:0.75rem;">円/単位</span>`;
+
+      const boxA = document.getElementById('boxA');
+      const boxB = document.getElementById('boxB');
+      boxA.classList.remove('winner');
+      boxB.classList.remove('winner');
+
+      const winTitle = document.getElementById('winTitle');
+      const diffText = document.getElementById('diffText');
+
+      if (unitPriceA < unitPriceB) {
+        boxA.classList.add('winner');
+        const diffPercent = (((unitPriceB - unitPriceA) / unitPriceB) * 100).toFixed(1);
+        winTitle.textContent = '商品 A の方がお得！';
+        diffText.textContent = `商品Bより 約 ${diffPercent}% 安いです`;
+      } else if (unitPriceB < unitPriceA) {
+        boxB.classList.add('winner');
+        const diffPercent = (((unitPriceA - unitPriceB) / unitPriceA) * 100).toFixed(1);
+        winTitle.textContent = '商品 B の方がお得！';
+        diffText.textContent = `商品Aより 約 ${diffPercent}% 安いです`;
+      } else {
+        winTitle.textContent = 'どちらも同じコスパ！';
+        diffText.textContent = '1単位あたりの価格は全く同じです';
+      }
+
+      document.getElementById('result-area').style.display = 'block';
+      document.getElementById('result-area').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      compareItems();
+    });
+  </script>
+</body>
+</html>
