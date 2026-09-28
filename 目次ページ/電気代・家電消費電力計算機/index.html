@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電気代・家電消費電力計算機 - 1時間・1日・1ヶ月の電気料金を即計算</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 56px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .chip-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>電気代・家電消費電力計算機</h1>
+      <p class="subtitle">消費電力(W)と使用時間から1時間・1日・1ヶ月の電気代を算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="watt">消費電力</label>
+        <div class="input-wrapper">
+          <input type="number" id="watt" step="1" value="500">
+          <span class="unit">W</span>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <button type="button" class="chip-btn" onclick="setWatt(600)">エアコン (約600W)</button>
+        <button type="button" class="chip-btn" onclick="setWatt(200)">PC・ゲーム機 (約200W)</button>
+        <button type="button" class="chip-btn" onclick="setWatt(1200)">ドライヤー (約1200W)</button>
+        <button type="button" class="chip-btn" onclick="setWatt(10)">LED電球 (約10W)</button>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label for="hours">1日の使用時間</label>
+        <div class="input-wrapper">
+          <input type="number" id="hours" step="0.5" value="6">
+          <span class="unit">時間</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="pricePerKwh">電気料金単価（全国目安 31円/kWh）</label>
+        <div class="input-wrapper">
+          <input type="number" id="pricePerKwh" step="0.1" value="31">
+          <span class="unit">円/kWh</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calcElec()">電気代を計算する</button>
+
+    <div id="result-area" class="card">
+      <div class="main-box">
+        <div class="label">1ヶ月（30日）あたりの電気代目安</div>
+        <div class="value" id="resMonthPrice">0 円</div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">1時間あたり</div>
+          <div class="val" id="resHourPrice">0 円</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">1日あたり</div>
+          <div class="val" id="resDayPrice">0 円</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    function setWatt(w) {
+      document.getElementById('watt').value = w;
+      calcElec();
+    }
+
+    function calcElec() {
+      const watt = parseFloat(document.getElementById('watt').value) || 0;
+      const hours = parseFloat(document.getElementById('hours').value) || 0;
+      const rate = parseFloat(document.getElementById('pricePerKwh').value) || 31;
+      const resultArea = document.getElementById('result-area');
+
+      if (watt <= 0 || hours <= 0 || rate <= 0) {
+        alert('数値を正しく入力してください。');
+        return;
+      }
+
+      // 1時間あたりの電気代: (W ÷ 1000) × 単価
+      const perHour = (watt / 1000) * rate;
+      const perDay = perHour * hours;
+      const perMonth = perDay * 30;
+
+      document.getElementById('resHourPrice').textContent = `${perHour.toFixed(2)} 円`;
+      document.getElementById('resDayPrice').textContent = `${Math.round(perDay).toLocaleString()} 円`;
+      document.getElementById('resMonthPrice').textContent = `${Math.round(perMonth).toLocaleString()} 円`;
+
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', calcElec);
+  </script>
+</body>
+</html>
