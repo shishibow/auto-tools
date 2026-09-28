@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポモドーロタイマー - 25分集中＆5分休憩で作業効率UP</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --break-color: #0d9488;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .mode-badge {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      margin-bottom: 16px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .mode-badge.break {
+      background: #ccfbf1;
+      color: var(--break-color);
+    }
+
+    .timer-display {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 2px;
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn-action {
+      flex: 1;
+      max-width: 140px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-action:active {
+      transform: scale(0.98);
+    }
+
+    .btn-reset {
+      background: #f1f5f9;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-reset:active {
+      background: #e2e8f0;
+    }
+
+    .stat-box {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .stat-val {
+      font-weight: 800;
+      color: var(--text);
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>ポモドーロタイマー</h1>
+      <p class="subtitle">25分作業 ＋ 5分休憩で集中力と生産性を最大化</p>
+    </header>
+
+    <div class="card">
+      <div class="mode-badge" id="modeBadge">🔥 集中タイム（25分）</div>
+      
+      <div class="timer-display" id="timeDisplay">25:00</div>
+
+      <div class="btn-group">
+        <button type="button" class="btn-action" id="startBtn" onclick="toggleTimer()">スタート</button>
+        <button type="button" class="btn-reset" onclick="resetTimer()">リセット</button>
+      </div>
+
+      <div class="stat-box">
+        本日完了したセッション: <span class="stat-val" id="completedSessions">0</span> 回
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const WORK_TIME = 25 * 60;
+    const BREAK_TIME = 5 * 60;
+
+    let timeLeft = WORK_TIME;
+    let isRunning = false;
+    let isWork = true;
+    let timerId = null;
+    let completedCount = 0;
+
+    // Web Audio API による終了アラームビープ音
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {}
+    }
+
+    function updateDisplay() {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      const str = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.getElementById('timeDisplay').textContent = str;
+      document.title = `${str} - ${isWork ? '集中' : '休憩'} | ポモドーロタイマー`;
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('startBtn');
+      if (isRunning) {
+        clearInterval(timerId);
+        isRunning = false;
+        btn.textContent = '再開';
+      } else {
+        isRunning = true;
+        btn.textContent = '一時停止';
+        timerId = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+          } else {
+            playBeep();
+            clearInterval(timerId);
+            isRunning = false;
+            btn.textContent = 'スタート';
+
+            if (isWork) {
+              completedCount++;
+              document.getElementById('completedSessions').textContent = completedCount;
+              isWork = false;
+              timeLeft = BREAK_TIME;
+              document.getElementById('modeBadge').textContent = '☕ 休憩タイム（5分）';
+              document.getElementById('modeBadge').className = 'mode-badge break';
+            } else {
+              isWork = true;
+              timeLeft = WORK_TIME;
+              document.getElementById('modeBadge').textContent = '🔥 集中タイム（25分）';
+              document.getElementById('modeBadge').className = 'mode-badge';
+            }
+            updateDisplay();
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerId);
+      isRunning = false;
+      isWork = true;
+      timeLeft = WORK_TIME;
+      document.getElementById('startBtn').textContent = 'スタート';
+      document.getElementById('modeBadge').textContent = '🔥 集中タイム（25分）';
+      document.getElementById('modeBadge').className = 'mode-badge';
+      updateDisplay();
+    }
+
+    window.addEventListener('DOMContentLoaded', updateDisplay);
+  </script>
+</body>
+</html>
