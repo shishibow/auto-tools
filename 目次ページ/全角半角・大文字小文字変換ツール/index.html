@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全角半角・大文字小文字変換ツール - ワンクリックで一括テキスト変換</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    textarea {
+      width: 100%;
+      height: 160px;
+      padding: 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      resize: vertical;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-action {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-action:active {
+      background: #e2e8f0;
+      transform: scale(0.98);
+    }
+
+    .btn-copy-main {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-copy-main:active {
+      transform: scale(0.98);
+    }
+
+    .btn-clear {
+      margin-top: 8px;
+      background: transparent;
+      border: none;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>全角半角・大文字小文字変換</h1>
+      <p class="subtitle">英数・カナ・大文字・小文字をワンタップで一括変換</p>
+    </header>
+
+    <div class="card">
+      <textarea id="targetText" placeholder="ここに変換したいテキストを入力または貼り付け..."></textarea>
+      
+      <div style="display:flex; justify-content:flex-end;">
+        <button type="button" class="btn-clear" onclick="clearInput()">テキストをクリア</button>
+      </div>
+
+      <div class="btn-grid">
+        <button type="button" class="btn-action" onclick="toHalfAlphanum()">全角英数 ➔ 半角</button>
+        <button type="button" class="btn-action" onclick="toFullAlphanum()">半角英数 ➔ 全角</button>
+        <button type="button" class="btn-action" onclick="toUpper()">すべて大文字 (ABC)</button>
+        <button type="button" class="btn-action" onclick="toLower()">すべて小文字 (abc)</button>
+        <button type="button" class="btn-action" onclick="toHalfKana()">全角カナ ➔ 半角ｶﾅ</button>
+        <button type="button" class="btn-action" onclick="toFullKana()">半角ｶﾅ ➔ 全角カナ</button>
+      </div>
+
+      <button type="button" class="btn-copy-main" id="copyBtn" onclick="copyResult()">変換結果をコピー</button>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const el = document.getElementById('targetText');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function clearInput() {
+      el.value = '';
+      el.focus();
+    }
+
+    // 全角英数・スペース -> 半角
+    function toHalfAlphanum() {
+      el.value = el.value.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/　/g, ' ');
+    }
+
+    // 半角英数・スペース -> 全角
+    function toFullAlphanum() {
+      el.value = el.value.replace(/[!-~]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0)).replace(/ /g, '　');
+    }
+
+    // 大文字
+    function toUpper() {
+      el.value = el.value.toUpperCase();
+    }
+
+    // 小文字
+    function toLower() {
+      el.value = el.value.toLowerCase();
+    }
+
+    // カナ変換マップ
+    const kanaMap = {
+      'ｶﾞ': 'ガ', 'ｷﾞ': 'ギ', 'ｸﾞ': 'グ', 'ｹﾞ': 'ゲ', 'ｺﾞ': 'ゴ',
+      'ｻﾞ': 'ザ', 'ｼﾞ': 'ジ', 'ｽﾞ': 'ズ', 'ｾﾞ': 'ゼ', 'ｿﾞ': 'ゾ',
+      'ﾀﾞ': 'ダ', 'ﾁﾞ': 'ヂ', 'ﾂﾞ': 'ヅ', 'ﾃﾞ': 'デ', 'ﾄﾞ': 'ド',
+      'ﾊﾞ': 'バ', 'ﾋﾞ': 'ビ', 'ﾌﾞ': 'ブ', 'ﾍﾞ': 'ベ', 'ﾎﾞ': 'ボ',
+      'ﾊﾟ': 'パ', 'ﾋﾟ': 'ピ', 'ﾌﾟ': 'プ', 'ﾍﾟ': 'ペ', 'ﾎﾟ': 'ポ',
+      'ｳﾞ': 'ヴ', 'ﾜﾞ': 'ヷ', 'ｦﾞ': 'ヺ',
+      'ｱ': 'ア', 'ｲ': 'イ', 'ｳ': 'ウ', 'ｴ': 'エ', 'ｵ': 'オ',
+      'ｶ': 'カ', 'ｷ': 'キ', 'ｸ': 'ク', 'ｹ': 'ケ', 'ｺ': 'コ',
+      'ｻ': 'サ', 'ｼ': 'シ', 'ｽ': 'ス', 'ｾ': 'セ', 'ｿ': 'ソ',
+      'ﾀ': 'タ', 'ﾁ': 'チ', 'ﾂ': 'ツ', 'ﾃ': 'テ', 'ﾄ': 'ト',
+      'ﾅ': 'ナ', 'ﾆ': 'ニ', 'ﾇ': 'ヌ', 'ﾈ': 'ネ', 'ﾉ': 'ノ',
+      'ﾊ': 'ハ', 'ﾋ': 'ヒ', 'ﾌ': 'フ', 'ﾍ': 'ヘ', 'ﾎ': 'ホ',
+      'ﾏ': 'マ', 'ﾐ': 'ミ', 'ﾑ': 'ム', 'ﾒ': 'メ', 'ﾓ': 'モ',
+      'ﾔ': 'ヤ', 'ﾕ': 'ユ', 'ﾖ': 'ヨ',
+      'ﾗ': 'ラ', 'ﾘ': 'リ', 'ﾙ': 'ル', 'ﾚ': 'レ', 'ﾛ': 'ロ',
+      'ﾜ': 'ワ', 'ｦ': 'ヲ', 'ﾝ': 'ン',
+      'ｧ': 'ァ', 'ｨ': 'ィ', 'ｩ': 'ゥ', 'ｪ': 'ェ', 'ｫ': 'ォ',
+      'ｯ': 'ッ', 'ｬ': 'ャ', 'ｭ': 'ュ', 'ｮ': 'ョ',
+      'ｰ': 'ー', '｡': '。', '｢': '「', '｣': '」', '､': '、', '･': '・'
+    };
+
+    function toFullKana() {
+      let reg = new RegExp('(' + Object.keys(kanaMap).join('|') + ')', 'g');
+      el.value = el.value.replace(reg, m => kanaMap[m]);
+    }
+
+    function toHalfKana() {
+      let invMap = {};
+      for (let k in kanaMap) { invMap[kanaMap[k]] = k; }
+      let reg = new RegExp('(' + Object.keys(invMap).join('|') + ')', 'g');
+      el.value = el.value.replace(reg, m => invMap[m]);
+    }
+
+    function copyResult() {
+      if (!el.value) return;
+      navigator.clipboard.writeText(el.value).then(() => {
+        copyBtn.textContent = 'コピーしました！';
+        copyBtn.style.background = 'var(--accent)';
+        setTimeout(() => {
+          copyBtn.textContent = '変換結果をコピー';
+          copyBtn.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
+        }, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
