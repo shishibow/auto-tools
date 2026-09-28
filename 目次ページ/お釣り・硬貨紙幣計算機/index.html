@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お釣り・硬貨紙幣計算機 - 最適なお釣りの枚数を瞬時に計算</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --danger: #ef4444;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .coin-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .coin-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .coin-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .coin-count {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>お釣り・硬貨紙幣計算機</h1>
+      <p class="subtitle">請求額とお預かり金額からお釣りの最小枚数を即算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="price">お会計・請求金額</label>
+        <div class="input-wrapper">
+          <input type="number" id="price" value="1680">
+          <span class="unit">円</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="payment">お預かり金額（支払額）</label>
+        <div class="input-wrapper">
+          <input type="number" id="payment" value="2000">
+          <span class="unit">円</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calcChange()">お釣りを計算する</button>
+
+    <div id="result-area" class="card">
+      <div class="main-box">
+        <div class="label">お釣り合計</div>
+        <div class="value" id="resChangeTotal">0 円</div>
+      </div>
+
+      <div class="coin-grid" id="coinGrid">
+        <!-- JSで硬貨・紙幣の内訳を表示 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const DENOMINATIONS = [
+      { name: '10,000円札', val: 10000 },
+      { name: '5,000円札', val: 5000 },
+      { name: '1,000円札', val: 1000 },
+      { name: '500円玉', val: 500 },
+      { name: '100円玉', val: 100 },
+      { name: '50円玉', val: 50 },
+      { name: '10円玉', val: 10 },
+      { name: '5円玉', val: 5 },
+      { name: '1円玉', val: 1 }
+    ];
+
+    function calcChange() {
+      const price = parseInt(document.getElementById('price').value) || 0;
+      const payment = parseInt(document.getElementById('payment').value) || 0;
+      const resultArea = document.getElementById('result-area');
+      const grid = document.getElementById('coinGrid');
+
+      if (payment < price) {
+        alert('お預かり金額が請求額より少なくなっています。');
+        return;
+      }
+
+      let change = payment - price;
+      document.getElementById('resChangeTotal').textContent = `${change.toLocaleString()} 円`;
+
+      grid.innerHTML = '';
+      if (change === 0) {
+        grid.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:10px; color:#64748b;">お釣りはありません（ぴったりです）</div>';
+      } else {
+        let tempChange = change;
+        DENOMINATIONS.forEach(d => {
+          const count = Math.floor(tempChange / d.val);
+          if (count > 0) {
+            tempChange %= d.val;
+            const item = document.createElement('div');
+            item.className = 'coin-item';
+            item.innerHTML = `
+              <span class="coin-name">${d.name}</span>
+              <span class="coin-count">${count} <span style="font-size:0.8rem; font-weight:normal; color:#64748b;">枚</span></span>
+            `;
+            grid.appendChild(item);
+          }
+        });
+      }
+
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', calcChange);
+  </script>
+</body>
+</html>
