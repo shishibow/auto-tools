@@ -84,4 +84,24 @@
     <loc>https://shishibow.github.io/auto-tools/経過年数・勤続年数計算機/</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/ガソリン代・燃費計算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/電気代・家電消費電力計算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/時間計算・タイムカード合計ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/履歴書・入学卒業年計算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/全角半角・大文字小文字変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>
