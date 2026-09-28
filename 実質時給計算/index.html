@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実質時給チェッカー - あなたの本当の時給を計算</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px; /* 広告枠のスペース確保 */
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .help-text {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* 結果表示エリア */
+    #result-area {
+      display: none;
+      scroll-margin-top: 10px;
+    }
+
+    .result-badge {
+      display: inline-block;
+      background: #fef3c7;
+      color: #b45309;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .main-wage-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 12px 0 16px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-wage-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-wage-box .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 6px 0;
+    }
+
+    .main-wage-box .value span {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .comp-item {
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .comp-item.alert {
+      background: #fee2e2;
+    }
+
+    .comp-item .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .comp-item.alert .title {
+      color: var(--danger);
+    }
+
+    .comp-item .val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+
+    .breakdown-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-table td {
+      padding: 8px 0;
+    }
+
+    .breakdown-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .commentary {
+      font-size: 0.8rem;
+      background: #f8fafc;
+      border-left: 3px solid var(--primary);
+      padding: 10px;
+      border-radius: 0 6px 6px 0;
+      margin-top: 12px;
+      color: #334155;
+    }
+
+    /* 広告コンテナ（画面下部固定） */
+    .ad-fixed-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+      border-top: 1px solid var(--border);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 0 6px;
+      min-height: 60px;
+    }
+
+    .ad-label {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .ad-slot {
+      width: 100%;
+      max-width: 320px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>実質時給チェッカー</h1>
+      <p class="subtitle">通勤・残業・自腹出費を含めた「本当の労働対価」を判定</p>
+    </header>
+
+    <!-- 入力セクション1: 収入 -->
+    <div class="card">
+      <div class="card-title">1. 手取り収入を入力</div>
+      <div class="form-group">
+        <label for="monthlyNetPay">月間の手取り給与（基本給+残業代）</label>
+        <div class="input-wrapper">
+          <input type="number" id="monthlyNetPay" placeholder="例: 240000" value="230000">
+          <span class="unit">円</span>
+        </div>
+        <div class="help-text">銀行口座に実際に振り込まれる月額です</div>
+      </div>
+      <div class="form-group">
+        <label for="bonusNetPay">年間の手取りボーナス合計</label>
+        <div class="input-wrapper">
+          <input type="number" id="bonusNetPay" placeholder="例: 600000" value="400000">
+          <span class="unit">円</span>
+        </div>
+        <div class="help-text">ボーナスがない場合は0と入力</div>
+      </div>
+    </div>
+
+    <!-- 入力セクション2: 拘束時間 -->
+    <div class="card">
+      <div class="card-title">2. 月間の拘束時間を入力</div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="workDays">月間出勤日数</label>
+          <div class="input-wrapper">
+            <input type="number" id="workDays" value="20">
+            <span class="unit">日</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="dailyHours">所定労働時間/日</label>
+          <div class="input-wrapper">
+            <input type="number" id="dailyHours" step="0.5" value="8">
+            <span class="unit">h</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="overtimeHours">月間残業時間</label>
+        <div class="input-wrapper">
+          <input type="number" id="overtimeHours" value="25">
+          <span class="unit">時間</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="commuteHoursDaily">1日の往復通勤時間</label>
+        <div class="input-wrapper">
+          <input type="number" id="commuteHoursDaily" step="0.1" value="1.5">
+          <span class="unit">時間</span>
+        </div>
+        <div class="help-text">片道45分の場合は「1.5」</div>
+      </div>
+
+      <div class="form-group">
+        <label for="prepTimeDaily">1日の仕事準備・身支度時間</label>
+        <div class="input-wrapper">
+          <input type="number" id="prepTimeDaily" step="0.1" value="0.75">
+          <span class="unit">時間</span>
+        </div>
+        <div class="help-text">仕事用メイク、着替え、退勤後の片付け等（45分=0.75）</div>
+      </div>
+
+      <div class="form-group">
+        <label for="unpaidWorkHours">月間の持ち帰り仕事・自己研鑽等</label>
+        <div class="input-wrapper">
+          <input type="number" id="unpaidWorkHours" value="5">
+          <span class="unit">時間</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 入力セクション3: 仕事のための支出 -->
+    <div class="card">
+      <div class="card-title">3. 仕事のための自己負担（月額）</div>
+      
+      <div class="form-group">
+        <label for="clothesCost">仕事着・スーツ・消耗品（月換算）</label>
+        <div class="input-wrapper">
+          <input type="number" id="clothesCost" value="4000">
+          <span class="unit">円</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="socialCost">付き合いの飲み会・交際費（月額）</label>
+        <div class="input-wrapper">
+          <input type="number" id="socialCost" value="8000">
+          <span class="unit">円</span>
+        </div>
+        <div class="help-text">断りにくい職場飲みなど</div>
+      </div>
+
+      <div class="form-group">
+        <label for="lunchCost">仕事日の外食・ランチ割増代（月額）</label>
+        <div class="input-wrapper">
+          <input type="number" id="lunchCost" value="8000">
+          <span class="unit">円</span>
+        </div>
+        <div class="help-text">自炊と比べて余計にかかる出費</div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calculateWage()">実質時給を計算する</button>
+
+    <!-- 結果表示エリア -->
+    <div id="result-area" class="card" style="margin-top: 20px;">
+      <span class="result-badge">計算結果</span>
+      
+      <div class="main-wage-box">
+        <div class="label">あなたの実質時給</div>
+        <div class="value" id="resRealWage">0 <span>円/時間</span></div>
+        <div style="font-size:0.75rem; color:#475569;" id="resSummary">拘束時間・自腹経費を差し引いた純粋な対価</div>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comp-item">
+          <div class="title">名目時給（基本拘束のみ）</div>
+          <div class="val" id="resNominalWage">0円</div>
+        </div>
+        <div class="comp-item alert">
+          <div class="title">実質との差額（時給低下）</div>
+          <div class="val" id="resDiffWage" style="color:var(--danger);">-0円</div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top: 15px; font-size: 0.85rem;">月間の時間・収支の内訳</div>
+      <table class="breakdown-table">
+        <tbody>
+          <tr>
+            <td>月平均の手取り収入（賞与込）</td>
+            <td id="resMonthlyNetIncome">0 円</td>
+          </tr>
+          <tr>
+            <td>仕事のための自腹支出</td>
+            <td id="resTotalExpense" style="color:var(--danger);">-0 円</td>
+          </tr>
+          <tr style="border-top: 1.5px solid var(--border);">
+            <td><strong>純手取り収入</strong></td>
+            <td id="resPureIncome"><strong>0 円</strong></td>
+          </tr>
+          <tr>
+            <td>契約所定労働時間</td>
+            <td id="resBaseHours">0 時間</td>
+          </tr>
+          <tr>
+            <td>通勤・準備・残業などの拘束時間</td>
+            <td id="resExtraHours" style="color:var(--primary);">+0 時間</td>
+          </tr>
+          <tr style="border-top: 1.5px solid var(--border);">
+            <td><strong>総拘束時間（月間）</strong></td>
+            <td id="resTotalHours"><strong>0 時間</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="commentary" id="resComment">
+        <!-- JSで判定コメント挿入 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 画面下部固定 忍者AdMax 広告枠 -->
+  <div class="ad-fixed-footer">
+    <div class="ad-label">SPONSORED</div>
+    <div class="ad-slot">
+      <!-- 忍者AdMax広告コード ここから -->
+      <div style="font-size: 11px; color: #94a3b8; text-align: center;">
+        <!-- 忍者AdMax等のタグをここに貼付してください -->
+        広告エリア（忍者AdMax）
+      </div>
+      <!-- 忍者AdMax広告コード ここまで -->
+    </div>
+  </div>
+
+  <script>
+    function calculateWage() {
+      // 収入
+      const monthlyNet = parseFloat(document.getElementById('monthlyNetPay').value) || 0;
+      const bonusNet = parseFloat(document.getElementById('bonusNetPay').value) || 0;
+      const monthlyIncome = monthlyNet + (bonusNet / 12);
+
+      // 時間関連
+      const workDays = parseFloat(document.getElementById('workDays').value) || 0;
+      const dailyHours = parseFloat(document.getElementById('dailyHours').value) || 0;
+      const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
+      const commuteHoursDaily = parseFloat(document.getElementById('commuteHoursDaily').value) || 0;
+      const prepTimeDaily = parseFloat(document.getElementById('prepTimeDaily').value) || 0;
+      const unpaidWorkHours = parseFloat(document.getElementById('unpaidWorkHours').value) || 0;
+
+      // 経費
+      const clothes = parseFloat(document.getElementById('clothesCost').value) || 0;
+      const social = parseFloat(document.getElementById('socialCost').value) || 0;
+      const lunch = parseFloat(document.getElementById('lunchCost').value) || 0;
+      const totalExpense = clothes + social + lunch;
+
+      // 計算
+      const baseContractHours = workDays * dailyHours;
+      const extraCommute = workDays * commuteHoursDaily;
+      const extraPrep = workDays * prepTimeDaily;
+      const totalExtraHours = overtimeHours + extraCommute + extraPrep + unpaidWorkHours;
+      const totalConstrainedHours = baseContractHours + totalExtraHours;
+
+      // 純手取り
+      const pureIncome = Math.max(0, monthlyIncome - totalExpense);
+
+      // 名目時給（基本労働時間のみに対する時給）
+      const nominalWage = baseContractHours > 0 ? Math.round(monthlyIncome / baseContractHours) : 0;
+
+      // 実質時給
+      const realWage = totalConstrainedHours > 0 ? Math.round(pureIncome / totalConstrainedHours) : 0;
+      const diffWage = nominalWage - realWage;
+
+      // UIに反映
+      document.getElementById('resRealWage').innerHTML = `${realWage.toLocaleString()} <span>円/時間</span>`;
+      document.getElementById('resNominalWage').textContent = `${nominalWage.toLocaleString()} 円`;
+      document.getElementById('resDiffWage').textContent = `-${diffWage.toLocaleString()} 円`;
+
+      document.getElementById('resMonthlyNetIncome').textContent = `${Math.round(monthlyIncome).toLocaleString()} 円`;
+      document.getElementById('resTotalExpense').textContent = `-${totalExpense.toLocaleString()} 円`;
+      document.getElementById('resPureIncome').textContent = `${Math.round(pureIncome).toLocaleString()} 円`;
+
+      document.getElementById('resBaseHours').textContent = `${baseContractHours.toFixed(1)} 時間`;
+      document.getElementById('resExtraHours').textContent = `+${totalExtraHours.toFixed(1)} 時間`;
+      document.getElementById('resTotalHours').textContent = `${totalConstrainedHours.toFixed(1)} 時間`;
+
+      // コメント判定
+      let comment = "";
+      const tokyoMinWage = 1113; // 参考: 東京都最低賃金レベル
+
+      if (realWage < tokyoMinWage) {
+        comment = `⚠️ <strong>要注意:</strong> あなたの実質時給は地域最低賃金（約1,100円前後）を下回っている可能性があります。通勤時間や自腹出費が大きな負担になっています。働き方の見直しやリモート化の検討が有効です。`;
+      } else if (diffWage > 800) {
+        comment = `💡 <strong>乖離大:</strong> 表向きの時給と比べて<strong>毎時 ${diffWage.toLocaleString()}円</strong> 目減りしています。主な原因は長時間の通勤や業務外拘束です。通勤の短縮や出費の見直しで大きく改善できます。`;
+      } else {
+        comment = `✨ <strong>健全なバランス:</strong> 拘束時間と業務外費用のロスが比較的少なく抑えられています。さらに時給単価を上げるにはスキルの専門性を高めることが近道です。`;
+      }
+
+      document.getElementById('resComment').innerHTML = comment;
+
+      // 表示とスクロール
+      const resultArea = document.getElementById('result-area');
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 初回自動計算
+    window.addEventListener('DOMContentLoaded', () => {
+      calculateWage();
+    });
+  </script>
+</body>
+</html>
