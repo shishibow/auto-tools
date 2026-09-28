@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パーセント・割合計算機 - 何％・割合の増減を即計算</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .row-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .row-inputs span {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    .res-box {
+      margin-top: 10px;
+      background: var(--primary-light);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .res-label {
+      font-size: 0.75rem;
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    .res-value {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>パーセント・割合計算機</h1>
+      <p class="subtitle">「〇〇の〇％はいくら？」「〇〇は〇〇の何％？」を即解決</p>
+    </header>
+
+    <!-- パターン1: AのB%は？ -->
+    <div class="card">
+      <div class="card-title">① 金額・数値の〇％を求める</div>
+      <div class="row-inputs">
+        <input type="number" id="p1Base" placeholder="1000" value="5000">
+        <span>の</span>
+        <input type="number" id="p1Rate" placeholder="20" value="20" style="max-width:90px;">
+        <span>％ は？</span>
+      </div>
+      <button type="button" class="btn-calc" onclick="calcP1()">計算する</button>
+
+      <div class="res-box" id="resBox1">
+        <div class="res-label">計算結果</div>
+        <div class="res-value" id="val1">1,000</div>
+      </div>
+    </div>
+
+    <!-- パターン2: AはBの何%？ -->
+    <div class="card">
+      <div class="card-title">② ある数値が全体に占める割合を求める</div>
+      <div class="row-inputs">
+        <input type="number" id="p2Part" placeholder="150" value="150">
+        <span>は</span>
+        <input type="number" id="p2Total" placeholder="600" value="600">
+        <span>の何％？</span>
+      </div>
+      <button type="button" class="btn-calc" onclick="calcP2()">計算する</button>
+
+      <div class="res-box" id="resBox2">
+        <div class="res-label">計算結果</div>
+        <div class="res-value" id="val2">25 %</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    function calcP1() {
+      const base = parseFloat(document.getElementById('p1Base').value) || 0;
+      const rate = parseFloat(document.getElementById('p1Rate').value) || 0;
+      const res = base * (rate / 100);
+      document.getElementById('val1').textContent = Number.isInteger(res) ? res.toLocaleString() : res.toFixed(2);
+    }
+
+    function calcP2() {
+      const part = parseFloat(document.getElementById('p2Part').value) || 0;
+      const total = parseFloat(document.getElementById('p2Total').value) || 0;
+      if (total === 0) {
+        document.getElementById('val2').textContent = '0 %';
+        return;
+      }
+      const res = (part / total) * 100;
+      document.getElementById('val2').textContent = `${Number.isInteger(res) ? res : res.toFixed(2)} %`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calcP1();
+      calcP2();
+    });
+  </script>
+</body>
+</html>
