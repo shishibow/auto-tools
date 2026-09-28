@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経過年数・勤続年数計算機 - 〇年〇ヶ月〇日を正確に算出</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="date"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.2;
+      margin: 6px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>経過年数・勤続年数計算機</h1>
+      <p class="subtitle">入社日や記念日からの「〇年〇ヶ月〇日」を正確に算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="startDate">開始日（入社日・記念日など）</label>
+        <input type="date" id="startDate" value="2020-04-01">
+      </div>
+
+      <div class="form-group">
+        <label for="endDate">基準日（退職日・現在日など）</label>
+        <input type="date" id="endDate">
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calcDuration()">経過期間を計算する</button>
+
+    <div id="result-area" class="card">
+      <div class="main-box">
+        <div class="label">正確な経過期間</div>
+        <div class="value" id="mainDuration">0年 0ヶ月 0日</div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">丸経過年数</div>
+          <div class="val" id="resTotalYears">満 0 年</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">総経過日数</div>
+          <div class="val" id="resTotalDays">0 日間</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('endDate').value = today;
+      calcDuration();
+    });
+
+    function calcDuration() {
+      const startStr = document.getElementById('startDate').value;
+      const endStr = document.getElementById('endDate').value;
+      const resultArea = document.getElementById('result-area');
+
+      if (!startStr || !endStr) return;
+
+      const d1 = new Date(startStr);
+      const d2 = new Date(endStr);
+
+      if (d1 > d2) {
+        alert('終了日は開始日以降の日付を選択してください。');
+        return;
+      }
+
+      // 年・月・日の正確な差分計算
+      let y = d2.getFullYear() - d1.getFullYear();
+      let m = d2.getMonth() - d1.getMonth();
+      let d = d2.getDate() - d1.getDate();
+
+      if (d < 0) {
+        m--;
+        // 前月の日数を加算
+        const prevMonthLastDay = new Date(d2.getFullYear(), d2.getMonth(), 0).getDate();
+        d += prevMonthLastDay;
+      }
+
+      if (m < 0) {
+        y--;
+        m += 12;
+      }
+
+      const totalDays = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+
+      document.getElementById('mainDuration').textContent = `${y}年 ${m}ヶ月 ${d}日`;
+      document.getElementById('resTotalYears').textContent = `満 ${y} 年`;
+      document.getElementById('resTotalDays').textContent = `${totalDays.toLocaleString()} 日間`;
+
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
