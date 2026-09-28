@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安全なパスワード自動生成ツール - 長さ・記号・数字をカスタム生成</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .display-box {
+      display: flex;
+      align-items: center;
+      background: var(--primary-light);
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+
+    .password-text {
+      flex: 1;
+      font-family: monospace, monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      word-break: break-all;
+    }
+
+    .btn-copy {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-copy:active {
+      transform: scale(0.96);
+    }
+
+    .slider-group {
+      margin-bottom: 16px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+    }
+
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .checkbox-label input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>パスワード自動生成ツール</h1>
+      <p class="subtitle">推測されにくい安全で強固なパスワードをワンタップ生成</p>
+    </header>
+
+    <div class="card">
+      <div class="display-box">
+        <div class="password-text" id="passDisplay">--------</div>
+        <button type="button" class="btn-copy" id="copyBtn" onclick="copyPassword()">コピー</button>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>文字数（長さ）</span>
+          <span id="lengthVal" style="color:var(--primary); font-weight:800;">14 文字</span>
+        </div>
+        <input type="range" id="passLength" min="8" max="32" value="14" oninput="updateLength()">
+      </div>
+
+      <div class="checkbox-grid">
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkUpper" checked onchange="generatePass()"> 英大文字 (A-Z)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkLower" checked onchange="generatePass()"> 英小文字 (a-z)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkNumbers" checked onchange="generatePass()"> 数字 (0-9)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkSymbols" checked onchange="generatePass()"> 記号 (!@#$%...)
+        </label>
+      </div>
+
+      <button type="button" class="btn-calc" onclick="generatePass()">新しいパスワードを生成</button>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const CHAR_SETS = {
+      upper: 'ABCDEFGHJKLMNPQRSTUVWXYZ', // 見間違いやすいI, O等を除外
+      lower: 'abcdefghijkmnpqrstuvwxyz', // l等を除外
+      numbers: '23456789',               // 0, 1等を除外
+      symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    };
+
+    function updateLength() {
+      const len = document.getElementById('passLength').value;
+      document.getElementById('lengthVal').textContent = `${len} 文字`;
+      generatePass();
+    }
+
+    function generatePass() {
+      const len = parseInt(document.getElementById('passLength').value);
+      const useUpper = document.getElementById('chkUpper').checked;
+      const useLower = document.getElementById('chkLower').checked;
+      const useNums = document.getElementById('chkNumbers').checked;
+      const useSyms = document.getElementById('chkSymbols').checked;
+
+      let pool = '';
+      if (useUpper) pool += CHAR_SETS.upper;
+      if (useLower) pool += CHAR_SETS.lower;
+      if (useNums) pool += CHAR_SETS.numbers;
+      if (useSyms) pool += CHAR_SETS.symbols;
+
+      if (!pool) {
+        document.getElementById('passDisplay').textContent = '文字種を選んでください';
+        return;
+      }
+
+      // 暗号学的に安全な乱数生成 (crypto.getRandomValues)
+      const randomVals = new Uint32Array(len);
+      crypto.getRandomValues(randomVals);
+
+      let pass = '';
+      for (let i = 0; i < len; i++) {
+        pass += pool[randomVals[i] % pool.length];
+      }
+
+      document.getElementById('passDisplay').textContent = pass;
+      document.getElementById('copyBtn').textContent = 'コピー';
+      document.getElementById('copyBtn').style.background = 'var(--primary)';
+    }
+
+    function copyPassword() {
+      const text = document.getElementById('passDisplay').textContent;
+      if (!text || text.includes('文字種を選んでください')) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '完了！';
+        btn.style.background = 'var(--accent)';
+        setTimeout(() => {
+          btn.textContent = 'コピー';
+          btn.style.background = 'var(--primary)';
+        }, 1500);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', generatePass);
+  </script>
+</body>
+</html>
