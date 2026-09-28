@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>年齢・和暦西暦・生年月日早見計算機 - 干支や次の誕生日も即算出</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #0f172a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="date"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>年齢・和暦西暦早見計算機</h1>
+      <p class="subtitle">生年月日を選ぶだけ！満年齢・元号・干支・次の誕生日を即算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="birthDate">生年月日を選択</label>
+        <input type="date" id="birthDate" value="2005-01-01">
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calcAge()">年齢と和暦を調べる</button>
+
+    <div id="result-area" class="card">
+      <div class="main-box">
+        <div class="label">現在の満年齢</div>
+        <div class="value" id="resAge">0 歳</div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">生まれ年の和暦</div>
+          <div class="val" id="resWareki">-</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">干支（えと）</div>
+          <div class="val" id="resEto">-</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">生まれてからの日数</div>
+          <div class="val" id="resDaysLiving">0 日目</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">次の誕生日まで</div>
+          <div class="val" id="resNextBday">あと 0 日</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    function getWareki(date) {
+      const y = date.getFullYear();
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const ymd = y * 10000 + m * 100 + d;
+
+      if (ymd >= 20190501) {
+        const ey = y - 2018;
+        return `令和${ey === 1 ? '元' : ey}年`;
+      } else if (ymd >= 19890108) {
+        const ey = y - 1988;
+        return `平成${ey === 1 ? '元' : ey}年`;
+      } else if (ymd >= 19261225) {
+        const ey = y - 1925;
+        return `昭和${ey === 1 ? '元' : ey}年`;
+      } else if (ymd >= 19120730) {
+        const ey = y - 1911;
+        return `大正${ey === 1 ? '元' : ey}年`;
+      } else if (ymd >= 18680125) {
+        const ey = y - 1867;
+        return `明治${ey === 1 ? '元' : ey}年`;
+      }
+      return `${y}年`;
+    }
+
+    function getEto(year) {
+      const etoList = ['子（ね）', '丑（うし）', '寅（とら）', '卯（う）', '辰（たつ）', '巳（み）', '午（うま）', '未（ひつじ）', '申（さる）', '酉（とり）', '戌（いぬ）', '亥（い）'];
+      return etoList[(year - 4) % 12];
+    }
+
+    function calcAge() {
+      const bInput = document.getElementById('birthDate').value;
+      if (!bInput) return;
+
+      const birth = new Date(bInput + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // 満年齢計算
+      let age = today.getFullYear() - birth.getFullYear();
+      const mDiff = today.getMonth() - birth.getMonth();
+      if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+
+      // 生まれてからの日数
+      const days = Math.floor((today - birth) / (1000 * 60 * 60 * 24));
+
+      // 次の誕生日まで
+      const thisYearBday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+      let nextBday = thisYearBday;
+      if (today > thisYearBday) {
+        nextBday = new Date(today.getFullYear() + 1, birth.getMonth(), birth.getDate());
+      }
+      const daysUntilBday = Math.ceil((nextBday - today) / (1000 * 60 * 60 * 24));
+
+      document.getElementById('resAge').textContent = `${age} 歳`;
+      document.getElementById('resWareki').textContent = getWareki(birth);
+      document.getElementById('resEto').textContent = getEto(birth.getFullYear());
+      document.getElementById('resDaysLiving').textContent = `${days.toLocaleString()} 日目`;
+      document.getElementById('resNextBday').textContent = daysUntilBday === 0 ? '本日誕生日！🎉' : `あと ${daysUntilBday} 日`;
+
+      const area = document.getElementById('result-area');
+      area.style.display = 'block';
+      area.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calcAge();
+    });
+  </script>
+</body>
+</html>
