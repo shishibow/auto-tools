@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日数計算・日付カウントツール - 2つの日付の間隔や〇日後を即算出</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    input[type="date"], input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="date"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>日数計算・日付カウントツール</h1>
+      <p class="subtitle">2つの日付の間隔や「〇日後は何日？」を即座に計算</p>
+    </header>
+
+    <!-- 機能1: 日付の差を計算 -->
+    <div class="card">
+      <div class="card-title">① 2つの日付の間の日数を計算</div>
+      <div class="form-group">
+        <label for="startDate">開始日</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="form-group">
+        <label for="endDate">終了日</label>
+        <input type="date" id="endDate">
+      </div>
+      <button type="button" class="btn-calc" onclick="calcDateDiff()">日数を計算</button>
+      
+      <div class="main-box" id="diffResultBox" style="display:none;">
+        <div class="label">期間の日数</div>
+        <div class="value" id="resDiffDays">0 日間</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);" id="resDiffWeeks">（0週間 0日）</div>
+      </div>
+    </div>
+
+    <!-- 機能2: 〇日後・〇日前を計算 -->
+    <div class="card">
+      <div class="card-title">② 基準日から〇日後・〇日前を計算</div>
+      <div class="form-group">
+        <label for="baseDate">基準日</label>
+        <input type="date" id="baseDate">
+      </div>
+      <div class="form-group">
+        <label for="addDays">加減する日数（前を調べる場合はマイナス）</label>
+        <input type="number" id="addDays" placeholder="例: 100" value="100">
+      </div>
+      <button type="button" class="btn-calc" onclick="calcTargetDate()">日付を計算</button>
+
+      <div class="main-box" id="targetResultBox" style="display:none;">
+        <div class="label" id="targetResultLabel">計算後の日付</div>
+        <div class="value" id="resTargetDate" style="font-size:1.6rem;">----年--月--日</div>
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary);" id="resTargetWeek">-曜日</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').value = today;
+      document.getElementById('baseDate').value = today;
+      
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      document.getElementById('endDate').value = nextMonth.toISOString().split('T')[0];
+
+      calcDateDiff();
+      calcTargetDate();
+    });
+
+    function calcDateDiff() {
+      const start = new Date(document.getElementById('startDate').value);
+      const end = new Date(document.getElementById('endDate').value);
+      if (isNaN(start) || isNaN(end)) return;
+
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const weeks = Math.floor(diffDays / 7);
+      const remDays = diffDays % 7;
+
+      document.getElementById('resDiffDays').textContent = `${diffDays} 日間`;
+      document.getElementById('resDiffWeeks').textContent = `（約 ${weeks}週間 ${remDays}日）`;
+      document.getElementById('diffResultBox').style.display = 'block';
+    }
+
+    function calcTargetDate() {
+      const base = new Date(document.getElementById('baseDate').value);
+      const days = parseInt(document.getElementById('addDays').value) || 0;
+      if (isNaN(base)) return;
+
+      const target = new Date(base);
+      target.setDate(target.getDate() + days);
+
+      const y = target.getFullYear();
+      const m = target.getMonth() + 1;
+      const d = target.getDate();
+      const w = daysOfWeek[target.getDay()];
+
+      document.getElementById('targetResultLabel').textContent = days >= 0 ? `${days} 日後` : `${Math.abs(days)} 日前`;
+      document.getElementById('resTargetDate').textContent = `${y}年${m}月${d}日`;
+      document.getElementById('resTargetWeek').textContent = `（${w}曜日）`;
+      document.getElementById('targetResultBox').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
