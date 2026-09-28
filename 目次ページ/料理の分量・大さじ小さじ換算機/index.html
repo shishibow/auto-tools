@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>料理の分量・大さじ小さじ換算機 - 調味料ごとのグラム(g)も即算出</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #ea580c;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .row-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="number"], select {
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      flex: 1;
+    }
+
+    select {
+      width: 100%;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .main-box {
+      text-align: center;
+      background: #fff7ed;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 14px;
+      border: 1.5px solid #fed7aa;
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>料理の分量・大さじ小さじ換算機</h1>
+      <p class="subtitle">大さじ・小さじ・カップの容量と調味料別の重さ(g)を即換算</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="ingredient">調味料の種類</label>
+        <select id="ingredient" onchange="convertCook()">
+          <option value="water">水・酒・酢（比重 1.0）</option>
+          <option value="shoyu">醤油・みりん・味噌（比重 1.2）</option>
+          <option value="sugar">上白糖・砂糖（比重 0.6）</option>
+          <option value="salt">塩・食塩（比重 1.2）</option>
+          <option value="flour">小麦粉・片栗粉（比重 0.6）</option>
+          <option value="oil">サラダ油・オリーブ油（比重 0.9）</option>
+          <option value="butter">バター・マーガリン（比重 0.8）</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>入力する単位と数値</label>
+        <div class="row-input">
+          <input type="number" id="inputVal" step="0.1" value="1" oninput="convertCook()">
+          <select id="inputUnit" style="flex:1;" onchange="convertCook()">
+            <option value="tbsp">大さじ (15ml)</option>
+            <option value="tsp">小さじ (5ml)</option>
+            <option value="cup">カップ (200ml)</option>
+            <option value="ml">ミリリットル (ml)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="main-box">
+        <div class="label">換算した重さ（グラム）</div>
+        <div class="value" id="resGrams">15 g</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);" id="resVolume">容量: 15 ml</div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">大さじ換算</div>
+          <div class="val" id="resTbsp">1 杯</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">小さじ換算</div>
+          <div class="val" id="resTsp">3 杯</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const DENSITY = {
+      water: 1.0,
+      shoyu: 1.2,
+      sugar: 0.6,
+      salt: 1.2,
+      flour: 0.6,
+      oil: 0.9,
+      butter: 0.8
+    };
+
+    function convertCook() {
+      const val = parseFloat(document.getElementById('inputVal').value) || 0;
+      const unit = document.getElementById('inputUnit').value;
+      const ing = document.getElementById('ingredient').value;
+      const density = DENSITY[ing];
+
+      let ml = 0;
+      if (unit === 'tbsp') ml = val * 15;
+      else if (unit === 'tsp') ml = val * 5;
+      else if (unit === 'cup') ml = val * 200;
+      else ml = val;
+
+      const grams = ml * density;
+      const tbsp = ml / 15;
+      const tsp = ml / 5;
+
+      document.getElementById('resGrams').textContent = `${grams >= 10 ? grams.toFixed(1) : grams.toFixed(2)} g`;
+      document.getElementById('resVolume').textContent = `容量: ${ml.toFixed(1)} ml (cc)`;
+      document.getElementById('resTbsp').textContent = `${tbsp.toFixed(2)} 杯`;
+      document.getElementById('resTsp').textContent = `${tsp.toFixed(2)} 杯`;
+    }
+
+    window.addEventListener('DOMContentLoaded', convertCook);
+  </script>
+</body>
+</html>
