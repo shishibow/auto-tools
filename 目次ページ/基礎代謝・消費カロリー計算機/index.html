@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基礎代謝・消費カロリー計算機 - 1日の必要カロリーと減量目安</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .gender-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .gender-btn {
+      flex: 1;
+      background: #f1f5f9;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .gender-btn.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      padding-right: 36px;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-calc {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-calc:active {
+      transform: scale(0.98);
+    }
+
+    #result-area {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .main-box {
+      text-align: center;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .main-box .label {
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .main-box .value {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .summary-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>基礎代謝・消費カロリー計算機</h1>
+      <p class="subtitle">年齢・体型・活動量から1日の必要カロリーを算出</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label>性別</label>
+        <div class="gender-selector">
+          <div class="gender-btn active" id="btnMale" onclick="setGender('male')">男性</div>
+          <div class="gender-btn" id="btnFemale" onclick="setGender('female')">女性</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="age">年齢</label>
+          <div class="input-wrapper">
+            <input type="number" id="age" value="25">
+            <span class="unit">歳</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="height">身長</label>
+          <div class="input-wrapper">
+            <input type="number" id="height" value="170">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="weight">体重</label>
+        <div class="input-wrapper">
+          <input type="number" id="weight" step="0.1" value="65">
+          <span class="unit">kg</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="activity">普段の活動レベル</label>
+        <select id="activity">
+          <option value="1.2">ほぼ運動しない（デスクワーク中心）</option>
+          <option value="1.375" selected>軽い運動（週1〜2回の軽い運動/通勤歩行）</option>
+          <option value="1.55">中程度の運動（週3〜5回の運動/立ち仕事）</option>
+          <option value="1.725">激しい運動（週6〜7回の激しいトレーニング）</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="button" class="btn-calc" onclick="calcCalories()">カロリーを計算する</button>
+
+    <div id="result-area" class="card">
+      <div class="main-box">
+        <div class="label">1日の推定総消費カロリー（体重維持）</div>
+        <div class="value" id="tdeeVal">0 kcal</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+          体重をキープするために必要な1日の目安摂取エネルギー
+        </div>
+      </div>
+
+      <div class="grid-summary">
+        <div class="summary-box">
+          <div class="title">あなたの基礎代謝量 (BMR)</div>
+          <div class="val" id="bmrVal">0 kcal</div>
+        </div>
+        <div class="summary-box">
+          <div class="title">減量目標目安 (-500kcal)</div>
+          <div class="val" id="cutVal" style="color:var(--accent);">0 kcal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let gender = 'male';
+
+    function setGender(g) {
+      gender = g;
+      document.getElementById('btnMale').classList.toggle('active', g === 'male');
+      document.getElementById('btnFemale').classList.toggle('active', g === 'female');
+      calcCalories();
+    }
+
+    function calcCalories() {
+      const age = parseFloat(document.getElementById('age').value) || 0;
+      const height = parseFloat(document.getElementById('height').value) || 0;
+      const weight = parseFloat(document.getElementById('weight').value) || 0;
+      const activity = parseFloat(document.getElementById('activity').value) || 1.2;
+      const resultArea = document.getElementById('result-area');
+
+      if (age <= 0 || height <= 0 || weight <= 0) {
+        alert('正しい数値を入力してください。');
+        return;
+      }
+
+      // ハリス・ベネディクト方程式 (改良版)
+      let bmr = 0;
+      if (gender === 'male') {
+        bmr = 13.397 * weight + 4.799 * height - 5.677 * age + 88.362;
+      } else {
+        bmr = 9.247 * weight + 3.098 * height - 4.33 * age + 447.593;
+      }
+
+      const tdee = bmr * activity;
+      const cut = Math.max(bmr, tdee - 500); // 基礎代謝を下回らないように配慮
+
+      document.getElementById('bmrVal').textContent = `${Math.round(bmr).toLocaleString()} kcal`;
+      document.getElementById('tdeeVal').textContent = `${Math.round(tdee).toLocaleString()} kcal`;
+      document.getElementById('cutVal').textContent = `${Math.round(cut).toLocaleString()} kcal`;
+
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    window.addEventListener('DOMContentLoaded', calcCalories);
+  </script>
+</body>
+</html>
