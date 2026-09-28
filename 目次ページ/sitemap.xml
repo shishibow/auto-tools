@@ -104,4 +104,24 @@
     <loc>https://shishibow.github.io/auto-tools/全角半角・大文字小文字変換ツール/</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/料理の分量・大さじ小さじ換算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/長さ・重さ単位換算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/お釣り・硬貨紙幣計算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/倍速再生・動画視聴時間計算機/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/徒歩・移動時間計算機/</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>
