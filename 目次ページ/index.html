@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>完全無料Webツール集 - 日常を便利にする計算＆管理ツール</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding: 12px 0 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .tool-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tool-card {
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .tool-card:active {
+      transform: scale(0.98);
+      border-color: var(--primary);
+    }
+
+    .tool-icon {
+      font-size: 1.8rem;
+      margin-right: 14px;
+      width: 44px;
+      height: 44px;
+      background: var(--primary-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .tool-info {
+      flex: 1;
+    }
+
+    .tool-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .tool-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .arrow {
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-left: 8px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <span class="badge">登録不要・完全無料</span>
+      <h1>完全無料 Webツール集</h1>
+      <p class="subtitle">日常の「ちょっと面倒」をスマホから秒で解決</p>
+    </header>
+
+    <div class="tool-list">
+      <!-- ツール1 -->
+      <a href="./実質時給計算/" class="tool-card">
+        <div class="tool-icon">⏱️</div>
+        <div class="tool-info">
+          <div class="tool-title">実質時給チェッカー</div>
+          <div class="tool-desc">通勤や自腹出費を差し引いた本当の時給を算出</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+
+      <!-- ツール2 -->
+      <a href="./loan-calculator/" class="tool-card">
+        <div class="tool-icon">💰</div>
+        <div class="tool-info">
+          <div class="tool-title">奨学金・借金返済シミュレーター</div>
+          <div class="tool-desc">完済までの期間と利息の総支払額を簡単計算</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+
+      <!-- ツール3 -->
+      <a href="./warikan/" class="tool-card">
+        <div class="tool-icon">🧾</div>
+        <div class="tool-info">
+          <div class="tool-title">端数スッキリ割り勘計算機</div>
+          <div class="tool-desc">100円/500円単位の丸めや幹事割増に対応</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+
+      <!-- ツール4 -->
+      <a href="./countdown/" class="tool-card">
+        <div class="tool-icon">⏳</div>
+        <div class="tool-info">
+          <div class="tool-title">イベント カウントダウンタイマー</div>
+          <div class="tool-desc">目標・推し活・試験日までの残り時間をリアルタイム表示</div>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+    </div>
+
+    <footer>
+      <p>© 完全無料Webツール All Rights Reserved.</p>
+    </footer>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+</body>
+</html>
