@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>グリーンバック透過ツール - クロマキー背景透過・PNG保存</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover {
+      background: #f1f5f9;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .control-group {
+      margin-top: 14px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .color-select-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .color-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .color-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .preview-box {
+      margin-top: 14px;
+      text-align: center;
+      display: none;
+    }
+
+    /* 透過が分かりやすい市松模様背景 */
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>グリーンバック透過ツール</h1>
+      <p class="subtitle">緑・青の背景をワンタップで透過して透明PNGを保存</p>
+    </header>
+
+    <div class="card">
+      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">画像をタップして選択</div>
+        <div class="upload-hint">PNG / JPG / WebP 対応（完全端末内処理・安全）</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handleImage(event)">
+
+      <div id="controls" style="display: none;">
+        <div class="color-select-row">
+          <button type="button" class="color-btn active" id="btnGreen" onclick="setTargetColor('green')">🟩 緑色を透過</button>
+          <button type="button" class="color-btn" id="btnBlue" onclick="setTargetColor('blue')">🟦 青色（BB）を透過</button>
+        </div>
+
+        <div class="control-group">
+          <div class="slider-header">
+            <span>透過の強さ（許容度）</span>
+            <span id="toleranceVal">80</span>
+          </div>
+          <input type="range" id="tolerance" min="20" max="150" value="80" oninput="updateTolerance(this.value)">
+        </div>
+
+        <div class="preview-box" id="previewArea">
+          <div class="checkerboard">
+            <canvas id="canvas"></canvas>
+          </div>
+          <button type="button" class="btn-download" onclick="downloadImage()">透過PNGをダウンロード</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let sourceImg = null;
+    let targetColor = 'green';
+    let tolerance = 80;
+
+    function handleImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        sourceImg = new Image();
+        sourceImg.onload = function() {
+          document.getElementById('controls').style.display = 'block';
+          document.getElementById('previewArea').style.display = 'block';
+          processChroma();
+        };
+        sourceImg.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setTargetColor(color) {
+      targetColor = color;
+      document.getElementById('btnGreen').classList.toggle('active', color === 'green');
+      document.getElementById('btnBlue').classList.toggle('active', color === 'blue');
+      processChroma();
+    }
+
+    function updateTolerance(val) {
+      tolerance = parseInt(val);
+      document.getElementById('toleranceVal').textContent = val;
+      processChroma();
+    }
+
+    function processChroma() {
+      if (!sourceImg) return;
+
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // 表示と処理の軽量化のため最大幅1200pxに制限
+      let w = sourceImg.width;
+      let h = sourceImg.height;
+      const maxSide = 1200;
+      if (w > maxSide || h > maxSide) {
+        if (w > h) {
+          h = Math.round((h * maxSide) / w);
+          w = maxSide;
+        } else {
+          w = Math.round((w * maxSide) / h);
+          h = maxSide;
+        }
+      }
+
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(sourceImg, 0, 0, w, h);
+
+      const frame = ctx.getImageData(0, 0, w, h);
+      const data = frame.data;
+      const len = data.length;
+
+      for (let i = 0; i < len; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        let diff = 0;
+        if (targetColor === 'green') {
+          // 緑色の優位性（緑成分が赤・青よりどれだけ強いか）
+          const maxRB = Math.max(r, b);
+          diff = g - maxRB;
+        } else {
+          // 青色の優位性（ブルーバック）
+          const maxRG = Math.max(r, g);
+          diff = b - maxRG;
+        }
+
+        if (diff > tolerance) {
+          // 完全透過
+          data[i + 3] = 0;
+        } else if (diff > tolerance - 25) {
+          // 境界線のギザギザを和らげるアンチエイリアス処理
+          const alpha = 1 - (diff - (tolerance - 25)) / 25;
+          data[i + 3] = Math.round(data[i + 3] * alpha);
+        }
+      }
+
+      ctx.putImageData(frame, 0, 0);
+    }
+
+    function downloadImage() {
+      const canvas = document.getElementById('canvas');
+      const link = document.createElement('a');
+      link.download = 'chroma_transparent.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
