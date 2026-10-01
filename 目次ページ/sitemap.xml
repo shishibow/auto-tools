@@ -128,4 +128,8 @@
     <loc>https://shishibow.github.io/auto-tools/グリーンバック透過ツール/</loc>
     <priority>0.8</priority>
   </url>
+    <url>
+    <loc>https://shishibow.github.io/auto-tools/動画トリミング・前後カットツール/</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>
