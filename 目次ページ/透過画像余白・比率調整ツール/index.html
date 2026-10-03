@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>透過画像 余白・比率調整ツール - 正方形枠とイラストのサイズ比率を変更</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover {
+      background: #f1f5f9;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .control-panel {
+      margin-top: 14px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .preset-chips {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      flex: 1;
+      padding: 6px 0;
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .chip:active {
+      background: #e2e8f0;
+    }
+
+    .preview-wrapper {
+      text-align: center;
+      margin: 16px 0;
+    }
+
+    /* 透過チェック模様 */
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+      display: inline-block;
+      max-width: 280px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>透過画像 余白・比率調整</h1>
+      <p class="subtitle">正方形キャンバスを維持したまま、本体の大きさを縮小・拡大</p>
+    </header>
+
+    <div class="card">
+      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">透過PNG・画像をタップして選択</div>
+        <div class="upload-hint">完全端末内処理（サーバー送信なし・高画質出力）</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)">
+
+      <div id="editorPanel" style="display: none;" class="control-panel">
+        
+        <div class="slider-header">
+          <span>本体のサイズ比率</span>
+          <span id="scaleVal" style="color:var(--primary); font-size:1rem;">80%</span>
+        </div>
+        <input type="range" id="scaleRange" min="20" max="130" value="80" oninput="updateScale(this.value)">
+
+        <div class="preset-chips">
+          <div class="chip" onclick="setScale(60)">60% (余白大)</div>
+          <div class="chip" onclick="setScale(80)">80% (標準余白)</div>
+          <div class="chip" onclick="setScale(90)">90% (微余白)</div>
+          <div class="chip" onclick="setScale(100)">100% (等倍)</div>
+        </div>
+
+        <div class="preview-wrapper">
+          <div class="checkerboard">
+            <canvas id="previewCanvas"></canvas>
+          </div>
+        </div>
+
+        <button type="button" class="btn-download" onclick="downloadImage()">調整した透過PNGを保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let sourceImg = null;
+    let canvasSize = 800; // 高画質正方形キャンバス
+    let currentScale = 0.8; // デフォルト80%
+
+    function loadImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        sourceImg = new Image();
+        sourceImg.onload = function() {
+          // 元画像の長辺を基準に高画質キャンバスサイズを決定
+          const maxDim = Math.max(sourceImg.width, sourceImg.height);
+          canvasSize = Math.max(512, Math.min(maxDim, 1200));
+
+          document.getElementById('editorPanel').style.display = 'block';
+          renderCanvas();
+        };
+        sourceImg.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateScale(val) {
+      currentScale = parseInt(val) / 100;
+      document.getElementById('scaleVal').textContent = `${val}%`;
+      renderCanvas();
+    }
+
+    function setScale(val) {
+      document.getElementById('scaleRange').value = val;
+      updateScale(val);
+    }
+
+    function renderCanvas() {
+      if (!sourceImg) return;
+
+      const canvas = document.getElementById('previewCanvas');
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+      // アスペクト比を維持して中央配置
+      const imgAspect = sourceImg.width / sourceImg.height;
+      let drawW, drawH;
+
+      if (imgAspect >= 1) {
+        drawW = canvasSize * currentScale;
+        drawH = drawW / imgAspect;
+      } else {
+        drawH = canvasSize * currentScale;
+        drawW = drawH * imgAspect;
+      }
+
+      const offsetX = (canvasSize - drawW) / 2;
+      const offsetY = (canvasSize - drawH) / 2;
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(sourceImg, offsetX, offsetY, drawW, drawH);
+    }
+
+    function downloadImage() {
+      const canvas = document.getElementById('previewCanvas');
+      const link = document.createElement('a');
+      link.download = `adjusted_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
