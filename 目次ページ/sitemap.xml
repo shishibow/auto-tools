@@ -124,12 +124,16 @@
     <loc>https://shishibow.github.io/auto-tools/徒歩・移動時間計算機/</loc>
     <priority>0.8</priority>
   </url>
-    <url>
+  <url>
     <loc>https://shishibow.github.io/auto-tools/グリーンバック透過ツール/</loc>
     <priority>0.8</priority>
   </url>
-    <url>
+  <url>
     <loc>https://shishibow.github.io/auto-tools/動画トリミング・前後カットツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/透過画像余白・比率調整ツール/</loc>
     <priority>0.8</priority>
   </url>
 </urlset>
