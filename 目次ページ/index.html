@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="google-site-verification" content="-6wVpKBLuMbzI1EvJouNAwWOBqw4uWqgvaJI9H3sK64" />
-  <title>無料Webツール集 - 日常を便利にする計算＆管理ツール</title>
+  <title>実用Web便利ツール集 - スマホ・PCで即座に使える計算・変換まとめ</title>
+  <meta name="description" content="日常、仕事、学業、創作で役立つ実用的なWeb計算・変換・画像編集ツールのポータルサイト。">
   <style>
     :root {
       --primary: #2563eb;
       --primary-light: #eff6ff;
       --primary-dark: #1d4ed8;
+      --accent: #16a34a;
       --text: #1e293b;
       --text-muted: #64748b;
       --bg: #f8fafc;
@@ -34,45 +35,130 @@
     }
 
     .container {
-      max-width: 520px;
+      max-width: 600px;
       margin: 0 auto;
-      padding: 20px 16px;
+      padding: 16px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 24px;
-      padding: 12px 0 6px;
-    }
-
-    .badge {
-      display: inline-block;
-      background: var(--primary-light);
-      color: var(--primary);
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
     }
 
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: 800;
-      color: var(--text);
+      color: var(--primary);
       letter-spacing: -0.5px;
     }
 
     .subtitle {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
+    /* 特化版バナー */
+    .special-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .special-banner h3 {
+      font-size: 0.95rem;
+      color: #1e3a8a;
+      margin-bottom: 6px;
+    }
+
+    .special-banner p {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+
+    .special-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .special-list li a {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    /* カテゴリタブ（横スクロール可能） */
+    .category-tabs-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      padding: 8px 0;
+      margin: 0 -16px 16px -16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 0 16px;
+      scrollbar-width: none;
+    }
+
+    .category-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex-shrink: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    /* セクション */
+    .category-section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-left: 4px;
+    }
+
+    /* ツールカード一覧 */
     .tool-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
 
     .tool-card {
@@ -81,60 +167,52 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 12px 14px;
       text-decoration: none;
       color: inherit;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: transform 0.1s, border-color 0.2s;
     }
 
     .tool-card:active {
       transform: scale(0.98);
-      border-color: var(--primary);
+      background: #f8fafc;
     }
 
     .tool-icon {
-      font-size: 1.8rem;
-      margin-right: 14px;
-      width: 44px;
-      height: 44px;
-      background: var(--primary-light);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 1.4rem;
+      margin-right: 12px;
       flex-shrink: 0;
     }
 
     .tool-info {
       flex: 1;
+      min-width: 0;
     }
 
     .tool-title {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .tool-desc {
       font-size: 0.75rem;
       color: var(--text-muted);
-      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
     }
 
     .arrow {
-      color: #94a3b8;
-      font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1rem;
+      color: #cbd5e1;
       margin-left: 8px;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 32px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -142,201 +220,361 @@
 
   <div class="container">
     <header>
-      <span class="badge">登録不要・完全無料</span>
-      <h1>無料 Webツール集</h1>
-      <p class="subtitle">日常の「ちょっと面倒」をスマホから秒で解決</p>
+      <h1>実用Webツール集</h1>
+      <p class="subtitle">日常・仕事・創作で役立つ便利な計算・変換・画像ツールまとめ</p>
     </header>
 
     <!-- 特化版ツールの案内ブロック -->
-    <section style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; margin: 20px 0;">
-      <h3 style="font-size: 1rem; color: #1e3a8a; margin-bottom: 8px;">🔥 スマホ対応・高機能特化版ツール</h3>
-      <p style="font-size: 0.85rem; color: #475569; margin-bottom: 12px;">
-        日常の計算をよりスムーズに行える専用ページです。
-      </p>
-      <ul style="list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+    <section class="special-banner">
+      <h3>🔥 スマホ対応・高機能特化版ツール</h3>
+      <p>日常の計算をよりスムーズに行える専用ページです。</p>
+      <ul class="special-list">
         <li>
-          👉 <a href="https://shishibow.github.io/baito-keisan/" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600; text-decoration: none;">バイト実働・休憩・給与計算ツール ↗</a>
-          <span style="font-size: 0.8rem; color: #64748b;">（深夜割増・法定休憩の自動計算）</span>
+          👉 <a href="https://shishibow.github.io/baito-keisan/" target="_blank" rel="noopener">バイト実働・休憩・給与計算ツール ↗</a>
+          <span style="font-size: 0.75rem; color: #64748b;">（深夜割増・法定休憩の自動計算）</span>
         </li>
         <li>
-          👉 <a href="https://shishibow.github.io/date-keisan/" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600; text-decoration: none;">日数・日付計算ツール ↗</a>
-          <span style="font-size: 0.8rem; color: #64748b;">（あと何日？・〇日後の日付・日数差分）</span>
-        </li>
-        <li>
-          👉 <a href="https://shishibow.github.io/percent-keisan/" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600; text-decoration: none;">パーセント・割引計算ツール ↗</a>
-           <span style="font-size: 0.8rem; color: #64748b;">（セール割引額・消費税の税込税抜逆算・全体割合）</span>
+          👉 <a href="https://shishibow.github.io/date-keisan/" target="_blank" rel="noopener">日数・日付計算ツール ↗</a>
+          <span style="font-size: 0.75rem; color: #64748b;">（あと何日？・〇日後の日付・差分）</span>
         </li>
       </ul>
     </section>
-    
-    <div class="tool-list">
-      
-      <!-- ツール1 -->
-      <a href="./実質時給計算/" class="tool-card">
-        <div class="tool-icon">⏱️</div>
-        <div class="tool-info">
-          <div class="tool-title">実質時給チェッカー</div>
-          <div class="tool-desc">通勤や自腹出費を差し引いた本当の時給を算出</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
 
-      <!-- ツール2 -->
-      <a href="./奨学金・借金返済シミュレーター/" class="tool-card">
-        <div class="tool-icon">💰</div>
-        <div class="tool-info">
-          <div class="tool-title">奨学金・借金返済シミュレーター</div>
-          <div class="tool-desc">完済までの期間と利息の総支払額を簡単計算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- カテゴリ切り替えタブ（固定スクロール） -->
+    <div class="category-tabs-wrapper">
+      <div class="category-tabs">
+        <button type="button" class="tab-btn active" onclick="filterCategory('all', this)">すべて</button>
+        <button type="button" class="tab-btn" onclick="filterCategory('media', this)">🎨 画像・動画</button>
+        <button type="button" class="tab-btn" onclick="filterCategory('money', this)">💰 お金・買い物</button>
+        <button type="button" class="tab-btn" onclick="filterCategory('time', this)">⏱️ 時間・スケジュール</button>
+        <button type="button" class="tab-btn" onclick="filterCategory('lifestyle', this)">🍳 生活・健康・移動</button>
+        <button type="button" class="tab-btn" onclick="filterCategory('utility', this)">🛠️ テキスト・便利機能</button>
+      </div>
+    </div>
 
-      <!-- ツール3 -->
-      <a href="./割り勘・端数スッキリ計算機/" class="tool-card">
-        <div class="tool-icon">🧾</div>
-        <div class="tool-info">
-          <div class="tool-title">端数スッキリ割り勘計算機</div>
-          <div class="tool-desc">100円/500円単位の丸めや幹事割増に対応</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- 1. 画像・動画・メディア制作 -->
+    <section class="category-section" data-cat="media">
+      <div class="section-title">🎨 画像・動画・メディア制作</div>
+      <div class="tool-list">
+        <a href="./透過画像余白・比率調整ツール/" class="tool-card">
+          <div class="tool-icon">🔲</div>
+          <div class="tool-info">
+            <div class="tool-title">透過画像 余白・比率調整ツール</div>
+            <div class="tool-desc">正方形枠を維持したまま、本体のサイズ・余白比率を微調整</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./グリーンバック透過ツール/" class="tool-card">
+          <div class="tool-icon">🖼️</div>
+          <div class="tool-info">
+            <div class="tool-title">グリーンバック透過ツール</div>
+            <div class="tool-desc">緑・青の背景をワンタップで透過して透明PNGを保存</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./動画トリミング・前後カットツール/" class="tool-card">
+          <div class="tool-icon">✂️</div>
+          <div class="tool-info">
+            <div class="tool-title">動画トリミング・前後カットツール</div>
+            <div class="tool-desc">不要な前後をブラウザ上で安全＆瞬時に切り取り</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./倍速再生・動画視聴時間計算機/" class="tool-card">
+          <div class="tool-icon">⏩</div>
+          <div class="tool-info">
+            <div class="tool-title">倍速再生・動画視聴時間計算機</div>
+            <div class="tool-desc">講義・YouTube・映画の倍速視聴時間と短縮分を即算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+      </div>
+    </section>
 
-      <!-- ツール4 -->
-      <a href="./推し活・イベントカウントダウンタイマー/" class="tool-card">
-        <div class="tool-icon">⏳</div>
-        <div class="tool-info">
-          <div class="tool-title">イベント カウントダウンタイマー</div>
-          <div class="tool-desc">目標・推し活・試験日までの残り時間をリアルタイム表示</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- 2. お金・買い物・精算 -->
+    <section class="category-section" data-cat="money">
+      <div class="section-title">💰 お金・買い物・精算</div>
+      <div class="tool-list">
+        <a href="./実質時給計算/" class="tool-card">
+          <div class="tool-icon">⌛</div>
+          <div class="tool-info">
+            <div class="tool-title">実質時給計算機</div>
+            <div class="tool-desc">通勤時間・準備時間・交通費を含めた「本当の時給」を算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./端数スッキリ割り勘計算機/" class="tool-card">
+          <div class="tool-icon">👥</div>
+          <div class="tool-info">
+            <div class="tool-title">端数スッキリ割り勘計算機</div>
+            <div class="tool-desc">100円・500円単位でキレイに丸めて傾斜配分もできる割り勘ツール</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./お釣り・硬貨紙幣計算機/" class="tool-card">
+          <div class="tool-icon">🪙</div>
+          <div class="tool-info">
+            <div class="tool-title">お釣り・硬貨紙幣計算機</div>
+            <div class="tool-desc">請求額とお預かり金額からお釣りの最小枚数を即算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./メルカリ・フリマ利益計算機/" class="tool-card">
+          <div class="tool-icon">📦</div>
+          <div class="tool-info">
+            <div class="tool-title">メルカリ・フリマ利益計算機</div>
+            <div class="tool-desc">販売価格・手数料・送料・原価から手元に残る純利益と利益率を即算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./割引・セール価格計算機/" class="tool-card">
+          <div class="tool-icon">🏷️</div>
+          <div class="tool-info">
+            <div class="tool-title">割引・セール価格計算機</div>
+            <div class="tool-desc">「〇%OFF」「〇割引」の値下げ後価格とお得額を即計算</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./単価・コスパ比較計算機/" class="tool-card">
+          <div class="tool-icon">⚖️</div>
+          <div class="tool-info">
+            <div class="tool-title">単価・コスパ比較計算機</div>
+            <div class="tool-desc">内容量とお値段から「1g・1個あたりどちらが安いか」を判定</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./消費税・税込税抜計算機/" class="tool-card">
+          <div class="tool-icon">🧾</div>
+          <div class="tool-info">
+            <div class="tool-title">消費税・税込税抜計算機</div>
+            <div class="tool-desc">標準税率10%・軽減税率8%の税込・税抜価格と税額を即算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./奨学金・借金返済シミュレーター/" class="tool-card">
+          <div class="tool-icon">📉</div>
+          <div class="tool-info">
+            <div class="tool-title">奨学金・返済シミュレーター</div>
+            <div class="tool-desc">借入残高と利息から、毎月の返済額・総支払利息をシミュレーション</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+      </div>
+    </section>
 
-      <!-- ツール5 -->
-      <a href="./単価・コスパ比較計算機/" class="tool-card">
-        <div class="tool-icon">⚖️</div>
-        <div class="tool-info">
-          <div class="tool-title">単価・コスパ比較計算機</div>
-          <div class="tool-desc">容量や個数が違う2つの商品、どっちがお得かを即判定</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- 3. 時間・日程・スケジュール -->
+    <section class="category-section" data-cat="time">
+      <div class="section-title">⏱️ 時間・日程・スケジュール</div>
+      <div class="tool-list">
+        <a href="./時間計算・タイムカード合計ツール/" class="tool-card">
+          <div class="tool-icon">⏰</div>
+          <div class="tool-info">
+            <div class="tool-title">時間計算・タイムカード合計ツール</div>
+            <div class="tool-desc">開始・終了時刻の差分や休憩引き後の実働時間を即算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./ポモドーロタイマー/" class="tool-card">
+          <div class="tool-icon">🍅</div>
+          <div class="tool-info">
+            <div class="tool-title">ポモドーロタイマー</div>
+            <div class="tool-desc">25分集中＋5分休憩の黄金サイクルで集中力を持続するタイマー</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./推し活・イベントカウントダウンタイマー/" class="tool-card">
+          <div class="tool-icon">✨</div>
+          <div class="tool-info">
+            <div class="tool-title">推し活・イベントカウントダウン</div>
+            <div class="tool-desc">ライブ・記念日・締め切りまでの日・時間・分・秒をリアルタイム表示</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./日数計算・日付カウントツール/" class="tool-card">
+          <div class="tool-icon">📅</div>
+          <div class="tool-info">
+            <div class="tool-title">日数計算・日付カウントツール</div>
+            <div class="tool-desc">2つの日付の間の日数差や「今日から〇日後」の正確な日付を算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./睡眠サイクル計算機/" class="tool-card">
+          <div class="tool-info">
+            <div class="tool-title"><span style="margin-right:6px;">🌙</span>睡眠サイクル計算機</div>
+            <div class="tool-desc">90分周期のレム睡眠に合わせて「スッキリ起きられる就寝・起床時間」を逆算</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./経過年数・勤続年数計算機/" class="tool-card">
+          <div class="tool-icon">⏳</div>
+          <div class="tool-info">
+            <div class="tool-title">経過年数・勤続年数計算機</div>
+            <div class="tool-desc">入社日や記念日からの「〇年〇ヶ月〇日」を瞬時に算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+      </div>
+    </section>
 
-      <!-- ツール6 -->
-      <a href="./割引・セール価格計算機/" class="tool-card">
-        <div class="tool-icon">🏷️</div>
-        <div class="tool-info">
-          <div class="tool-title">割引・セール価格計算機</div>
-          <div class="tool-desc">「〇%OFF」「〇割引」の支払額とお得額を即計算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- 4. 生活・健康・移動 -->
+    <section class="category-section" data-cat="lifestyle">
+      <div class="section-title">🍳 生活・健康・移動</div>
+      <div class="tool-list">
+        <a href="./徒歩・移動時間計算機/" class="tool-card">
+          <div class="tool-icon">🚶</div>
+          <div class="tool-info">
+            <div class="tool-title">徒歩・移動時間計算機</div>
+            <div class="tool-desc">距離から正確な所要時間・推定歩数・消費カロリーを算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./ガソリン代・燃費計算機/" class="tool-card">
+          <div class="tool-icon">⛽</div>
+          <div class="tool-info">
+            <div class="tool-title">ガソリン代・燃費計算機</div>
+            <div class="tool-desc">走行距離とガソリン価格から合計費用＆1km単価を算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./電気代・家電消費電力計算機/" class="tool-card">
+          <div class="tool-icon">💡</div>
+          <div class="tool-info">
+            <div class="tool-title">電気代・家電消費電力計算機</div>
+            <div class="tool-desc">消費電力(W)と使用時間から1時間・1日・1ヶ月の電気代を算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./料理の分量・大さじ小さじ換算機/" class="tool-card">
+          <div class="tool-icon">🍳</div>
+          <div class="tool-info">
+            <div class="tool-title">料理の分量・大さじ小さじ換算機</div>
+            <div class="tool-desc">大さじ・小さじ・カップの容量と調味料別の重さ(g)を即換算</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./長さ・重さ単位換算機/" class="tool-card">
+          <div class="tool-icon">📏</div>
+          <div class="tool-info">
+            <div class="tool-title">長さ・重さ単位換算機</div>
+            <div class="tool-desc">インチ・センチ・ポンド・kgなどをリアルタイム相互換算</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./BMI・適正体重計算機/" class="tool-card">
+          <div class="tool-icon">⚖️</div>
+          <div class="tool-info">
+            <div class="tool-title">BMI・適正体重計算機</div>
+            <div class="tool-desc">身長と体重から肥満度・適正体重・美容体重を即時算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./基礎代謝・消費カロリー計算機/" class="tool-card">
+          <div class="tool-icon">🔥</div>
+          <div class="tool-info">
+            <div class="tool-title">基礎代謝・消費カロリー計算機</div>
+            <div class="tool-desc">年齢・性別・活動量から1日の推定消費カロリーと維持カロリーを算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./アルコール分解時間計算機/" class="tool-card">
+          <div class="tool-icon">🍺</div>
+          <div class="tool-info">
+            <div class="tool-title">アルコール分解時間計算機</div>
+            <div class="tool-desc">お酒の量・度数・体重から身体からアルコールが抜ける目安時間を算出</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+      </div>
+    </section>
 
-      <!-- ツール7 -->
-      <a href="./睡眠サイクル計算機/" class="tool-card">
-        <div class="tool-icon">🌙</div>
-        <div class="tool-info">
-          <div class="tool-title">睡眠サイクル計算機</div>
-          <div class="tool-desc">90分周期で目覚めがスッキリする就寝・起床時間を逆算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+    <!-- 5. テキスト・便利機能・事務 -->
+    <section class="category-section" data-cat="utility">
+      <div class="section-title">🛠️ テキスト・便利機能・事務</div>
+      <div class="tool-list">
+        <a href="./文字数・原稿用紙カウントツール/" class="tool-card">
+          <div class="tool-icon">📝</div>
+          <div class="tool-info">
+            <div class="tool-title">文字数・原稿用紙カウントツール</div>
+            <div class="tool-desc">空白除外文字数・行数・400字詰め原稿用紙の枚数換算をリアルタイム表示</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./全角半角・大文字小文字変換ツール/" class="tool-card">
+          <div class="tool-icon">🔤</div>
+          <div class="tool-info">
+            <div class="tool-title">全角半角・大文字小文字変換</div>
+            <div class="tool-desc">英数・カナ・大文字・小文字をワンタップで一括変換</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./履歴書・入学卒業年計算機/" class="tool-card">
+          <div class="tool-icon">🎓</div>
+          <div class="tool-info">
+            <div class="tool-title">履歴書・入学卒業年計算機</div>
+            <div class="tool-desc">生年月日を選ぶだけ！履歴書用の学歴（入学・卒業年）を自動作成</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./年齢・和暦西暦早見計算機/" class="tool-card">
+          <div class="tool-icon">🗓️</div>
+          <div class="tool-info">
+            <div class="tool-title">年齢・和暦西暦早見計算機</div>
+            <div class="tool-desc">生年月日から現在の満年齢・干支・令和/平成/昭和の和暦を即座に相互変換</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./パーセント・割合計算機/" class="tool-card">
+          <div class="tool-icon">％</div>
+          <div class="tool-info">
+            <div class="tool-title">パーセント・割合計算機</div>
+            <div class="tool-desc">「AのB%は？」「AはBの何%？」日常の割合を迷わずワンタップ計算</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./パスワード生成ツール/" class="tool-card">
+          <div class="tool-icon">🔑</div>
+          <div class="tool-info">
+            <div class="tool-title">強力パスワード生成ツール</div>
+            <div class="tool-desc">英大文字・小文字・数字・記号を組み合わせた安全なパスワードを自動生成</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+        <a href="./乱数・くじ引き生成ツール/" class="tool-card">
+          <div class="tool-icon">🎲</div>
+          <div class="tool-info">
+            <div class="tool-title">乱数・くじ引き生成ツール</div>
+            <div class="tool-desc">指定範囲の数字ランダム抽出やルーレット形式の抽選ツール</div>
+          </div>
+          <span class="arrow">›</span>
+        </a>
+      </div>
+    </section>
+  </div>
 
-      <!-- ツール8 -->
-      <a href="./BMI・適正体重計算機/" class="tool-card">
-        <div class="tool-icon">⚖️</div>
-        <div class="tool-info">
-          <div class="tool-title">BMI・適正体重計算機</div>
-          <div class="tool-desc">健康管理の基本！あなたの適正体重と肥満度を即測定</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
 
-      <!-- ツール9 -->
-      <a href="./文字数・原稿用紙カウントツール/" class="tool-card">
-        <div class="tool-icon">📝</div>
-        <div class="tool-info">
-          <div class="tool-title">文字数・原稿用紙カウントツール</div>
-          <div class="tool-desc">空白除外・400字原稿用紙換算・読了目安時間を即集計</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
+  <script>
+    function filterCategory(cat, btn) {
+      const tabs = document.querySelectorAll('.tab-btn');
+      tabs.forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
 
-      <!-- ツール10 -->
-      <a href="./年齢・和暦西暦早見計算機/" class="tool-card">
-        <div class="tool-icon">📅</div>
-        <div class="tool-info">
-          <div class="tool-title">年齢・和暦西暦早見計算機</div>
-          <div class="tool-desc">生年月日を選ぶだけ！満年齢・元号・干支・次の誕生日を即算出</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール11 -->
-      <a href="./消費税・税込税抜計算機/" class="tool-card">
-        <div class="tool-icon">🪙</div>
-        <div class="tool-info">
-          <div class="tool-title">消費税・税込税抜計算機</div>
-          <div class="tool-desc">金額を入れるだけで税込・税抜・消費税額を同時算出</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール12 -->
-      <a href="./日数計算・日付カウントツール/" class="tool-card">
-        <div class="tool-icon">🗓️</div>
-        <div class="tool-info">
-          <div class="tool-title">日数計算・日付カウントツール</div>
-          <div class="tool-desc">2つの日付の間隔や「〇日後は何日？」を即座に計算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール13 -->
-      <a href="./パーセント・割合計算機/" class="tool-card">
-        <div class="tool-icon">➗</div>
-        <div class="tool-info">
-          <div class="tool-title">パーセント・割合計算機</div>
-          <div class="tool-desc">「〇〇の〇％は？」「〇〇は何％？」を直感的に即逆算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール14 -->
-      <a href="./基礎代謝・消費カロリー計算機/" class="tool-card">
-        <div class="tool-icon">🔥</div>
-        <div class="tool-info">
-          <div class="tool-title">基礎代謝・消費カロリー計算機</div>
-          <div class="tool-desc">年齢・体型・活動量から1日の必要カロリーと減量目安を算出</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール15 -->
-      <a href="./メルカリ・フリマ利益計算機/" class="tool-card">
-        <div class="tool-icon">📦</div>
-        <div class="tool-info">
-          <div class="tool-title">メルカリ・フリマ利益計算機</div>
-          <div class="tool-desc">手数料・送料・仕入値を引いた「手取り利益」と利益率を即計算</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール16 -->
-      <a href="./ポモドーロタイマー/" class="tool-card">
-        <div class="tool-icon">🍅</div>
-        <div class="tool-info">
-          <div class="tool-title">ポモドーロタイマー</div>
-          <div class="tool-desc">25分作業＋5分休憩で集中力と勉強・作業効率を最大化</div>
-        </div>
-        <span class="arrow">›</span>
-      </a>
-
-      <!-- ツール17 -->
-      <a href="./乱数・くじ引き生成ツール/" class="tool-card">
-        <div class="tool-icon">🎲</div>
-        <div class="tool-info">
-          <div class="tool-title">乱数・くじ引き生成ツール</div>
-          <div class="tool-desc">指定範囲の数字をランダム抽選！履歴表示付き</div>
+      const sections = document.querySelectorAll('.category-section');
+      sections.forEach(sec => {
+        if (cat === 'all' || sec.getAttribute('data-cat') === cat) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+v class="tool-desc">指定範囲の数字をランダム抽選！履歴表示付き</div>
         </div>
         <span class="arrow">›</span>
       </a>
