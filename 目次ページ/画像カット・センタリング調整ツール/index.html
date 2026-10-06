@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>画像カット・センタリング調整ツール - トリミング＆中央寄せ</title>
+  <title>スプライト自動切り抜き＆完全センタリングツール</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -34,15 +34,15 @@
     }
 
     .container {
-      max-width: 520px;
+      max-width: 640px;
       margin: 0 auto;
       padding: 16px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 20px;
-      padding: 12px 0 6px;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
     }
 
     h1 {
@@ -102,89 +102,92 @@
       display: none;
     }
 
-    .control-panel {
+    .instruction-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    /* 原画キャンバス用ラッパー */
+    .source-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      text-align: center;
+      max-height: 420px;
+    }
+
+    #sourceCanvas {
+      cursor: crosshair;
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
       margin-top: 14px;
     }
 
-    .aspect-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-
-    .aspect-btn {
-      flex: 1;
-      padding: 8px 0;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      background: #fff;
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--text);
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .aspect-btn.active {
-      border-color: var(--primary);
-      background: var(--primary-light);
-      color: var(--primary);
-    }
-
-    .btn-center {
-      width: 100%;
-      background: #f1f5f9;
+    .control-item {
+      background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 10px;
-      font-size: 0.85rem;
+      padding: 8px 10px;
+    }
+
+    .control-item label {
+      display: block;
+      font-size: 0.75rem;
       font-weight: 700;
-      color: var(--text);
-      cursor: pointer;
-      margin-bottom: 14px;
-    }
-
-    .btn-center:active {
-      background: #e2e8f0;
-    }
-
-    .slider-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      font-weight: 600;
+      color: var(--text-muted);
       margin-bottom: 4px;
     }
 
     input[type="range"] {
       width: 100%;
       accent-color: var(--primary);
-      margin-bottom: 12px;
     }
 
-    .preview-container {
-      position: relative;
-      width: 100%;
-      max-height: 380px;
-      background: #1e293b;
-      border-radius: 8px;
+    /* プレビューエリア */
+    .preview-section {
+      margin-top: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 14px;
-      touch-action: none;
-      user-select: none;
+      display: inline-block;
+      width: 200px;
+      height: 200px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
 
-    #stageCanvas {
+    #resultCanvas {
+      width: 100%;
+      height: 100%;
       display: block;
-      cursor: grab;
-      touch-action: none;
-    }
-
-    #stageCanvas:active {
-      cursor: grabbing;
     }
 
     .btn-download {
@@ -197,6 +200,7 @@
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
+      margin-top: 12px;
       box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
     }
 
@@ -209,40 +213,50 @@
 
   <div class="container">
     <header>
-      <h1>画像カット・センタリング調整</h1>
-      <p class="subtitle">切り抜き枠に合わせて位置・拡大率をドラッグで調整</p>
+      <h1>スプライト自動検出＆センタリング</h1>
+      <p class="subtitle">切り抜きたいアイコンをタップするだけで、余白と中心を完全補正</p>
     </header>
 
     <div class="card">
       <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-        <div class="upload-icon">✂️</div>
-        <div class="upload-text">画像をタップして選択</div>
-        <div class="upload-hint">PNG / JPG / WebP（端末内処理・安全）</div>
+        <div class="upload-icon">🎯</div>
+        <div class="upload-text">素材画像を選択またはドラッグ</div>
+        <div class="upload-hint">グリーンバック等のスプライト画像対応</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)">
+      <input type="file" id="fileInput" accept="image/*" onchange="handleImage(event)">
 
-      <div id="editorPanel" style="display: none;" class="control-panel">
-        <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:6px;">切り抜きアスペクト比</label>
-        <div class="aspect-row">
-          <div class="aspect-btn active" onclick="setAspect(1, 1, this)">正方形 (1:1)</div>
-          <div class="aspect-btn" onclick="setAspect(16, 9, this)">横長 (16:9)</div>
-          <div class="aspect-btn" onclick="setAspect(9, 16, this)">縦長 (9:16)</div>
-          <div class="aspect-btn" onclick="setAspect(4, 3, this)">標準 (4:3)</div>
+      <div id="editorArea" style="display: none; margin-top: 14px;">
+        <div style="text-align: center;">
+          <span class="instruction-badge">👉 下の画像から切り抜きたいアイコンをタップしてください</span>
         </div>
 
-        <button type="button" class="btn-center" onclick="resetToCenter()">🎯 画像を中央にセンタリング</button>
-
-        <div class="slider-header">
-          <span>ズーム・拡大率</span>
-          <span id="zoomVal">100%</span>
-        </div>
-        <input type="range" id="zoomRange" min="50" max="300" value="100" oninput="updateZoom(this.value)">
-
-        <div class="preview-container">
-          <canvas id="stageCanvas"></canvas>
+        <div class="source-wrapper">
+          <canvas id="sourceCanvas" onclick="onCanvasClick(event)"></canvas>
         </div>
 
-        <button type="button" class="btn-download" onclick="downloadCropped()">切り抜いて保存</button>
+        <div class="controls-grid">
+          <div class="control-item">
+            <label>本体の大きさ（余白比率）: <span id="paddingVal">80%</span></label>
+            <input type="range" id="paddingRange" min="30" max="95" value="80" oninput="updateSettings()">
+          </div>
+          <div class="control-item">
+            <label>緑色判定の感度: <span id="toleranceVal">60</span></label>
+            <input type="range" id="toleranceRange" min="20" max="120" value="60" oninput="updateSettings()">
+          </div>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+          <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            【完全センタリング・透過プレビュー】
+          </p>
+          <div class="checkerboard">
+            <canvas id="resultCanvas"></canvas>
+          </div>
+
+          <button type="button" class="btn-download" onclick="downloadResult()">
+            センタリング済み透過PNGを保存 (512×512)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -253,160 +267,215 @@
   <!-- admax -->
 
   <script>
-    let img = null;
-    let aspectW = 1;
-    let aspectH = 1;
-    let zoom = 1.0;
+    let rawImg = null;
+    let selectedBox = null; // { minX, maxX, minY, maxY }
 
-    let posX = 0;
-    let posY = 0;
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
+    const srcCanvas = document.getElementById('sourceCanvas');
+    const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
 
-    const canvas = document.getElementById('stageCanvas');
-    const ctx = canvas.getContext('2d');
-    const stageWidth = 320;
-    let stageHeight = 320;
+    const resCanvas = document.getElementById('resultCanvas');
+    const resCtx = resCanvas.getContext('2d');
 
-    function loadImage(e) {
+    function handleImage(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        img = new Image();
-        img.onload = function() {
-          document.getElementById('editorPanel').style.display = 'block';
-          resetToCenter();
+        rawImg = new Image();
+        rawImg.onload = function() {
+          srcCanvas.width = rawImg.width;
+          srcCanvas.height = rawImg.height;
+          srcCtx.drawImage(rawImg, 0, 0);
+
+          document.getElementById('editorArea').style.display = 'block';
+          selectedBox = null;
+          document.getElementById('previewSection').style.display = 'none';
         };
-        img.src = evt.target.result;
+        rawImg.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
 
-    function setAspect(w, h, btn) {
-      aspectW = w;
-      aspectH = h;
-      document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      resetToCenter();
+    // 緑背景かどうかの判定（クロマキー判定）
+    function isGreenBackground(r, g, b, tolerance) {
+      const maxRB = Math.max(r, b);
+      return (g - maxRB) > tolerance;
     }
 
-    function resetToCenter() {
-      if (!img) return;
+    function onCanvasClick(e) {
+      if (!rawImg) return;
 
-      stageHeight = Math.round(stageWidth * (aspectH / aspectW));
-      canvas.width = stageWidth;
-      canvas.height = stageHeight;
+      const rect = srcCanvas.getBoundingClientRect();
+      const scaleX = srcCanvas.width / rect.width;
+      const scaleY = srcCanvas.height / rect.height;
 
-      // 枠にぴったり収まる基本スケール
-      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
-      zoom = 1.0;
-      document.getElementById('zoomRange').value = 100;
-      document.getElementById('zoomVal').textContent = '100%';
+      const clickX = Math.floor((e.clientX - rect.left) * scaleX);
+      const clickY = Math.floor((e.clientY - rect.top) * scaleY);
 
-      const drawW = img.width * scaleFit;
-      const drawH = img.height * scaleFit;
-
-      posX = (stageWidth - drawW) / 2;
-      posY = (stageHeight - drawH) / 2;
-
-      draw();
+      detectBoundingBox(clickX, clickY);
     }
 
-    function updateZoom(val) {
-      const prevZoom = zoom;
-      zoom = parseInt(val) / 100;
-      document.getElementById('zoomVal').textContent = `${val}%`;
+    // クリック位置から周囲の非背景ピクセル群（アイコン1個）の範囲を自動検出
+    function detectBoundingBox(startX, startY) {
+      const w = srcCanvas.width;
+      const h = srcCanvas.height;
+      const imgData = srcCtx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const tolerance = parseInt(document.getElementById('toleranceRange').value);
 
-      // 枠の中心を保ったままズーム
-      const centerX = stageWidth / 2;
-      const centerY = stageHeight / 2;
-      posX = centerX - (centerX - posX) * (zoom / prevZoom);
-      posY = centerY - (centerY - posY) * (zoom / prevZoom);
+      // クリック箇所が緑背景だった場合、周囲30px以内にある最寄りの素材ピクセルを探す
+      let seedX = startX;
+      let seedY = startY;
+      let idx = (seedY * w + seedX) * 4;
 
-      draw();
-    }
-
-    function draw() {
-      if (!img) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
-      const w = img.width * scaleFit * zoom;
-      const h = img.height * scaleFit * zoom;
-
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, posX, posY, w, h);
-
-      // ガイド枠（グリッド線）
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // ドラッグ＆タッチ操作によるセンタリング・位置調整
-    canvas.addEventListener('mousedown', e => {
-      isDragging = true;
-      startX = e.clientX - posX;
-      startY = e.clientY - posY;
-    });
-
-    window.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-      posX = e.clientX - startX;
-      posY = e.clientY - startY;
-      draw();
-    });
-
-    window.addEventListener('mouseup', () => isDragging = false);
-
-    // スマホのタッチ操作対応
-    canvas.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) {
-        isDragging = true;
-        startX = e.touches[0].clientX - posX;
-        startY = e.touches[0].clientY - posY;
+      if (isGreenBackground(data[idx], data[idx+1], data[idx+2], tolerance)) {
+        let found = false;
+        for (let r = 1; r <= 35 && !found; r++) {
+          for (let dy = -r; dy <= r && !found; dy++) {
+            for (let dx = -r; dx <= r && !found; dx++) {
+              const nx = seedX + dx;
+              const ny = seedY + dy;
+              if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                const nIdx = (ny * w + nx) * 4;
+                if (!isGreenBackground(data[nIdx], data[nIdx+1], data[nIdx+2], tolerance)) {
+                  seedX = nx;
+                  seedY = ny;
+                  found = true;
+                }
+              }
+            }
+          }
+        }
+        if (!found) return; // 素材が見つからない
       }
-    }, { passive: false });
 
-    window.addEventListener('touchmove', e => {
-      if (!isDragging || e.touches.length !== 1) return;
-      posX = e.touches[0].clientX - startX;
-      posY = e.touches[0].clientY - startY;
-      draw();
-    }, { passive: false });
+      // BFS（幅優先探索）で隣接するアイコンピクセルをすべて探索
+      const visited = new Uint8Array(w * h);
+      const queue = [seedX, seedY];
+      visited[seedY * w + seedX] = 1;
 
-    window.addEventListener('touchend', () => isDragging = false);
+      let minX = seedX, maxX = seedX;
+      let minY = seedY, maxY = seedY;
 
-    function downloadCropped() {
-      if (!img) return;
+      let qIdx = 0;
+      while (qIdx < queue.length) {
+        const cx = queue[qIdx++];
+        const cy = queue[qIdx++];
 
-      // 高解像度保存用キャンバス
-      const outCanvas = document.createElement('canvas');
-      const outWidth = 1080;
-      const outHeight = Math.round(outWidth * (aspectH / aspectW));
-      outCanvas.width = outWidth;
-      outCanvas.height = outHeight;
+        if (cx < minX) minX = cx;
+        if (cx > maxX) maxX = cx;
+        if (cy < minY) minY = cy;
+        if (cy > maxY) maxY = cy;
 
-      const outCtx = outCanvas.getContext('2d');
-      const ratio = outWidth / stageWidth;
+        // 8方向チェック（斜めもつなぐ）
+        const neighbors = [
+          [-1, 0], [1, 0], [0, -1], [0, 1],
+          [-1, -1], [1, -1], [-1, 1], [1, 1]
+        ];
 
-      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
-      const w = img.width * scaleFit * zoom * ratio;
-      const h = img.height * scaleFit * zoom * ratio;
-      const x = posX * ratio;
-      const y = posY * ratio;
+        for (let i = 0; i < neighbors.length; i++) {
+          const nx = cx + neighbors[i][0];
+          const ny = cy + neighbors[i][1];
 
-      outCtx.imageSmoothingEnabled = true;
-      outCtx.imageSmoothingQuality = 'high';
-      outCtx.drawImage(img, x, y, w, h);
+          if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+            const pos = ny * w + nx;
+            if (!visited[pos]) {
+              visited[pos] = 1;
+              const pIdx = pos * 4;
+              if (!isGreenBackground(data[pIdx], data[pIdx+1], data[pIdx+2], tolerance)) {
+                queue.push(nx, ny);
+              }
+            }
+          }
+        }
+      }
 
+      // 極小のノイズ点（10px以下）は除外
+      if ((maxX - minX < 8) || (maxY - minY < 8)) return;
+
+      selectedBox = { minX, maxX, minY, maxY };
+      drawHighlightAndResult();
+    }
+
+    function updateSettings() {
+      document.getElementById('paddingVal').textContent = `${document.getElementById('paddingRange').value}%`;
+      document.getElementById('toleranceVal').textContent = document.getElementById('toleranceRange').value;
+      if (selectedBox) {
+        drawHighlightAndResult();
+      }
+    }
+
+    function drawHighlightAndResult() {
+      if (!selectedBox || !rawImg) return;
+
+      // 1. 原画上に選択中の赤いバウンディングボックスを描画
+      srcCtx.drawImage(rawImg, 0, 0);
+      srcCtx.strokeStyle = '#ef4444';
+      srcCtx.lineWidth = Math.max(2, Math.floor(rawImg.width / 400));
+      const bw = selectedBox.maxX - selectedBox.minX;
+      const bh = selectedBox.maxY - selectedBox.minY;
+      srcCtx.strokeRect(selectedBox.minX, selectedBox.minY, bw, bh);
+
+      // 2. プレビュー用キャンバスに「完全センタリング」して描画
+      const outSize = 512;
+      resCanvas.width = outSize;
+      resCanvas.height = outSize;
+      resCtx.clearRect(0, 0, outSize, outSize);
+
+      const targetScale = parseInt(document.getElementById('paddingRange').value) / 100;
+      const tolerance = parseInt(document.getElementById('toleranceRange').value);
+
+      // 素材のアスペクト比を維持しつつ、指定の比率内に収める
+      const aspect = bw / bh;
+      let drawW, drawH;
+      if (aspect >= 1) {
+        drawW = outSize * targetScale;
+        drawH = drawW / aspect;
+      } else {
+        drawH = outSize * targetScale;
+        drawW = drawH * aspect;
+      }
+
+      // 正方形の中心（完全センタリング）オフセット
+      const offsetX = (outSize - drawW) / 2;
+      const offsetY = (outSize - drawH) / 2;
+
+      // 切り抜いた部分を一時キャンバスに描き、緑色を完全透過処理
+      const tempC = document.createElement('canvas');
+      tempC.width = bw;
+      tempC.height = bh;
+      const tempCtx = tempC.getContext('2d');
+      tempCtx.drawImage(rawImg, selectedBox.minX, selectedBox.minY, bw, bh, 0, 0, bw, bh);
+
+      const frame = tempCtx.getImageData(0, 0, bw, bh);
+      const d = frame.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const maxRB = Math.max(r, b);
+        const diff = g - maxRB;
+        if (diff > tolerance) {
+          d[i + 3] = 0; // 透過
+        } else if (diff > tolerance - 20) {
+          const alpha = 1 - (diff - (tolerance - 20)) / 20;
+          d[i + 3] = Math.round(d[i + 3] * alpha);
+        }
+      }
+      tempCtx.putImageData(frame, 0, 0);
+
+      // 完全センタリングで描画
+      resCtx.imageSmoothingEnabled = true;
+      resCtx.imageSmoothingQuality = 'high';
+      resCtx.drawImage(tempC, offsetX, offsetY, drawW, drawH);
+
+      document.getElementById('previewSection').style.display = 'block';
+      document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function downloadResult() {
       const link = document.createElement('a');
-      link.download = `crop_centered_${Date.now()}.png`;
-      link.href = outCanvas.toDataURL('image/png');
+      link.download = `centered_icon_${Date.now()}.png`;
+      link.href = resCanvas.toDataURL('image/png');
       link.click();
     }
   </script>
