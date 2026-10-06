@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>スプライト切り抜き＆センタリングツール</title>
+  <title>スプライト自動検出＆センタリング切り抜きツール</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -108,12 +108,12 @@
       color: #1e40af;
       font-size: 0.8rem;
       font-weight: 700;
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       margin-bottom: 10px;
     }
 
-    .canvas-container {
+    .source-wrapper {
       position: relative;
       width: 100%;
       overflow: auto;
@@ -122,11 +122,10 @@
       background: #0f172a;
       text-align: center;
       max-height: 420px;
-      touch-action: none;
     }
 
     #sourceCanvas {
-      cursor: crosshair;
+      cursor: pointer;
       display: inline-block;
       vertical-align: middle;
       max-width: 100%;
@@ -148,7 +147,7 @@
     .btn-row {
       display: flex;
       gap: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .opt-btn {
@@ -250,8 +249,8 @@
 
   <div class="container">
     <header>
-      <h1>スプライト切り抜き＆センタリング</h1>
-      <p class="subtitle">ドラッグで囲んで指定！緑色素材も透けずに綺麗に中央配置</p>
+      <h1>スプライト自動検出＆センタリング</h1>
+      <p class="subtitle">タップするだけでアイコンを自動認識・中心補正＆背景透過</p>
     </header>
 
     <div class="card">
@@ -264,21 +263,21 @@
 
       <div id="editorArea" style="display: none; margin-top: 14px;">
         <div style="text-align: center;">
-          <span class="instruction-badge">👉 画像上でドラッグ（なぞる）してアイコンを囲んでください</span>
+          <span class="instruction-badge">👉 下の画像から切り抜きたいアイコンをタップしてください</span>
         </div>
 
-        <div class="canvas-container">
-          <canvas id="sourceCanvas"></canvas>
+        <div class="source-wrapper">
+          <canvas id="sourceCanvas" onclick="onCanvasClick(event)"></canvas>
         </div>
 
         <div class="option-group">
-          <label class="section-lbl">背景の処理モード</label>
+          <label class="section-lbl">背景の透過処理</label>
           <div class="btn-row">
-            <button type="button" class="opt-btn active" id="btnModeKeep" onclick="setBgMode('keep')">🛡️ 背景透過なし（緑色素材を100%保護）</button>
-            <button type="button" class="opt-btn" id="btnModeChroma" onclick="setBgMode('chroma')">✨ 緑背景を透過</button>
+            <button type="button" class="opt-btn active" id="btnChromaOn" onclick="setTransparentMode(true)">✨ 背景を透過する</button>
+            <button type="button" class="opt-btn" id="btnChromaOff" onclick="setTransparentMode(false)">🛡️ 背景を残す（完全保護）</button>
           </div>
 
-          <label class="section-lbl">出力キャンバスの比率</label>
+          <label class="section-lbl">出力キャンバス比率</label>
           <div class="btn-row">
             <button type="button" class="opt-btn active" onclick="setAspect('1:1', this)">正方形 (1:1)</button>
             <button type="button" class="opt-btn" onclick="setAspect('fit', this)">素材ぴったり</button>
@@ -289,11 +288,11 @@
           <div class="slider-row">
             <div class="slider-box">
               <label>本体サイズ（余白比率）: <span id="paddingVal">85%</span></label>
-              <input type="range" id="paddingRange" min="40" max="100" value="85" oninput="updateControls()">
+              <input type="range" id="paddingRange" min="30" max="100" value="85" oninput="updateControls()">
             </div>
-            <div class="slider-box" id="chromaBox" style="opacity: 0.4; pointer-events: none;">
-              <label>緑透過のしきい値: <span id="toleranceVal">70</span></label>
-              <input type="range" id="toleranceRange" min="20" max="120" value="70" oninput="updateControls()">
+            <div class="slider-box" id="toleranceBox">
+              <label>背景除去の許容度: <span id="toleranceVal">45</span></label>
+              <input type="range" id="toleranceRange" min="10" max="90" value="45" oninput="updateControls()">
             </div>
           </div>
         </div>
@@ -307,7 +306,7 @@
           </div>
 
           <button type="button" class="btn-download" onclick="downloadResult()">
-            切り抜いたPNG画像をダウンロード
+            センタリング済みPNGをダウンロード
           </button>
         </div>
       </div>
@@ -321,15 +320,13 @@
 
   <script>
     let rawImg = null;
-    let cropBox = null; // { x, y, w, h }
-    let isDrawing = false;
-    let startX = 0, startY = 0;
-
-    let bgMode = 'keep'; // 'keep' or 'chroma'
+    let selectedBox = null;
+    let bgRGB = { r: 0, g: 255, b: 0 }; // 自動検出する背景の代表色
+    let isTransparent = true;
     let currentAspect = '1:1';
 
     const srcCanvas = document.getElementById('sourceCanvas');
-    const srcCtx = srcCanvas.getContext('2d');
+    const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
 
     const resCanvas = document.getElementById('resultCanvas');
     const resCtx = resCanvas.getContext('2d');
@@ -346,8 +343,11 @@
           srcCanvas.height = rawImg.height;
           srcCtx.drawImage(rawImg, 0, 0);
 
+          // 画像の四隅から純粋な背景色を自動スポイト
+          detectBackgroundColor();
+
           document.getElementById('editorArea').style.display = 'block';
-          cropBox = null;
+          selectedBox = null;
           document.getElementById('previewSection').style.display = 'none';
         };
         rawImg.src = evt.target.result;
@@ -355,117 +355,224 @@
       reader.readAsDataURL(file);
     }
 
-    function setBgMode(mode) {
-      bgMode = mode;
-      document.getElementById('btnModeKeep').classList.toggle('active', mode === 'keep');
-      document.getElementById('btnModeChroma').classList.toggle('active', mode === 'chroma');
+    // 四隅のピクセルから背景色をサンプリング
+    function detectBackgroundColor() {
+      const data = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height).data;
+      const w = srcCanvas.width;
+      const h = srcCanvas.height;
+      const samples = [
+        0, // 左上
+        (w - 1) * 4, // 右上
+        ((h - 1) * w) * 4, // 左下
+        ((h - 1) * w + (w - 1)) * 4 // 右下
+      ];
+      let r = 0, g = 0, b = 0;
+      samples.forEach(idx => {
+        r += data[idx];
+        g += data[idx+1];
+        b += data[idx+2];
+      });
+      bgRGB = {
+        r: Math.round(r / 4),
+        g: Math.round(g / 4),
+        b: Math.round(b / 4)
+      };
+    }
 
-      const chromaBox = document.getElementById('chromaBox');
-      chromaBox.style.opacity = mode === 'chroma' ? '1' : '0.4';
-      chromaBox.style.pointerEvents = mode === 'chroma' ? 'auto' : 'none';
+    // 背景色とのユークリッド色距離で背景判定（色相がズレているアイコン内部の緑を誤爆しない）
+    function isBackgroundColor(r, g, b, tolerance) {
+      const dr = r - bgRGB.r;
+      const dg = g - bgRGB.g;
+      const db = b - bgRGB.b;
+      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+      return dist < tolerance;
+    }
 
-      if (cropBox) renderResult();
+    function setTransparentMode(enable) {
+      isTransparent = enable;
+      document.getElementById('btnChromaOn').classList.toggle('active', enable);
+      document.getElementById('btnChromaOff').classList.toggle('active', !enable);
+      const tolBox = document.getElementById('toleranceBox');
+      tolBox.style.opacity = enable ? '1' : '0.4';
+      tolBox.style.pointerEvents = enable ? 'auto' : 'none';
+      if (selectedBox) renderResult();
     }
 
     function setAspect(aspect, btn) {
       currentAspect = aspect;
       document.querySelectorAll('.opt-btn').forEach(b => {
-        if (b.id !== 'btnModeKeep' && b.id !== 'btnModeChroma') b.classList.remove('active');
+        if (b.id !== 'btnChromaOn' && b.id !== 'btnChromaOff') b.classList.remove('active');
       });
       btn.classList.add('active');
-      if (cropBox) renderResult();
+      if (selectedBox) renderResult();
     }
 
     function updateControls() {
       document.getElementById('paddingVal').textContent = `${document.getElementById('paddingRange').value}%`;
       document.getElementById('toleranceVal').textContent = document.getElementById('toleranceRange').value;
-      if (cropBox) renderResult();
+      if (selectedBox) renderResult();
     }
 
-    // ドラッグ選択処理
-    function getCanvasCoords(e) {
+    // アイコンをクリックで自動認識
+    function onCanvasClick(e) {
+      if (!rawImg) return;
       const rect = srcCanvas.getBoundingClientRect();
       const scaleX = srcCanvas.width / rect.width;
       const scaleY = srcCanvas.height / rect.height;
 
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const clickX = Math.floor((e.clientX - rect.left) * scaleX);
+      const clickY = Math.floor((e.clientY - rect.top) * scaleY);
 
-      return {
-        x: Math.max(0, Math.min(srcCanvas.width, (clientX - rect.left) * scaleX)),
-        y: Math.max(0, Math.min(srcCanvas.height, (clientY - rect.top) * scaleY))
-      };
+      detectBoundingBox(clickX, clickY);
     }
 
-    function startCrop(e) {
-      if (!rawImg) return;
-      isDrawing = true;
-      const p = getCanvasCoords(e);
-      startX = p.x;
-      startY = p.y;
+    function detectBoundingBox(startX, startY) {
+      const w = srcCanvas.width;
+      const h = srcCanvas.height;
+      const data = srcCtx.getImageData(0, 0, w, h).data;
+      const tolerance = parseInt(document.getElementById('toleranceRange').value);
+
+      let seedX = startX;
+      let seedY = startY;
+      let idx = (seedY * w + seedX) * 4;
+
+      // クリック位置が背景だった場合、周囲の素材ピクセルを探索
+      if (isBackgroundColor(data[idx], data[idx+1], data[idx+2], tolerance)) {
+        let found = false;
+        for (let r = 1; r <= 45 && !found; r++) {
+          for (let dy = -r; dy <= r && !found; dy++) {
+            for (let dx = -r; dx <= r && !found; dx++) {
+              const nx = seedX + dx;
+              const ny = seedY + dy;
+              if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                const nIdx = (ny * w + nx) * 4;
+                if (!isBackgroundColor(data[nIdx], data[nIdx+1], data[nIdx+2], tolerance)) {
+                  seedX = nx;
+                  seedY = ny;
+                  found = true;
+                }
+              }
+            }
+          }
+        }
+        if (!found) return;
+      }
+
+      // BFSでタップしたアイコンの限界輪郭（minX, maxX, minY, maxY）を数学的に特定
+      const visited = new Uint8Array(w * h);
+      const queue = [seedX, seedY];
+      visited[seedY * w + seedX] = 1;
+
+      let minX = seedX, maxX = seedX;
+      let minY = seedY, maxY = seedY;
+
+      let qIdx = 0;
+      while (qIdx < queue.length) {
+        const cx = queue[qIdx++];
+        const cy = queue[qIdx++];
+
+        if (cx < minX) minX = cx;
+        if (cx > maxX) maxX = cx;
+        if (cy < minY) minY = cy;
+        if (cy > maxY) maxY = cy;
+
+        const neighbors = [
+          [-1, 0], [1, 0], [0, -1], [0, 1],
+          [-1, -1], [1, -1], [-1, 1], [1, 1]
+        ];
+
+        for (let i = 0; i < neighbors.length; i++) {
+          const nx = cx + neighbors[i][0];
+          const ny = cy + neighbors[i][1];
+
+          if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+            const pos = ny * w + nx;
+            if (!visited[pos]) {
+              visited[pos] = 1;
+              const pIdx = pos * 4;
+              if (!isBackgroundColor(data[pIdx], data[pIdx+1], data[pIdx+2], tolerance)) {
+                queue.push(nx, ny);
+              }
+            }
+          }
+        }
+      }
+
+      if ((maxX - minX < 8) || (maxY - minY < 8)) return;
+
+      selectedBox = { minX, maxX, minY, maxY };
+      renderResult();
     }
 
-    function moveCrop(e) {
-      if (!isDrawing) return;
-      const p = getCanvasCoords(e);
+    function renderResult() {
+      if (!selectedBox || !rawImg) return;
 
-      const x = Math.min(startX, p.x);
-      const y = Math.min(startY, p.y);
-      const w = Math.abs(p.x - startX);
-      const h = Math.abs(p.y - startY);
-
-      cropBox = { x, y, w, h };
-
-      // ガイド枠を描画
+      // 原画上の赤枠表示
       srcCtx.drawImage(rawImg, 0, 0);
       srcCtx.strokeStyle = '#ef4444';
       srcCtx.lineWidth = Math.max(2, Math.floor(rawImg.width / 400));
-      srcCtx.strokeRect(x, y, w, h);
-    }
+      const bw = selectedBox.maxX - selectedBox.minX + 1;
+      const bh = selectedBox.maxY - selectedBox.minY + 1;
+      srcCtx.strokeRect(selectedBox.minX, selectedBox.minY, bw, bh);
 
-    function endCrop() {
-      if (!isDrawing) return;
-      isDrawing = false;
-      if (cropBox && cropBox.w > 10 && cropBox.h > 10) {
-        renderResult();
-      }
-    }
-
-    srcCanvas.addEventListener('mousedown', startCrop);
-    window.addEventListener('mousemove', moveCrop);
-    window.addEventListener('mouseup', endCrop);
-
-    srcCanvas.addEventListener('touchstart', startCrop, { passive: false });
-    window.addEventListener('touchmove', moveCrop, { passive: false });
-    window.addEventListener('touchend', endCrop);
-
-    // センタリング描画
-    function renderResult() {
-      if (!cropBox || !rawImg) return;
-
-      const { x, y, w, h } = cropBox;
-
-      // 切り抜いた部分を一時キャンバスにコピー
+      // 切り抜いた部分を一時キャンバスに取得
       const tempC = document.createElement('canvas');
-      tempC.width = w;
-      tempC.height = h;
+      tempC.width = bw;
+      tempC.height = bh;
       const tempCtx = tempC.getContext('2d');
-      tempCtx.drawImage(rawImg, x, y, w, h, 0, 0, w, h);
+      tempCtx.drawImage(rawImg, selectedBox.minX, selectedBox.minY, bw, bh, 0, 0, bw, bh);
 
-      // 緑背景透過モードがONの場合のみクロマキー処理
-      if (bgMode === 'chroma') {
-        const frame = tempCtx.getImageData(0, 0, w, h);
+      // 透過モードがONの場合の背景消去（外側からの浸水＋高精度色差）
+      if (isTransparent) {
+        const frame = tempCtx.getImageData(0, 0, bw, bh);
         const d = frame.data;
-        const tol = parseInt(document.getElementById('toleranceRange').value);
+        const tolerance = parseInt(document.getElementById('toleranceRange').value);
 
-        for (let i = 0; i < d.length; i += 4) {
-          const r = d[i], g = d[i+1], b = d[i+2];
-          const maxRB = Math.max(r, b);
-          const diff = g - maxRB;
-          if (diff > tol) {
-            d[i + 3] = 0;
-          } else if (diff > tol - 15) {
-            d[i + 3] = Math.round(d[i + 3] * (1 - (diff - (tol - 15)) / 15));
+        const bgVisited = new Uint8Array(bw * bh);
+        const floodQueue = [];
+
+        // 外周ピクセルから背景色を探索
+        for (let x = 0; x < bw; x++) {
+          checkAndPush(x, 0);
+          checkAndPush(x, bh - 1);
+        }
+        for (let y = 0; y < bh; y++) {
+          checkAndPush(0, y);
+          checkAndPush(bw - 1, y);
+        }
+
+        function checkAndPush(x, y) {
+          const p = y * bw + x;
+          if (!bgVisited[p]) {
+            const idx = p * 4;
+            if (isBackgroundColor(d[idx], d[idx+1], d[idx+2], tolerance)) {
+              bgVisited[p] = 1;
+              floodQueue.push(x, y);
+            }
+          }
+        }
+
+        let fIdx = 0;
+        while (fIdx < floodQueue.length) {
+          const fx = floodQueue[fIdx++];
+          const fy = floodQueue[fIdx++];
+          const p = fy * bw + fx;
+          d[p * 4 + 3] = 0; // 外側の緑背景だけを完全透過
+
+          const nbs = [[-1,0],[1,0],[0,-1],[0,1]];
+          for (let i = 0; i < 4; i++) {
+            const nx = fx + nbs[i][0];
+            const ny = fy + nbs[i][1];
+            if (nx >= 0 && nx < bw && ny >= 0 && ny < bh) {
+              const np = ny * bw + nx;
+              if (!bgVisited[np]) {
+                bgVisited[np] = 1;
+                const nIdx = np * 4;
+                if (isBackgroundColor(d[nIdx], d[nIdx+1], d[nIdx+2], tolerance)) {
+                  floodQueue.push(nx, ny);
+                }
+              }
+            }
           }
         }
         tempCtx.putImageData(frame, 0, 0);
@@ -478,36 +585,36 @@
       } else if (currentAspect === '4:3') {
         outW = 800; outH = 600;
       } else if (currentAspect === 'fit') {
-        outW = w; outH = h;
+        outW = bw; outH = bh;
       }
 
       resCanvas.width = outW;
       resCanvas.height = outH;
       resCtx.clearRect(0, 0, outW, outH);
 
-      const scale = currentAspect === 'fit' ? 1.0 : (parseInt(document.getElementById('paddingRange').value) / 100);
-      const aspectItem = w / h;
+      const targetScale = currentAspect === 'fit' ? 1.0 : (parseInt(document.getElementById('paddingRange').value) / 100);
+      const aspectItem = bw / bh;
       const aspectBox = outW / outH;
 
       let drawW, drawH;
       if (currentAspect === 'fit') {
-        drawW = w;
-        drawH = h;
+        drawW = bw;
+        drawH = bh;
       } else if (aspectItem > aspectBox) {
-        drawW = outW * scale;
+        drawW = outW * targetScale;
         drawH = drawW / aspectItem;
       } else {
-        drawH = outH * scale;
+        drawH = outH * targetScale;
         drawW = drawH * aspectItem;
       }
 
-      // ど真ん中にセンタリング
+      // ど真ん中に完全センタリング
       const offsetX = (outW - drawW) / 2;
       const offsetY = (outH - drawH) / 2;
 
       resCtx.imageSmoothingEnabled = true;
       resCtx.imageSmoothingQuality = 'high';
-      resCtx.drawImage(tempC, offsetX, offsetY, drawW, drawH);
+      resCtx.drawImage(tempC, 0, 0, bw, bh, offsetX, offsetY, drawW, drawH);
 
       document.getElementById('previewSection').style.display = 'block';
       document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
@@ -515,7 +622,7 @@
 
     function downloadResult() {
       const link = document.createElement('a');
-      link.download = `sprite_${Date.now()}.png`;
+      link.download = `centered_icon_${Date.now()}.png`;
       link.href = resCanvas.toDataURL('image/png');
       link.click();
     }
