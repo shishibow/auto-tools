@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像カット・センタリング調整ツール - トリミング＆中央寄せ</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-dark: #1d4ed8;
+      --accent: #16a34a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover {
+      background: #f1f5f9;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .control-panel {
+      margin-top: 14px;
+    }
+
+    .aspect-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .aspect-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .aspect-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .btn-center {
+      width: 100%;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .btn-center:active {
+      background: #e2e8f0;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .preview-container {
+      position: relative;
+      width: 100%;
+      max-height: 380px;
+      background: #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 14px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #stageCanvas {
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #stageCanvas:active {
+      cursor: grabbing;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>画像カット・センタリング調整</h1>
+      <p class="subtitle">切り抜き枠に合わせて位置・拡大率をドラッグで調整</p>
+    </header>
+
+    <div class="card">
+      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">✂️</div>
+        <div class="upload-text">画像をタップして選択</div>
+        <div class="upload-hint">PNG / JPG / WebP（端末内処理・安全）</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)">
+
+      <div id="editorPanel" style="display: none;" class="control-panel">
+        <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:6px;">切り抜きアスペクト比</label>
+        <div class="aspect-row">
+          <div class="aspect-btn active" onclick="setAspect(1, 1, this)">正方形 (1:1)</div>
+          <div class="aspect-btn" onclick="setAspect(16, 9, this)">横長 (16:9)</div>
+          <div class="aspect-btn" onclick="setAspect(9, 16, this)">縦長 (9:16)</div>
+          <div class="aspect-btn" onclick="setAspect(4, 3, this)">標準 (4:3)</div>
+        </div>
+
+        <button type="button" class="btn-center" onclick="resetToCenter()">🎯 画像を中央にセンタリング</button>
+
+        <div class="slider-header">
+          <span>ズーム・拡大率</span>
+          <span id="zoomVal">100%</span>
+        </div>
+        <input type="range" id="zoomRange" min="50" max="300" value="100" oninput="updateZoom(this.value)">
+
+        <div class="preview-container">
+          <canvas id="stageCanvas"></canvas>
+        </div>
+
+        <button type="button" class="btn-download" onclick="downloadCropped()">切り抜いて保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    let img = null;
+    let aspectW = 1;
+    let aspectH = 1;
+    let zoom = 1.0;
+
+    let posX = 0;
+    let posY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const canvas = document.getElementById('stageCanvas');
+    const ctx = canvas.getContext('2d');
+    const stageWidth = 320;
+    let stageHeight = 320;
+
+    function loadImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        img = new Image();
+        img.onload = function() {
+          document.getElementById('editorPanel').style.display = 'block';
+          resetToCenter();
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setAspect(w, h, btn) {
+      aspectW = w;
+      aspectH = h;
+      document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      resetToCenter();
+    }
+
+    function resetToCenter() {
+      if (!img) return;
+
+      stageHeight = Math.round(stageWidth * (aspectH / aspectW));
+      canvas.width = stageWidth;
+      canvas.height = stageHeight;
+
+      // 枠にぴったり収まる基本スケール
+      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
+      zoom = 1.0;
+      document.getElementById('zoomRange').value = 100;
+      document.getElementById('zoomVal').textContent = '100%';
+
+      const drawW = img.width * scaleFit;
+      const drawH = img.height * scaleFit;
+
+      posX = (stageWidth - drawW) / 2;
+      posY = (stageHeight - drawH) / 2;
+
+      draw();
+    }
+
+    function updateZoom(val) {
+      const prevZoom = zoom;
+      zoom = parseInt(val) / 100;
+      document.getElementById('zoomVal').textContent = `${val}%`;
+
+      // 枠の中心を保ったままズーム
+      const centerX = stageWidth / 2;
+      const centerY = stageHeight / 2;
+      posX = centerX - (centerX - posX) * (zoom / prevZoom);
+      posY = centerY - (centerY - posY) * (zoom / prevZoom);
+
+      draw();
+    }
+
+    function draw() {
+      if (!img) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
+      const w = img.width * scaleFit * zoom;
+      const h = img.height * scaleFit * zoom;
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, posX, posY, w, h);
+
+      // ガイド枠（グリッド線）
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ドラッグ＆タッチ操作によるセンタリング・位置調整
+    canvas.addEventListener('mousedown', e => {
+      isDragging = true;
+      startX = e.clientX - posX;
+      startY = e.clientY - posY;
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      posX = e.clientX - startX;
+      posY = e.clientY - startY;
+      draw();
+    });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    // スマホのタッチ操作対応
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - posX;
+        startY = e.touches[0].clientY - posY;
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', e => {
+      if (!isDragging || e.touches.length !== 1) return;
+      posX = e.touches[0].clientX - startX;
+      posY = e.touches[0].clientY - startY;
+      draw();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => isDragging = false);
+
+    function downloadCropped() {
+      if (!img) return;
+
+      // 高解像度保存用キャンバス
+      const outCanvas = document.createElement('canvas');
+      const outWidth = 1080;
+      const outHeight = Math.round(outWidth * (aspectH / aspectW));
+      outCanvas.width = outWidth;
+      outCanvas.height = outHeight;
+
+      const outCtx = outCanvas.getContext('2d');
+      const ratio = outWidth / stageWidth;
+
+      const scaleFit = Math.max(stageWidth / img.width, stageHeight / img.height);
+      const w = img.width * scaleFit * zoom * ratio;
+      const h = img.height * scaleFit * zoom * ratio;
+      const x = posX * ratio;
+      const y = posY * ratio;
+
+      outCtx.imageSmoothingEnabled = true;
+      outCtx.imageSmoothingQuality = 'high';
+      outCtx.drawImage(img, x, y, w, h);
+
+      const link = document.createElement('a');
+      link.download = `crop_centered_${Date.now()}.png`;
+      link.href = outCanvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
