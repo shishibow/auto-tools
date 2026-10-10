@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>スマート割り勘電卓 - PayShare</title>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-light: #e0e7ff;
+  --primary-dark: #3730a3;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-sub: #64748b;
+  --border: #e2e8f0;
+  --accent: #10b981;
+  --danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-main);
+  padding: 16px 12px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+header {
+  text-align: center;
+  padding: 8px 0;
+}
+
+header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+header p {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrap span.unit {
+  position: absolute;
+  right: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+input[type="number"], select {
+  width: 100%;
+  padding: 12px 14px;
+  padding-right: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background: #fdfdfd;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="number"]:focus, select:focus {
+  border-color: var(--primary);
+}
+
+.btn-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.toggle-sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border);
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.toggle-sec span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.slant-box {
+  display: none;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.slant-box.open {
+  display: block;
+}
+
+.slant-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.slant-row:last-child {
+  margin-bottom: 0;
+}
+
+.slant-row input {
+  font-size: 0.9rem;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.result-card {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 20px 18px;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+  text-align: center;
+}
+
+.result-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.result-amount {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 6px 0 12px;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.result-amount .yen {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.result-detail {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.result-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.copy-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  background: #ffffff;
+  color: var(--primary);
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+.copy-btn:active {
+  transform: scale(0.98);
+  background: #f8fafc;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>⚖️ PayShare</h1>
+    <p>スマート割り勘・精算計算機</p>
+  </header>
+
+  <div class="card">
+    <div class="form-group">
+      <label for="totalAmount">合計金額</label>
+      <div class="input-wrap">
+        <input type="number" id="totalAmount" inputmode="numeric" placeholder="例: 12800" min="0">
+        <span class="unit">円</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="personCount">参加人数</label>
+      <div class="input-wrap">
+        <input type="number" id="personCount" inputmode="numeric" value="3" min="1">
+        <span class="unit">人</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>端数まるめ単位</label>
+      <div class="btn-group">
+        <button type="button" class="btn-chip" data-round="1">端数なし</button>
+        <button type="button" class="btn-chip active" data-round="100">100円</button>
+        <button type="button" class="btn-chip" data-round="500">500円</button>
+        <button type="button" class="btn-chip" data-round="1000">1000円</button>
+      </div>
+    </div>
+
+    <div class="toggle-sec" id="toggleSlant">
+      <span>⚙️ 傾斜配分（多く払う人・少なく払う人）</span>
+      <span id="slantIcon">▼</span>
+    </div>
+
+    <div class="slant-box" id="slantBox">
+      <div class="slant-row">
+        <div style="flex: 1.2;">
+          <label style="font-size:0.75rem;">多めに払う人</label>
+          <div class="input-wrap">
+            <input type="number" id="bossCount" inputmode="numeric" value="0" min="0">
+            <span class="unit">人</span>
+          </div>
+        </div>
+        <div style="flex: 1.5;">
+          <label style="font-size:0.75rem;">上乗せ額 / 1人</label>
+          <div class="input-wrap">
+            <input type="number" id="bossExtra" inputmode="numeric" value="1000" min="0" step="100">
+            <span class="unit">円</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slant-row" style="margin-top: 8px;">
+        <div style="flex: 1.2;">
+          <label style="font-size:0.75rem;">少なめに払う人</label>
+          <div class="input-wrap">
+            <input type="number" id="discountCount" inputmode="numeric" value="0" min="0">
+            <span class="unit">人</span>
+          </div>
+        </div>
+        <div style="flex: 1.5;">
+          <label style="font-size:0.75rem;">割引額 / 1人</label>
+          <div class="input-wrap">
+            <input type="number" id="discountValue" inputmode="numeric" value="1000" min="0" step="100">
+            <span class="unit">円</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-card">
+    <div class="result-label">1人あたりの支払額（基本）</div>
+    <div class="result-amount">
+      <span id="resStandard">0</span><span class="yen">円</span>
+    </div>
+
+    <div class="result-detail" id="resultDetailArea">
+      <div class="result-row">
+        <span>集金合計</span>
+        <span id="resTotalCollected">0 円</span>
+      </div>
+      <div class="result-row">
+        <span>差額（余り/不足）</span>
+        <span id="resDifference">0 円</span>
+      </div>
+      <div class="result-row" id="slantBossRow" style="display: none;">
+        <span>多めに払う人 (<span id="txtBossCount">0</span>人)</span>
+        <span id="resBossPay">0 円</span>
+      </div>
+      <div class="result-row" id="slantDiscRow" style="display: none;">
+        <span>少なめに払う人 (<span id="txtDiscCount">0</span>人)</span>
+        <span id="resDiscPay">0 円</span>
+      </div>
+    </div>
+
+    <button type="button" class="copy-btn" id="copyBtn">
+      📋 結果をコピーしてLINE等で共有
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast">結果をクリップボードにコピーしました！</div>
+
+<script>
+let currentRound = 100;
+
+const totalAmountInput = document.getElementById('totalAmount');
+const personCountInput = document.getElementById('personCount');
+const bossCountInput = document.getElementById('bossCount');
+const bossExtraInput = document.getElementById('bossExtra');
+const discountCountInput = document.getElementById('discountCount');
+const discountValueInput = document.getElementById('discountValue');
+
+const toggleSlant = document.getElementById('toggleSlant');
+const slantBox = document.getElementById('slantBox');
+const slantIcon = document.getElementById('slantIcon');
+
+const resStandard = document.getElementById('resStandard');
+const resTotalCollected = document.getElementById('resTotalCollected');
+const resDifference = document.getElementById('resDifference');
+const slantBossRow = document.getElementById('slantBossRow');
+const slantDiscRow = document.getElementById('slantDiscRow');
+const txtBossCount = document.getElementById('txtBossCount');
+const txtDiscCount = document.getElementById('txtDiscCount');
+const resBossPay = document.getElementById('resBossPay');
+const resDiscPay = document.getElementById('resDiscPay');
+const copyBtn = document.getElementById('copyBtn');
+const toast = document.getElementById('toast');
+
+// まるめボタン切り替え
+document.querySelectorAll('.btn-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRound = parseInt(btn.dataset.round, 10);
+    calculate();
+  });
+});
+
+// 傾斜開閉
+toggleSlant.addEventListener('click', () => {
+  slantBox.classList.toggle('open');
+  slantIcon.textContent = slantBox.classList.contains('open') ? '▲' : '▼';
+});
+
+// 入力イベントリスナー
+[totalAmountInput, personCountInput, bossCountInput, bossExtraInput, discountCountInput, discountValueInput].forEach(elem => {
+  elem.addEventListener('input', calculate);
+});
+
+function roundUp(val, unit) {
+  if (unit <= 1) return Math.ceil(val);
+  return Math.ceil(val / unit) * unit;
+}
+
+function calculate() {
+  const total = parseFloat(totalAmountInput.value) || 0;
+  const count = parseInt(personCountInput.value, 10) || 1;
+  const bossCount = parseInt(bossCountInput.value, 10) || 0;
+  const bossExtra = parseFloat(bossExtraInput.value) || 0;
+  const discCount = parseInt(discountCountInput.value, 10) || 0;
+  const discVal = parseFloat(discountValueInput.value) || 0;
+
+  if (count <= 0) {
+    resStandard.textContent = "0";
+    return;
+  }
+
+  // 傾斜合計の加減算
+  const slantAdjustment = (bossCount * bossExtra) - (discCount * discVal);
+  const remainingTotal = total - slantAdjustment;
+
+  // 基本額（1人あたり）の算出
+  const baseRaw = remainingTotal / count;
+  let standardPay = roundUp(baseRaw, currentRound);
+  if (standardPay < 0) standardPay = 0;
+
+  const bossPay = standardPay + bossExtra;
+  let discPay = standardPay - discVal;
+  if (discPay < 0) discPay = 0;
+
+  const normalCount = Math.max(0, count - bossCount - discCount);
+
+  // 集金総計
+  const totalCollected = (standardPay * normalCount) + (bossPay * bossCount) + (discPay * discCount);
+  const diff = totalCollected - total;
+
+  // UI更新
+  resStandard.textContent = standardPay.toLocaleString();
+  resTotalCollected.textContent = `${totalCollected.toLocaleString()} 円`;
+  
+  if (diff >= 0) {
+    resDifference.textContent = `+${diff.toLocaleString()} 円 (余り)`;
+    resDifference.style.color = "#a7f3d0";
+  } else {
+    resDifference.textContent = `${diff.toLocaleString()} 円 (不足)`;
+    resDifference.style.color = "#fecaca";
+  }
+
+  if (bossCount > 0) {
+    slantBossRow.style.display = 'flex';
+    txtBossCount.textContent = bossCount;
+    resBossPay.textContent = `${bossPay.toLocaleString()} 円`;
+  } else {
+    slantBossRow.style.display = 'none';
+  }
+
+  if (discCount > 0) {
+    slantDiscRow.style.display = 'flex';
+    txtDiscCount.textContent = discCount;
+    resDiscPay.textContent = `${discPay.toLocaleString()} 円`;
+  } else {
+    slantDiscRow.style.display = 'none';
+  }
+}
+
+// クリップボードコピー
+copyBtn.addEventListener('click', () => {
+  const total = parseFloat(totalAmountInput.value) || 0;
+  const count = parseInt(personCountInput.value, 10) || 1;
+  const bossCount = parseInt(bossCountInput.value, 10) || 0;
+  const discCount = parseInt(discountCountInput.value, 10) || 0;
+  const standard = resStandard.textContent;
+  const diff = resDifference.textContent;
+
+  let text = `【お会計精算】\n合計: ${total.toLocaleString()}円 (${count}名)\n`;
+  if (bossCount > 0) {
+    text += `・多めの方 (${bossCount}名): ${resBossPay.textContent} /人\n`;
+  }
+  if (discCount > 0) {
+    text += `・少なめの方 (${discCount}名): ${resDiscPay.textContent} /人\n`;
+  }
+  text += `・基本支払額: ${standard}円 /人\n`;
+  text += `端数調整: ${diff}\nよろしくお願いします！`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast());
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast();
+  }
+});
+
+function showToast() {
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2500);
+}
+
+calculate();
+</script>
+
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+</body>
+</html>
