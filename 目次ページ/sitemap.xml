@@ -140,4 +140,9 @@
     <loc>https://shishibow.github.io/auto-tools/画像カット・センタリング調整ツール/</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/動画軽量化・画質fps低下ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>
