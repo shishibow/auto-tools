@@ -220,6 +220,8 @@
     .page-head h1{font-size:clamp(1.35rem,5vw,1.8rem)}
     .back-link{display:inline-flex;align-items:center;gap:6px;margin-top:22px;
       color:var(--indigo);font-weight:800;font-size:.88rem;text-decoration:none;min-height:44px}
+    [data-cat="dev"] .tool-icon{background:linear-gradient(135deg,#e0e7ff,#cffafe)}
+    @media (prefers-color-scheme: dark){[data-cat="dev"] .tool-icon{background:var(--tint)}}
 </style>
 </head>
 <body>
@@ -239,6 +241,7 @@
     <a class="nav-item" href="./time.html"><span class="n-icon">⏱️</span>時間・日程<span class="n-count">6</span></a>
     <a class="nav-item" href="./lifestyle.html"><span class="n-icon">🍳</span>生活・健康・移動<span class="n-count">8</span></a>
     <a class="nav-item active" href="./utility.html"><span class="n-icon">🛠️</span>テキスト・便利機能<span class="n-count">7</span></a>
+    <a class="nav-item" href="./dev.html"><span class="n-icon">💻</span>開発者向け<span class="n-count">5</span></a>
     <a class="nav-item" href="./fav.html"><span class="n-icon">⭐</span>お気に入り</a>
   </aside>
   <div class="container">

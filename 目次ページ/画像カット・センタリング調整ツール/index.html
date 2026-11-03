@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>スプライト自動検出＆センタリング切り抜きツール</title>
+  <title>画像カット＆センタリング調整ツール</title>
+  <meta name="description" content="画像の切り取り（トリミング）とセンタリング調整。ドラッグ指定・タップ自動検出・回転・反転・背景透過・リサイズ・PNG/JPEG/WebP出力に対応。">
   <style>
     :root {
       --primary: #4f46e5;
@@ -67,6 +68,12 @@
       border: 1px solid var(--border);
     }
 
+    .card h2 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
     .upload-area {
       border: 2px dashed #94a3b8;
       border-radius: var(--radius);
@@ -77,14 +84,11 @@
       transition: background 0.2s;
     }
 
-    .upload-area:hover {
-      background: #f1f5f9;
+    .upload-area:hover, .upload-area.dragover {
+      background: var(--primary-light);
     }
 
-    .upload-icon {
-      font-size: 2rem;
-      margin-bottom: 6px;
-    }
+    .upload-icon { font-size: 2rem; margin-bottom: 6px; }
 
     .upload-text {
       font-size: 0.9rem;
@@ -98,42 +102,15 @@
       margin-top: 2px;
     }
 
-    input[type="file"] {
+    input[type="file"] { display: none; }
+
+    .file-info {
       display: none;
-    }
-
-    .instruction-badge {
-      display: inline-block;
-      background: #dbeafe;
-      color: #1e40af;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 20px;
-      margin-bottom: 10px;
-    }
-
-    .source-wrapper {
-      position: relative;
-      width: 100%;
-      overflow: auto;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #0f172a;
-      text-align: center;
-      max-height: 420px;
-    }
-
-    #sourceCanvas {
-      cursor: pointer;
-      display: inline-block;
-      vertical-align: middle;
-      max-width: 100%;
-      height: auto;
-    }
-
-    .option-group {
-      margin-top: 14px;
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      word-break: break-all;
     }
 
     label.section-lbl {
@@ -148,15 +125,18 @@
       display: flex;
       gap: 6px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
 
     .opt-btn {
       flex: 1;
+      min-width: 64px;
+      min-height: 48px;
       padding: 8px 4px;
       border: 1.5px solid var(--border);
       border-radius: 8px;
       background: #fff;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--text);
       cursor: pointer;
@@ -169,22 +149,138 @@
       color: var(--primary);
     }
 
-    .slider-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .opt-btn:active { transform: scale(0.97); }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+    .chip {
+      min-height: 44px;
+      padding: 6px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .source-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      text-align: center;
+      max-height: 480px;
+      line-height: 0;
+    }
+
+    #viewCanvas {
+      display: inline-block;
+      vertical-align: middle;
+      max-width: none;
+      cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+
+    .range-info {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .zoom-row {
+      display: flex;
+      align-items: center;
       gap: 10px;
+      margin-top: 10px;
+    }
+
+    .zoom-row input[type="range"] { flex: 1; }
+
+    .zoom-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      min-width: 3.2em;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini-btn {
+      min-height: 44px;
+      padding: 6px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .mini-btn:active { transform: scale(0.97); }
+
+    .num-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .num-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .num-box label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .num-box input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
+      background: #fff;
+      color: var(--text);
     }
 
     .slider-box {
       background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
     }
 
     .slider-box label {
       display: block;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--text-muted);
       margin-bottom: 4px;
@@ -193,13 +289,27 @@
     input[type="range"] {
       width: 100%;
       accent-color: var(--primary);
+      min-height: 32px;
     }
 
-    .preview-section {
-      margin-top: 16px;
-      text-align: center;
-      display: none;
+    .swatch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
     }
+
+    .swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .preview-section { text-align: center; }
 
     .checkerboard {
       background-color: #ffffff;
@@ -222,8 +332,15 @@
 
     #resultCanvas {
       max-width: 100%;
-      max-height: 240px;
+      max-height: 260px;
       display: block;
+    }
+
+    .out-info {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 10px;
+      font-variant-numeric: tabular-nums;
     }
 
     .btn-download {
@@ -240,9 +357,10 @@
       box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
     }
 
-    .btn-download:active {
-      transform: scale(0.98);
-    }
+    .btn-download:active { transform: scale(0.98); }
+    .btn-download:disabled { opacity: 0.45; cursor: default; }
+
+    .hidden { display: none !important; }
   </style>
 
   <style id="portal-theme">
@@ -269,69 +387,139 @@
   <div class="container">
     <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
     <header>
-      <h1>スプライト自動検出＆センタリング</h1>
-      <p class="subtitle">タップするだけでアイコンを自動認識・中心補正＆背景透過</p>
+      <h1>画像カット＆センタリング調整</h1>
+      <p class="subtitle">ドラッグで切り取り、タップで素材を自動検出。回転・反転・背景透過・出力形式の変更まで。</p>
     </header>
 
-    <div class="card">
-      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-        <div class="upload-icon">🎯</div>
-        <div class="upload-text">素材画像をタップして選択</div>
-        <div class="upload-hint">PNG / JPG 対応（完全端末内処理）</div>
+    <div class="card" id="loadCard">
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">画像をタップして選択</div>
+        <div class="upload-hint">ドラッグ＆ドロップ / 貼り付け（Ctrl+V）でも読み込めます</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" onchange="handleImage(event)">
+      <input type="file" id="fileInput" accept="image/*">
+      <p class="file-info" id="fileInfo"></p>
+    </div>
 
-      <div id="editorArea" style="display: none; margin-top: 14px;">
-        <div style="text-align: center;">
-          <span class="instruction-badge">👉 下の画像から切り抜きたいアイコンをタップしてください</span>
+    <div id="editorArea" class="hidden">
+      <div class="card">
+        <h2>切り取り範囲</h2>
+        <div class="btn-row" role="group" aria-label="操作モード">
+          <button type="button" class="opt-btn active" id="modeCropBtn">✂️ 切り取り（ドラッグ）</button>
+          <button type="button" class="opt-btn" id="modeDetectBtn">🎯 自動検出（タップ）</button>
         </div>
-
-        <div class="source-wrapper">
-          <canvas id="sourceCanvas" onclick="onCanvasClick(event)"></canvas>
+        <div class="source-wrapper" id="sourceWrapper">
+          <canvas id="viewCanvas"></canvas>
         </div>
+        <p class="range-info" id="rangeInfo"></p>
+        <p class="hint" id="modeHint"></p>
+        <div class="zoom-row">
+          <span class="section-lbl" style="margin:0">表示倍率</span>
+          <input type="range" id="zoomRange" min="25" max="400" value="100" step="5">
+          <span class="zoom-label" id="zoomLabel">100%</span>
+          <button type="button" class="mini-btn" id="zoomFitBtn">合わせる</button>
+        </div>
+      </div>
 
-        <div class="option-group">
-          <label class="section-lbl">背景の透過処理</label>
-          <div class="btn-row">
-            <button type="button" class="opt-btn active" id="btnChromaOn" onclick="setTransparentMode(true)">✨ 背景を透過する</button>
-            <button type="button" class="opt-btn" id="btnChromaOff" onclick="setTransparentMode(false)">🛡️ 背景を残す（完全保護）</button>
-          </div>
+      <div class="card">
+        <h2>範囲の調整</h2>
+        <label class="section-lbl">比率を固定</label>
+        <div class="chip-row" id="aspectChips">
+          <button type="button" class="chip active" data-aspect="">自由</button>
+          <button type="button" class="chip" data-aspect="1">1:1</button>
+          <button type="button" class="chip" data-aspect="1.3333">4:3</button>
+          <button type="button" class="chip" data-aspect="0.75">3:4</button>
+          <button type="button" class="chip" data-aspect="1.7778">16:9</button>
+          <button type="button" class="chip" data-aspect="0.5625">9:16</button>
+          <button type="button" class="chip" data-aspect="1.5">3:2</button>
+          <button type="button" class="chip" data-aspect="0.6667">2:3</button>
+        </div>
+        <div class="num-grid">
+          <div class="num-box"><label for="inX">X（左）</label><input type="number" id="inX" min="0" step="1"></div>
+          <div class="num-box"><label for="inY">Y（上）</label><input type="number" id="inY" min="0" step="1"></div>
+          <div class="num-box"><label for="inW">幅</label><input type="number" id="inW" min="1" step="1"></div>
+          <div class="num-box"><label for="inH">高さ</label><input type="number" id="inH" min="1" step="1"></div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="opt-btn" id="btnSelectAll">全体を選択</button>
+          <button type="button" class="opt-btn" id="btnDetectAll">素材全体を検出</button>
+          <button type="button" class="opt-btn" id="btnCenter">中央に配置</button>
+        </div>
+        <p class="hint">キーボードの矢印キーで1pxずつ移動（Shift同時押しで10px）。</p>
+      </div>
 
+      <div class="card">
+        <h2>回転・反転</h2>
+        <div class="btn-row">
+          <button type="button" class="opt-btn" id="btnRotL">⟲ 左90°</button>
+          <button type="button" class="opt-btn" id="btnRotR">⟳ 右90°</button>
+          <button type="button" class="opt-btn" id="btnFlipH">⇋ 左右反転</button>
+          <button type="button" class="opt-btn" id="btnFlipV">⇅ 上下反転</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>背景透過</h2>
+        <div class="swatch-row">
+          <span class="swatch" id="bgSwatch"></span>
+          <span id="bgText">背景色: 未検出</span>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="opt-btn active" id="btnChromaOn">✨ 背景を透過する</button>
+          <button type="button" class="opt-btn" id="btnChromaOff">背景を残す</button>
+        </div>
+        <div class="slider-box" id="toleranceBox">
+          <label>背景除去の許容度: <span id="toleranceVal">45</span></label>
+          <input type="range" id="toleranceRange" min="5" max="120" value="45">
+        </div>
+        <p class="hint">画像の端につながっている背景色だけを透過します。素材の内側にある同じ色は残ります。</p>
+      </div>
+
+      <div class="card">
+        <h2>出力</h2>
+        <label class="section-lbl">出力のしかた</label>
+        <div class="btn-row">
+          <button type="button" class="opt-btn active" id="outDirectBtn">切り取りそのまま</button>
+          <button type="button" class="opt-btn" id="outCenterBtn">比率をそろえてセンタリング</button>
+        </div>
+        <div id="centerOpts" class="hidden">
           <label class="section-lbl">出力キャンバス比率</label>
-          <div class="btn-row">
-            <button type="button" class="opt-btn active" onclick="setAspect('1:1', this)">正方形 (1:1)</button>
-            <button type="button" class="opt-btn" onclick="setAspect('fit', this)">素材ぴったり</button>
-            <button type="button" class="opt-btn" onclick="setAspect('16:9', this)">横長 (16:9)</button>
-            <button type="button" class="opt-btn" onclick="setAspect('4:3', this)">標準 (4:3)</button>
+          <div class="chip-row" id="centerAspectChips">
+            <button type="button" class="chip active" data-caspect="1">正方形 (1:1)</button>
+            <button type="button" class="chip" data-caspect="fit">素材ぴったり</button>
+            <button type="button" class="chip" data-caspect="1.7778">横長 (16:9)</button>
+            <button type="button" class="chip" data-caspect="1.3333">標準 (4:3)</button>
           </div>
-
-          <div class="slider-row">
-            <div class="slider-box">
-              <label>本体サイズ（余白比率）: <span id="paddingVal">85%</span></label>
-              <input type="range" id="paddingRange" min="30" max="100" value="85" oninput="updateControls()">
-            </div>
-            <div class="slider-box" id="toleranceBox">
-              <label>背景除去の許容度: <span id="toleranceVal">45</span></label>
-              <input type="range" id="toleranceRange" min="10" max="90" value="45" oninput="updateControls()">
-            </div>
+          <div class="slider-box">
+            <label>本体サイズ（余白比率）: <span id="paddingVal">85%</span></label>
+            <input type="range" id="paddingRange" min="30" max="100" value="85">
           </div>
         </div>
-
+        <label class="section-lbl">形式</label>
+        <div class="chip-row" id="formatChips">
+          <button type="button" class="chip active" data-format="image/png">PNG</button>
+          <button type="button" class="chip" data-format="image/jpeg">JPEG</button>
+          <button type="button" class="chip" data-format="image/webp">WebP</button>
+        </div>
+        <div class="slider-box" id="qualityBox" style="opacity:.4;pointer-events:none">
+          <label>画質: <span id="qualityVal">90</span></label>
+          <input type="range" id="qualityRange" min="10" max="100" value="90">
+        </div>
+        <div class="num-grid" style="grid-template-columns:1fr 1fr">
+          <div class="num-box"><label for="outWidth">出力幅 px（空欄=元の幅）</label><input type="number" id="outWidth" min="1" step="1" placeholder="元の幅"></div>
+          <div class="num-box"><label>出力サイズ</label><p class="out-info" id="outSizeInfo" style="margin-top:10px">-</p></div>
+        </div>
         <div class="preview-section" id="previewSection">
-          <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-            【完全センタリングプレビュー】
-          </p>
           <div class="checkerboard">
             <canvas id="resultCanvas"></canvas>
           </div>
-
-          <button type="button" class="btn-download" onclick="downloadResult()">
-            センタリング済みPNGをダウンロード
-          </button>
+          <p class="out-info" id="outInfo"></p>
+          <button type="button" class="btn-download" id="btnDownload" disabled>ダウンロード</button>
         </div>
       </div>
     </div>
-      <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+
+    <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
   </div>
 
   <!-- 忍者AdMax広告コード -->
@@ -340,313 +528,841 @@
   <!-- admax -->
 
   <script>
-    let rawImg = null;
-    let selectedBox = null;
-    let bgRGB = { r: 0, g: 255, b: 0 }; // 自動検出する背景の代表色
-    let isTransparent = true;
-    let currentAspect = '1:1';
+    'use strict';
 
-    const srcCanvas = document.getElementById('sourceCanvas');
-    const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+    // ===== 状態 =====
+    var srcC = document.createElement('canvas');       // 作業中の画像（回転・反転はここに焼き込む）
+    var srcCtx = srcC.getContext('2d', { willReadFrequently: true });
+    var crop = { x: 0, y: 0, w: 0, h: 0 };              // 画像座標の切り取り範囲
+    var hasImage = false;
+    var mode = 'crop';                                   // 'crop' | 'detect'
+    var aspect = null;                                   // 比率固定（w/h）。nullは自由
+    var centerAspect = 1;                                // センタリング出力の比率。'fit' または数値
+    var outMode = 'direct';                              // 'direct' | 'center'
+    var format = 'image/png';
+    var transparentOn = true;
+    var bgRGB = { r: 0, g: 0, b: 0 };
+    var zoom = 1;
+    var downloadUrl = null;
+    var renderSeq = 0;
 
-    const resCanvas = document.getElementById('resultCanvas');
-    const resCtx = resCanvas.getContext('2d');
+    var $ = function (id) { return document.getElementById(id); };
+    var viewCanvas = $('viewCanvas');
+    var viewCtx = viewCanvas.getContext('2d');
+    var resCanvas = $('resultCanvas');
+    var resCtx = resCanvas.getContext('2d');
 
-    function handleImage(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        rawImg = new Image();
-        rawImg.onload = function() {
-          srcCanvas.width = rawImg.width;
-          srcCanvas.height = rawImg.height;
-          srcCtx.drawImage(rawImg, 0, 0);
+    function tolerance() { return parseInt($('toleranceRange').value, 10); }
 
-          // 画像の四隅から純粋な背景色を自動スポイト
-          detectBackgroundColor();
-
-          document.getElementById('editorArea').style.display = 'block';
-          selectedBox = null;
-          document.getElementById('previewSection').style.display = 'none';
-        };
-        rawImg.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
+    // 背景色との色距離（二乗）で背景判定。透明ピクセルも背景扱い
+    function isBgData(d, i, bg, tolSq) {
+      if (d[i + 3] < 128) return true;
+      var dr = d[i] - bg.r, dg = d[i + 1] - bg.g, db = d[i + 2] - bg.b;
+      return dr * dr + dg * dg + db * db < tolSq;
     }
 
-    // 四隅のピクセルから背景色をサンプリング
-    function detectBackgroundColor() {
-      const data = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height).data;
-      const w = srcCanvas.width;
-      const h = srcCanvas.height;
-      const samples = [
-        0, // 左上
-        (w - 1) * 4, // 右上
-        ((h - 1) * w) * 4, // 左下
-        ((h - 1) * w + (w - 1)) * 4 // 右下
+    // ===== 設定の保存（次回も同じ設定で開く） =====
+    var SETTINGS_KEY = 'imgcut-settings-v1';
+    function saveSettings() {
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+          format: format,
+          quality: $('qualityRange').value,
+          tol: $('toleranceRange').value,
+          transparentOn: transparentOn,
+          outMode: outMode
+        }));
+      } catch (e) {}
+    }
+    function loadSettings() {
+      try {
+        var s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+        if (!s) return;
+        if (s.format) setFormat(s.format, false);
+        if (s.quality) { $('qualityRange').value = s.quality; $('qualityVal').textContent = s.quality; }
+        if (s.tol) { $('toleranceRange').value = s.tol; $('toleranceVal').textContent = s.tol; }
+        if (typeof s.transparentOn === 'boolean') setTransparent(s.transparentOn, false);
+        if (s.outMode) setOutMode(s.outMode, false);
+      } catch (e) {}
+    }
+
+    // ===== 画像の読み込み =====
+    $('uploadArea').addEventListener('click', function () { $('fileInput').click(); });
+    $('fileInput').addEventListener('change', function (e) {
+      if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    ['dragover', 'dragenter'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); $('uploadArea').classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); $('uploadArea').classList.remove('dragover'); });
+    });
+    document.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) loadFile(f);
+    });
+    document.addEventListener('paste', function (e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image/') === 0) {
+          var f = items[i].getAsFile();
+          if (f) { loadFile(f); e.preventDefault(); }
+          break;
+        }
+      }
+    });
+
+    function loadFile(file) {
+      if (file.type && file.type.indexOf('image/') !== 0) return;
+      var done = function (drawable, w, h) { setSource(drawable, w, h, file); };
+      if (window.createImageBitmap) {
+        createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) {
+          done(bmp, bmp.width, bmp.height);
+        }).catch(function () { loadViaImage(file, done); });
+      } else {
+        loadViaImage(file, done);
+      }
+    }
+
+    function loadViaImage(file, done) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { done(img, img.naturalWidth, img.naturalHeight); setTimeout(function () { URL.revokeObjectURL(url); }, 4000); };
+      img.onerror = function () { URL.revokeObjectURL(url); };
+      img.src = url;
+    }
+
+    function setSource(drawable, w, h, file) {
+      srcC.width = w;
+      srcC.height = h;
+      srcCtx.drawImage(drawable, 0, 0);
+      hasImage = true;
+      crop = { x: 0, y: 0, w: w, h: h };
+      if (aspect) fitAspectInside();
+      viewCanvas.width = w;
+      viewCanvas.height = h;
+      zoom = 1;
+      $('zoomRange').value = 100;
+      $('zoomLabel').textContent = '100%';
+      sampleBackground();
+      // 背景がほぼ一色（スプライト系）なら透過を初期ON、写真系ならOFF。利用者の手間を減らすための自動判定
+      setTransparent(isUniformBackground(), false);
+      $('editorArea').classList.remove('hidden');
+      var sizeKb = file && file.size ? ' ・ ' + Math.max(1, Math.round(file.size / 1024)) + ' KB' : '';
+      $('fileInfo').style.display = 'block';
+      $('fileInfo').textContent = (file && file.name ? file.name + ' ・ ' : '') + w + ' × ' + h + ' px' + sizeKb;
+      applyZoom();
+      draw();
+      updateRangeInfo();
+      // まず全体表示で結果を出し、続けて素材の範囲を自動検出して初期選択にする
+      renderOutput();
+      setTimeout(function () {
+        var box = detectAllBox();
+        if (box && (box.w * box.h) < (w * h) * 0.98) {
+          crop = box;
+          if (aspect) fitAspectInside();
+          draw();
+          updateRangeInfo();
+          renderOutput();
+        }
+      }, 30);
+      $('editorArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ===== 背景色サンプリング =====
+    function sampleBackground() {
+      var w = srcC.width, h = srcC.height;
+      var d = srcCtx.getImageData(0, 0, w, h).data;
+      var pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]];
+      var r = 0, g = 0, b = 0, n = 0;
+      pts.forEach(function (p) {
+        var i = (p[1] * w + p[0]) * 4;
+        if (d[i + 3] >= 128) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      });
+      if (n > 0) bgRGB = { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+      $('bgSwatch').style.background = 'rgb(' + bgRGB.r + ',' + bgRGB.g + ',' + bgRGB.b + ')';
+      $('bgText').textContent = '背景色（自動検出）: RGB(' + bgRGB.r + ', ' + bgRGB.g + ', ' + bgRGB.b + ')';
+    }
+
+    // 四隅＋各辺の中点の色がほぼそろっているか（スプライト系素材の目安）
+    function isUniformBackground() {
+      var w = srcC.width, h = srcC.height;
+      var d = srcCtx.getImageData(0, 0, w, h).data;
+      var pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
+                 [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
+      var cols = [];
+      pts.forEach(function (p) {
+        var i = (p[1] * w + p[0]) * 4;
+        if (d[i + 3] < 128) return; // 透明な隅は無視
+        cols.push([d[i], d[i + 1], d[i + 2]]);
+      });
+      if (cols.length < 3) return true; // ほぼ透明＝透過素材
+      var maxDist = 0;
+      for (var i = 0; i < cols.length; i++) {
+        for (var j = i + 1; j < cols.length; j++) {
+          var dr = cols[i][0] - cols[j][0], dg = cols[i][1] - cols[j][1], db = cols[i][2] - cols[j][2];
+          var dist = dr * dr + dg * dg + db * db;
+          if (dist > maxDist) maxDist = dist;
+        }
+      }
+      return maxDist < 900; // 色距離30未満なら一色とみなす
+    }
+
+    // ===== 表示（キャンバス描画） =====
+    function displayScale() {
+      var rect = viewCanvas.getBoundingClientRect();
+      return rect.width > 0 ? srcC.width / rect.width : 1;
+    }
+
+    function applyZoom() {
+      if (!hasImage) return;
+      var wrapW = $('sourceWrapper').clientWidth - 2;
+      var fitW = Math.min(srcC.width, wrapW);
+      viewCanvas.style.width = Math.round(fitW * zoom) + 'px';
+      viewCanvas.style.height = 'auto';
+      draw();
+    }
+
+    $('zoomRange').addEventListener('input', function () {
+      zoom = parseInt($('zoomRange').value, 10) / 100;
+      $('zoomLabel').textContent = $('zoomRange').value + '%';
+      applyZoom();
+    });
+    $('zoomFitBtn').addEventListener('click', function () {
+      zoom = 1;
+      $('zoomRange').value = 100;
+      $('zoomLabel').textContent = '100%';
+      applyZoom();
+    });
+    window.addEventListener('resize', function () { if (hasImage) applyZoom(); });
+
+    function draw() {
+      if (!hasImage) return;
+      var w = srcC.width, h = srcC.height;
+      viewCtx.clearRect(0, 0, w, h);
+      viewCtx.drawImage(srcC, 0, 0);
+      if (crop.w < 1 || crop.h < 1) return;
+      var sc = displayScale();
+      // 選択範囲の外側を暗くする
+      viewCtx.beginPath();
+      viewCtx.rect(0, 0, w, h);
+      viewCtx.rect(crop.x, crop.y, crop.w, crop.h);
+      viewCtx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+      viewCtx.fill('evenodd');
+      // 三分割グリッド
+      viewCtx.strokeStyle = 'rgba(255,255,255,0.45)';
+      viewCtx.lineWidth = Math.max(1, sc * 1);
+      viewCtx.beginPath();
+      for (var i = 1; i <= 2; i++) {
+        var gx = crop.x + (crop.w * i) / 3;
+        var gy = crop.y + (crop.h * i) / 3;
+        viewCtx.moveTo(gx, crop.y); viewCtx.lineTo(gx, crop.y + crop.h);
+        viewCtx.moveTo(crop.x, gy); viewCtx.lineTo(crop.x + crop.w, gy);
+      }
+      viewCtx.stroke();
+      // 枠線
+      viewCtx.strokeStyle = '#ffffff';
+      viewCtx.lineWidth = Math.max(1.5, sc * 2.5);
+      viewCtx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+      viewCtx.strokeStyle = '#4f46e5';
+      viewCtx.lineWidth = Math.max(1, sc * 1.2);
+      viewCtx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+      // ハンドル（8か所）
+      var hs = clamp(13 * sc, 5, 60);
+      viewCtx.fillStyle = '#ffffff';
+      viewCtx.strokeStyle = '#4f46e5';
+      viewCtx.lineWidth = Math.max(1, sc * 1.2);
+      handlePoints().forEach(function (p) {
+        viewCtx.beginPath();
+        viewCtx.rect(p.x - hs / 2, p.y - hs / 2, hs, hs);
+        viewCtx.fill();
+        viewCtx.stroke();
+      });
+    }
+
+    function handlePoints() {
+      var x0 = crop.x, y0 = crop.y, x1 = crop.x + crop.w, y1 = crop.y + crop.h;
+      var xm = crop.x + crop.w / 2, ym = crop.y + crop.h / 2;
+      return [
+        { k: 'nw', x: x0, y: y0 }, { k: 'n', x: xm, y: y0 }, { k: 'ne', x: x1, y: y0 },
+        { k: 'e', x: x1, y: ym }, { k: 'se', x: x1, y: y1 }, { k: 's', x: xm, y: y1 },
+        { k: 'sw', x: x0, y: y1 }, { k: 'w', x: x0, y: ym }
       ];
-      let r = 0, g = 0, b = 0;
-      samples.forEach(idx => {
-        r += data[idx];
-        g += data[idx+1];
-        b += data[idx+2];
-      });
-      bgRGB = {
-        r: Math.round(r / 4),
-        g: Math.round(g / 4),
-        b: Math.round(b / 4)
+    }
+
+    function updateRangeInfo() {
+      if (!hasImage) { $('rangeInfo').textContent = ''; return; }
+      $('rangeInfo').textContent = '選択範囲: ' + Math.round(crop.w) + ' × ' + Math.round(crop.h) +
+        ' px（X: ' + Math.round(crop.x) + ' / Y: ' + Math.round(crop.y) + '）';
+      var nx = $('inX'), ny = $('inY'), nw = $('inW'), nh = $('inH');
+      if (document.activeElement !== nx) nx.value = Math.round(crop.x);
+      if (document.activeElement !== ny) ny.value = Math.round(crop.y);
+      if (document.activeElement !== nw) nw.value = Math.round(crop.w);
+      if (document.activeElement !== nh) nh.value = Math.round(crop.h);
+    }
+
+    // ===== モード切替 =====
+    function setMode(m) {
+      mode = m;
+      $('modeCropBtn').classList.toggle('active', m === 'crop');
+      $('modeDetectBtn').classList.toggle('active', m === 'detect');
+      viewCanvas.style.cursor = m === 'detect' ? 'pointer' : 'crosshair';
+      $('modeHint').textContent = m === 'detect'
+        ? '画像の中の素材をタップすると、その素材の範囲を自動で検出します。検出後は「切り取り」モードで微調整できます。'
+        : 'ドラッグで範囲を指定します。枠の中をドラッグで移動、角と辺の四角をドラッグで大きさ変更。';
+    }
+    $('modeCropBtn').addEventListener('click', function () { setMode('crop'); });
+    $('modeDetectBtn').addEventListener('click', function () { setMode('detect'); });
+
+    // ===== ポインタ操作 =====
+    var drag = null;
+
+    function canvasPos(e) {
+      var rect = viewCanvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (srcC.width / rect.width),
+        y: (e.clientY - rect.top) * (srcC.height / rect.height)
       };
     }
 
-    // 背景色とのユークリッド色距離で背景判定（色相がズレているアイコン内部の緑を誤爆しない）
-    function isBackgroundColor(r, g, b, tolerance) {
-      const dr = r - bgRGB.r;
-      const dg = g - bgRGB.g;
-      const db = b - bgRGB.b;
-      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-      return dist < tolerance;
+    function hitHandle(p) {
+      var sc = displayScale();
+      var th = clamp(16 * sc, 8, 80);
+      var pts = handlePoints();
+      for (var i = 0; i < pts.length; i++) {
+        if (Math.abs(p.x - pts[i].x) <= th && Math.abs(p.y - pts[i].y) <= th) return pts[i].k;
+      }
+      return null;
     }
 
-    function setTransparentMode(enable) {
-      isTransparent = enable;
-      document.getElementById('btnChromaOn').classList.toggle('active', enable);
-      document.getElementById('btnChromaOff').classList.toggle('active', !enable);
-      const tolBox = document.getElementById('toleranceBox');
-      tolBox.style.opacity = enable ? '1' : '0.4';
-      tolBox.style.pointerEvents = enable ? 'auto' : 'none';
-      if (selectedBox) renderResult();
+    function inCrop(p) {
+      return p.x >= crop.x && p.x <= crop.x + crop.w && p.y >= crop.y && p.y <= crop.y + crop.h;
     }
 
-    function setAspect(aspect, btn) {
-      currentAspect = aspect;
-      document.querySelectorAll('.opt-btn').forEach(b => {
-        if (b.id !== 'btnChromaOn' && b.id !== 'btnChromaOff') b.classList.remove('active');
-      });
+    viewCanvas.addEventListener('pointerdown', function (e) {
+      if (!hasImage) return;
+      e.preventDefault();
+      viewCanvas.setPointerCapture(e.pointerId);
+      var p = canvasPos(e);
+      if (mode === 'detect') {
+        drag = { type: 'tap', x: p.x, y: p.y, moved: false };
+        return;
+      }
+      var h = hitHandle(p);
+      if (h) {
+        drag = { type: 'resize', handle: h, start: p, orig: { x: crop.x, y: crop.y, w: crop.w, h: crop.h } };
+      } else if (inCrop(p)) {
+        drag = { type: 'move', start: p, orig: { x: crop.x, y: crop.y, w: crop.w, h: crop.h } };
+      } else {
+        drag = { type: 'new', anchor: p };
+        crop = { x: p.x, y: p.y, w: 0, h: 0 };
+        draw();
+        updateRangeInfo();
+      }
+    });
+
+    viewCanvas.addEventListener('pointermove', function (e) {
+      if (!drag || !hasImage) return;
+      var p = canvasPos(e);
+      p.x = clamp(p.x, 0, srcC.width);
+      p.y = clamp(p.y, 0, srcC.height);
+      if (drag.type === 'tap') {
+        if (Math.abs(p.x - drag.x) > 6 || Math.abs(p.y - drag.y) > 6) drag.moved = true;
+        return;
+      }
+      if (drag.type === 'new') {
+        var ax = drag.anchor.x, ay = drag.anchor.y;
+        var x0 = Math.min(ax, p.x), y0 = Math.min(ay, p.y);
+        var w = Math.abs(p.x - ax), h = Math.abs(p.y - ay);
+        if (aspect && w > 0) {
+          h = w / aspect;
+          y0 = p.y >= ay ? ay : ay - h;
+          if (y0 < 0) { h += y0; w = h * aspect; y0 = 0; x0 = p.x >= ax ? ax : ax - w; }
+          if (y0 + h > srcC.height) { h = srcC.height - y0; w = h * aspect; x0 = p.x >= ax ? ax : ax - w; }
+        }
+        crop = { x: x0, y: y0, w: w, h: h };
+      } else if (drag.type === 'move') {
+        var dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+        crop.x = clamp(drag.orig.x + dx, 0, srcC.width - drag.orig.w);
+        crop.y = clamp(drag.orig.y + dy, 0, srcC.height - drag.orig.h);
+        crop.w = drag.orig.w;
+        crop.h = drag.orig.h;
+      } else if (drag.type === 'resize') {
+        resizeCrop(drag, p);
+      }
+      draw();
+      updateRangeInfo();
+    });
+
+    function endDrag(e) {
+      if (!drag) return;
+      var wasTap = drag.type === 'tap' && !drag.moved;
+      var tapX = drag.x, tapY = drag.y;
+      drag = null;
+      if (crop.w < 2 || crop.h < 2) {
+        if (mode === 'crop') { crop = { x: 0, y: 0, w: srcC.width, h: srcC.height }; }
+      }
+      normalizeCrop();
+      draw();
+      updateRangeInfo();
+      renderOutput();
+      if (wasTap && mode === 'detect' && hasImage) {
+        var box = detectTapBox(Math.round(tapX), Math.round(tapY));
+        if (box) {
+          crop = box;
+          if (aspect) fitAspectInside();
+          draw();
+          updateRangeInfo();
+          renderOutput();
+        }
+      }
+    }
+    viewCanvas.addEventListener('pointerup', endDrag);
+    viewCanvas.addEventListener('pointercancel', function () { drag = null; draw(); updateRangeInfo(); });
+
+    function resizeCrop(drag, p) {
+      var o = drag.orig;
+      var x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+      var k = drag.handle;
+      if (k.indexOf('w') >= 0) x0 = p.x;
+      if (k.indexOf('e') >= 0) x1 = p.x;
+      if (k.indexOf('n') >= 0) y0 = p.y;
+      if (k.indexOf('s') >= 0) y1 = p.y;
+      if (aspect) {
+        var isCorner = k.length === 2;
+        if (isCorner) {
+          var nw = Math.abs(x1 - x0);
+          var nh = nw / aspect;
+          if (k.indexOf('n') >= 0) y0 = y1 - nh; else y1 = y0 + nh;
+        } else if (k === 'e' || k === 'w') {
+          var nh2 = Math.abs(x1 - x0) / aspect;
+          var cy = (y0 + y1) / 2;
+          y0 = cy - nh2 / 2; y1 = cy + nh2 / 2;
+        } else {
+          var nw2 = Math.abs(y1 - y0) * aspect;
+          var cx = (x0 + x1) / 2;
+          x0 = cx - nw2 / 2; x1 = cx + nw2 / 2;
+        }
+      }
+      crop = {
+        x: Math.min(x0, x1), y: Math.min(y0, y1),
+        w: Math.abs(x1 - x0), h: Math.abs(y1 - y0)
+      };
+      normalizeCrop();
+    }
+
+    function normalizeCrop() {
+      crop.x = clamp(crop.x, 0, srcC.width - 1);
+      crop.y = clamp(crop.y, 0, srcC.height - 1);
+      crop.w = clamp(crop.w, 1, srcC.width - crop.x);
+      crop.h = clamp(crop.h, 1, srcC.height - crop.y);
+    }
+
+    // 比率固定時、現在の中心を保って画像内に収まる最大の範囲に合わせる
+    function fitAspectInside() {
+      if (!aspect) return;
+      var cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2;
+      var w = crop.w, h = w / aspect;
+      if (h > crop.h) { h = crop.h; w = h * aspect; }
+      var maxW = srcC.width, maxH = srcC.height;
+      if (w > maxW) { w = maxW; h = w / aspect; }
+      if (h > maxH) { h = maxH; w = h * aspect; }
+      crop = {
+        x: clamp(cx - w / 2, 0, srcC.width - w),
+        y: clamp(cy - h / 2, 0, srcC.height - h),
+        w: w, h: h
+      };
+    }
+
+    // ===== 比率チップ・数値入力・ボタン =====
+    $('aspectChips').addEventListener('click', function (e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      Array.prototype.forEach.call($('aspectChips').children, function (c) { c.classList.remove('active'); });
       btn.classList.add('active');
-      if (selectedBox) renderResult();
-    }
+      aspect = btn.getAttribute('data-aspect') ? parseFloat(btn.getAttribute('data-aspect')) : null;
+      if (aspect && hasImage) { fitAspectInside(); draw(); updateRangeInfo(); renderOutput(); }
+    });
 
-    function updateControls() {
-      document.getElementById('paddingVal').textContent = `${document.getElementById('paddingRange').value}%`;
-      document.getElementById('toleranceVal').textContent = document.getElementById('toleranceRange').value;
-      if (selectedBox) renderResult();
-    }
+    [['inX', 'x'], ['inY', 'y'], ['inW', 'w'], ['inH', 'h']].forEach(function (pair) {
+      $(pair[0]).addEventListener('change', function () {
+        if (!hasImage) return;
+        var v = parseFloat($(pair[0]).value);
+        if (isNaN(v)) { updateRangeInfo(); return; }
+        crop[pair[1]] = v;
+        if (aspect && (pair[1] === 'w')) crop.h = crop.w / aspect;
+        if (aspect && (pair[1] === 'h')) crop.w = crop.h * aspect;
+        normalizeCrop();
+        draw();
+        updateRangeInfo();
+        renderOutput();
+      });
+    });
 
-    // アイコンをクリックで自動認識
-    function onCanvasClick(e) {
-      if (!rawImg) return;
-      const rect = srcCanvas.getBoundingClientRect();
-      const scaleX = srcCanvas.width / rect.width;
-      const scaleY = srcCanvas.height / rect.height;
+    $('btnSelectAll').addEventListener('click', function () {
+      if (!hasImage) return;
+      crop = { x: 0, y: 0, w: srcC.width, h: srcC.height };
+      if (aspect) fitAspectInside();
+      draw(); updateRangeInfo(); renderOutput();
+    });
+    $('btnCenter').addEventListener('click', function () {
+      if (!hasImage) return;
+      crop.x = (srcC.width - crop.w) / 2;
+      crop.y = (srcC.height - crop.h) / 2;
+      draw(); updateRangeInfo(); renderOutput();
+    });
+    $('btnDetectAll').addEventListener('click', function () {
+      if (!hasImage) return;
+      var box = detectAllBox();
+      if (box) {
+        crop = box;
+        if (aspect) fitAspectInside();
+        draw(); updateRangeInfo(); renderOutput();
+      }
+    });
 
-      const clickX = Math.floor((e.clientX - rect.left) * scaleX);
-      const clickY = Math.floor((e.clientY - rect.top) * scaleY);
+    document.addEventListener('keydown', function (e) {
+      if (!hasImage || $('editorArea').classList.contains('hidden')) return;
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      var step = e.shiftKey ? 10 : 1;
+      var used = true;
+      if (e.key === 'ArrowLeft') crop.x -= step;
+      else if (e.key === 'ArrowRight') crop.x += step;
+      else if (e.key === 'ArrowUp') crop.y -= step;
+      else if (e.key === 'ArrowDown') crop.y += step;
+      else used = false;
+      if (used) {
+        e.preventDefault();
+        crop.x = clamp(crop.x, 0, srcC.width - crop.w);
+        crop.y = clamp(crop.y, 0, srcC.height - crop.h);
+        draw(); updateRangeInfo(); renderOutput();
+      }
+    });
 
-      detectBoundingBox(clickX, clickY);
-    }
-
-    function detectBoundingBox(startX, startY) {
-      const w = srcCanvas.width;
-      const h = srcCanvas.height;
-      const data = srcCtx.getImageData(0, 0, w, h).data;
-      const tolerance = parseInt(document.getElementById('toleranceRange').value);
-
-      let seedX = startX;
-      let seedY = startY;
-      let idx = (seedY * w + seedX) * 4;
-
-      // クリック位置が背景だった場合、周囲の素材ピクセルを探索
-      if (isBackgroundColor(data[idx], data[idx+1], data[idx+2], tolerance)) {
-        let found = false;
-        for (let r = 1; r <= 45 && !found; r++) {
-          for (let dy = -r; dy <= r && !found; dy++) {
-            for (let dx = -r; dx <= r && !found; dx++) {
-              const nx = seedX + dx;
-              const ny = seedY + dy;
+    // ===== 自動検出 =====
+    // タップした素材だけをBFSでたどり、外接矩形を返す（従来方式を高速化）
+    function detectTapBox(startX, startY) {
+      var w = srcC.width, h = srcC.height;
+      if (startX < 0 || startY < 0 || startX >= w || startY >= h) return null;
+      var data = srcCtx.getImageData(0, 0, w, h).data;
+      var tol = tolerance(), tolSq = tol * tol;
+      var seedX = startX, seedY = startY;
+      var idx = (seedY * w + seedX) * 4;
+      if (isBgData(data, idx, bgRGB, tolSq)) {
+        var found = false;
+        for (var r = 1; r <= 45 && !found; r++) {
+          for (var dy = -r; dy <= r && !found; dy++) {
+            for (var dx = -r; dx <= r && !found; dx++) {
+              var nx = seedX + dx, ny = seedY + dy;
               if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-                const nIdx = (ny * w + nx) * 4;
-                if (!isBackgroundColor(data[nIdx], data[nIdx+1], data[nIdx+2], tolerance)) {
-                  seedX = nx;
-                  seedY = ny;
-                  found = true;
-                }
+                if (!isBgData(data, (ny * w + nx) * 4, bgRGB, tolSq)) { seedX = nx; seedY = ny; found = true; }
               }
             }
           }
         }
-        if (!found) return;
+        if (!found) return null;
       }
-
-      // BFSでタップしたアイコンの限界輪郭（minX, maxX, minY, maxY）を数学的に特定
-      const visited = new Uint8Array(w * h);
-      const queue = [seedX, seedY];
+      var visited = new Uint8Array(w * h);
+      var queue = [seedX, seedY];
       visited[seedY * w + seedX] = 1;
-
-      let minX = seedX, maxX = seedX;
-      let minY = seedY, maxY = seedY;
-
-      let qIdx = 0;
-      while (qIdx < queue.length) {
-        const cx = queue[qIdx++];
-        const cy = queue[qIdx++];
-
+      var minX = seedX, maxX = seedX, minY = seedY, maxY = seedY;
+      var q = 0;
+      while (q < queue.length) {
+        var cx = queue[q++], cy = queue[q++];
         if (cx < minX) minX = cx;
         if (cx > maxX) maxX = cx;
         if (cy < minY) minY = cy;
         if (cy > maxY) maxY = cy;
-
-        const neighbors = [
-          [-1, 0], [1, 0], [0, -1], [0, 1],
-          [-1, -1], [1, -1], [-1, 1], [1, 1]
-        ];
-
-        for (let i = 0; i < neighbors.length; i++) {
-          const nx = cx + neighbors[i][0];
-          const ny = cy + neighbors[i][1];
-
-          if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-            const pos = ny * w + nx;
-            if (!visited[pos]) {
-              visited[pos] = 1;
-              const pIdx = pos * 4;
-              if (!isBackgroundColor(data[pIdx], data[pIdx+1], data[pIdx+2], tolerance)) {
-                queue.push(nx, ny);
-              }
-            }
-          }
+        for (var n = 0; n < 8; n++) {
+          var ox = (n % 3) - 1, oy = Math.floor(n / 3) - 1;
+          if (ox === 0 && oy === 0) continue;
+          var px = cx + ox, py = cy + oy;
+          if (px < 0 || py < 0 || px >= w || py >= h) continue;
+          var pos = py * w + px;
+          if (visited[pos]) continue;
+          visited[pos] = 1;
+          if (!isBgData(data, pos * 4, bgRGB, tolSq)) queue.push(px, py);
         }
       }
-
-      if ((maxX - minX < 8) || (maxY - minY < 8)) return;
-
-      selectedBox = { minX, maxX, minY, maxY };
-      renderResult();
+      if (maxX - minX < 4 || maxY - minY < 4) return null;
+      return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
     }
 
-    function renderResult() {
-      if (!selectedBox || !rawImg) return;
-
-      // 原画上の赤枠表示
-      srcCtx.drawImage(rawImg, 0, 0);
-      srcCtx.strokeStyle = '#ef4444';
-      srcCtx.lineWidth = Math.max(2, Math.floor(rawImg.width / 400));
-      const bw = selectedBox.maxX - selectedBox.minX + 1;
-      const bh = selectedBox.maxY - selectedBox.minY + 1;
-      srcCtx.strokeRect(selectedBox.minX, selectedBox.minY, bw, bh);
-
-      // 切り抜いた部分を一時キャンバスに取得
-      const tempC = document.createElement('canvas');
-      tempC.width = bw;
-      tempC.height = bh;
-      const tempCtx = tempC.getContext('2d');
-      tempCtx.drawImage(rawImg, selectedBox.minX, selectedBox.minY, bw, bh, 0, 0, bw, bh);
-
-      // 透過モードがONの場合の背景消去（外側からの浸水＋高精度色差）
-      if (isTransparent) {
-        const frame = tempCtx.getImageData(0, 0, bw, bh);
-        const d = frame.data;
-        const tolerance = parseInt(document.getElementById('toleranceRange').value);
-
-        const bgVisited = new Uint8Array(bw * bh);
-        const floodQueue = [];
-
-        // 外周ピクセルから背景色を探索
-        for (let x = 0; x < bw; x++) {
-          checkAndPush(x, 0);
-          checkAndPush(x, bh - 1);
-        }
-        for (let y = 0; y < bh; y++) {
-          checkAndPush(0, y);
-          checkAndPush(bw - 1, y);
-        }
-
-        function checkAndPush(x, y) {
-          const p = y * bw + x;
-          if (!bgVisited[p]) {
-            const idx = p * 4;
-            if (isBackgroundColor(d[idx], d[idx+1], d[idx+2], tolerance)) {
-              bgVisited[p] = 1;
-              floodQueue.push(x, y);
-            }
+    // 画像全体から素材の外接矩形を返す。縮小画像で大まかに当たりを付け、原寸の帯で縁を正確に詰める
+    function detectAllBox() {
+      var W = srcC.width, H = srcC.height;
+      var tol = tolerance(), tolSq = tol * tol;
+      var scale = Math.min(1, 1200 / Math.max(W, H));
+      var sw = Math.max(1, Math.round(W * scale)), sh = Math.max(1, Math.round(H * scale));
+      var small = document.createElement('canvas');
+      small.width = sw; small.height = sh;
+      var sctx = small.getContext('2d', { willReadFrequently: true });
+      sctx.drawImage(srcC, 0, 0, sw, sh);
+      var sd = sctx.getImageData(0, 0, sw, sh).data;
+      // 縮小画像側の背景色（四隅平均）
+      var bgS = { r: bgRGB.r, g: bgRGB.g, b: bgRGB.b };
+      var bx0 = sw, by0 = sh, bx1 = -1, by1 = -1;
+      for (var y = 0; y < sh; y++) {
+        for (var x = 0; x < sw; x++) {
+          var i = (y * sw + x) * 4;
+          if (!isBgData(sd, i, bgS, tolSq)) {
+            if (x < bx0) bx0 = x;
+            if (x > bx1) bx1 = x;
+            if (y < by0) by0 = y;
+            if (y > by1) by1 = y;
           }
         }
-
-        let fIdx = 0;
-        while (fIdx < floodQueue.length) {
-          const fx = floodQueue[fIdx++];
-          const fy = floodQueue[fIdx++];
-          const p = fy * bw + fx;
-          d[p * 4 + 3] = 0; // 外側の緑背景だけを完全透過
-
-          const nbs = [[-1,0],[1,0],[0,-1],[0,1]];
-          for (let i = 0; i < 4; i++) {
-            const nx = fx + nbs[i][0];
-            const ny = fy + nbs[i][1];
-            if (nx >= 0 && nx < bw && ny >= 0 && ny < bh) {
-              const np = ny * bw + nx;
-              if (!bgVisited[np]) {
-                bgVisited[np] = 1;
-                const nIdx = np * 4;
-                if (isBackgroundColor(d[nIdx], d[nIdx+1], d[nIdx+2], tolerance)) {
-                  floodQueue.push(nx, ny);
-                }
-              }
-            }
+      }
+      if (bx1 < 0) return null;
+      // 原寸座標へ戻し、少し広げてから縁を詰める
+      var pad = Math.ceil(1 / scale) + 2;
+      var rx0 = clamp(Math.floor(bx0 / scale) - pad, 0, W - 1);
+      var ry0 = clamp(Math.floor(by0 / scale) - pad, 0, H - 1);
+      var rx1 = clamp(Math.ceil((bx1 + 1) / scale) + pad, 1, W);
+      var ry1 = clamp(Math.ceil((by1 + 1) / scale) + pad, 1, H);
+      var rw = rx1 - rx0, rh = ry1 - ry0;
+      if (rw * rh > 40000000) {
+        return { x: rx0, y: ry0, w: rw, h: rh };
+      }
+      var rd = srcCtx.getImageData(rx0, ry0, rw, rh).data;
+      var fx0 = rw, fy0 = rh, fx1 = -1, fy1 = -1;
+      for (var yy = 0; yy < rh; yy++) {
+        for (var xx = 0; xx < rw; xx++) {
+          var ii = (yy * rw + xx) * 4;
+          if (!isBgData(rd, ii, bgRGB, tolSq)) {
+            if (xx < fx0) fx0 = xx;
+            if (xx > fx1) fx1 = xx;
+            if (yy < fy0) fy0 = yy;
+            if (yy > fy1) fy1 = yy;
           }
         }
-        tempCtx.putImageData(frame, 0, 0);
       }
+      if (fx1 < 0) return { x: rx0, y: ry0, w: rw, h: rh };
+      return { x: rx0 + fx0, y: ry0 + fy0, w: fx1 - fx0 + 1, h: fy1 - fy0 + 1 };
+    }
 
-      // 出力キャンバスサイズの決定
-      let outW = 512, outH = 512;
-      if (currentAspect === '16:9') {
-        outW = 800; outH = 450;
-      } else if (currentAspect === '4:3') {
-        outW = 800; outH = 600;
-      } else if (currentAspect === 'fit') {
-        outW = bw; outH = bh;
-      }
-
-      resCanvas.width = outW;
-      resCanvas.height = outH;
-      resCtx.clearRect(0, 0, outW, outH);
-
-      const targetScale = currentAspect === 'fit' ? 1.0 : (parseInt(document.getElementById('paddingRange').value) / 100);
-      const aspectItem = bw / bh;
-      const aspectBox = outW / outH;
-
-      let drawW, drawH;
-      if (currentAspect === 'fit') {
-        drawW = bw;
-        drawH = bh;
-      } else if (aspectItem > aspectBox) {
-        drawW = outW * targetScale;
-        drawH = drawW / aspectItem;
+    // ===== 回転・反転（作業画像に焼き込み、範囲は全体にリセット） =====
+    function bakeTransform(kind) {
+      if (!hasImage) return;
+      var w = srcC.width, h = srcC.height;
+      var out = document.createElement('canvas');
+      var octx = out.getContext('2d');
+      if (kind === 'rotL' || kind === 'rotR') {
+        out.width = h; out.height = w;
+        octx.translate(h / 2, w / 2);
+        octx.rotate((kind === 'rotR' ? 90 : -90) * Math.PI / 180);
+        octx.drawImage(srcC, -w / 2, -h / 2);
       } else {
-        drawH = outH * targetScale;
-        drawW = drawH * aspectItem;
+        out.width = w; out.height = h;
+        octx.translate(kind === 'flipH' ? w : 0, kind === 'flipV' ? h : 0);
+        octx.scale(kind === 'flipH' ? -1 : 1, kind === 'flipV' ? -1 : 1);
+        octx.drawImage(srcC, 0, 0);
       }
+      srcC.width = out.width;
+      srcC.height = out.height;
+      srcCtx.drawImage(out, 0, 0);
+      viewCanvas.width = srcC.width;
+      viewCanvas.height = srcC.height;
+      crop = { x: 0, y: 0, w: srcC.width, h: srcC.height };
+      if (aspect) fitAspectInside();
+      sampleBackground();
+      applyZoom();
+      updateRangeInfo();
+      renderOutput();
+    }
+    $('btnRotL').addEventListener('click', function () { bakeTransform('rotL'); });
+    $('btnRotR').addEventListener('click', function () { bakeTransform('rotR'); });
+    $('btnFlipH').addEventListener('click', function () { bakeTransform('flipH'); });
+    $('btnFlipV').addEventListener('click', function () { bakeTransform('flipV'); });
 
-      // ど真ん中に完全センタリング
-      const offsetX = (outW - drawW) / 2;
-      const offsetY = (outH - drawH) / 2;
+    // ===== 背景透過の設定 =====
+    function setTransparent(on, save) {
+      transparentOn = on;
+      $('btnChromaOn').classList.toggle('active', on);
+      $('btnChromaOff').classList.toggle('active', !on);
+      $('toleranceBox').style.opacity = on ? '1' : '0.4';
+      $('toleranceBox').style.pointerEvents = on ? 'auto' : 'none';
+      if (save !== false) saveSettings();
+      if (hasImage) renderOutput();
+    }
+    $('btnChromaOn').addEventListener('click', function () { setTransparent(true); });
+    $('btnChromaOff').addEventListener('click', function () { setTransparent(false); });
+    $('toleranceRange').addEventListener('input', function () {
+      $('toleranceVal').textContent = $('toleranceRange').value;
+      saveSettings();
+      scheduleRender();
+    });
 
-      resCtx.imageSmoothingEnabled = true;
-      resCtx.imageSmoothingQuality = 'high';
-      resCtx.drawImage(tempC, 0, 0, bw, bh, offsetX, offsetY, drawW, drawH);
-
-      document.getElementById('previewSection').style.display = 'block';
-      document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+    // 端につながった背景色だけを透過する（素材内部の同色は残る）
+    function chromaRemove(canvas) {
+      var w = canvas.width, h = canvas.height;
+      if (w < 1 || h < 1) return;
+      var ctx = canvas.getContext('2d', { willReadFrequently: true });
+      var frame = ctx.getImageData(0, 0, w, h);
+      var d = frame.data;
+      var tol = tolerance(), tolSq = tol * tol;
+      var visited = new Uint8Array(w * h);
+      var queue = [];
+      function push(x, y) {
+        var p = y * w + x;
+        if (visited[p]) return;
+        visited[p] = 1;
+        if (isBgData(d, p * 4, bgRGB, tolSq)) queue.push(x, y);
+      }
+      for (var x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+      for (var y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+      var q = 0;
+      while (q < queue.length) {
+        var fx = queue[q++], fy = queue[q++];
+        var p = fy * w + fx;
+        d[p * 4 + 3] = 0;
+        if (fx > 0) push(fx - 1, fy);
+        if (fx < w - 1) push(fx + 1, fy);
+        if (fy > 0) push(fx, fy - 1);
+        if (fy < h - 1) push(fx, fy + 1);
+      }
+      ctx.putImageData(frame, 0, 0);
     }
 
-    function downloadResult() {
-      const link = document.createElement('a');
-      link.download = `centered_icon_${Date.now()}.png`;
-      link.href = resCanvas.toDataURL('image/png');
-      link.click();
+    // ===== 出力設定 =====
+    function setOutMode(m, save) {
+      outMode = m;
+      $('outDirectBtn').classList.toggle('active', m === 'direct');
+      $('outCenterBtn').classList.toggle('active', m === 'center');
+      $('centerOpts').classList.toggle('hidden', m !== 'center');
+      if (save !== false) saveSettings();
+      if (hasImage) renderOutput();
     }
+    $('outDirectBtn').addEventListener('click', function () { setOutMode('direct'); });
+    $('outCenterBtn').addEventListener('click', function () { setOutMode('center'); });
+
+    $('centerAspectChips').addEventListener('click', function (e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      Array.prototype.forEach.call($('centerAspectChips').children, function (c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      var v = btn.getAttribute('data-caspect');
+      centerAspect = v === 'fit' ? 'fit' : parseFloat(v);
+      if (hasImage) renderOutput();
+    });
+    $('paddingRange').addEventListener('input', function () {
+      $('paddingVal').textContent = $('paddingRange').value + '%';
+      scheduleRender();
+    });
+
+    function setFormat(mime, save) {
+      format = mime;
+      Array.prototype.forEach.call($('formatChips').children, function (c) {
+        c.classList.toggle('active', c.getAttribute('data-format') === mime);
+      });
+      var lossy = mime !== 'image/png';
+      $('qualityBox').style.opacity = lossy ? '1' : '0.4';
+      $('qualityBox').style.pointerEvents = lossy ? 'auto' : 'none';
+      if (save !== false) saveSettings();
+      if (hasImage) renderOutput();
+    }
+    $('formatChips').addEventListener('click', function (e) {
+      var btn = e.target.closest('.chip');
+      if (btn) setFormat(btn.getAttribute('data-format'));
+    });
+    $('qualityRange').addEventListener('input', function () {
+      $('qualityVal').textContent = $('qualityRange').value;
+      saveSettings();
+      scheduleRender();
+    });
+    $('outWidth').addEventListener('change', function () { if (hasImage) renderOutput(); });
+
+    var outTimer = null;
+    function scheduleRender() {
+      if (!hasImage) return;
+      clearTimeout(outTimer);
+      outTimer = setTimeout(renderOutput, 80);
+    }
+
+    // ===== 出力レンダリング =====
+    function renderOutput() {
+      if (!hasImage || crop.w < 1 || crop.h < 1) return;
+      var seq = ++renderSeq;
+      var cx = Math.round(crop.x), cy = Math.round(crop.y);
+      var cw = Math.max(1, Math.round(crop.w)), ch = Math.max(1, Math.round(crop.h));
+      // 切り取り範囲をそのままの解像度で取り出す
+      var region = document.createElement('canvas');
+      region.width = cw; region.height = ch;
+      var rctx = region.getContext('2d');
+      rctx.drawImage(srcC, cx, cy, cw, ch, 0, 0, cw, ch);
+      if (transparentOn) chromaRemove(region);
+
+      var outWInput = parseInt($('outWidth').value, 10);
+      var final = document.createElement('canvas');
+      var fctx = final.getContext('2d');
+      if (outMode === 'center' && centerAspect !== 'fit') {
+        var W = outWInput > 0 ? outWInput : (centerAspect === 1 ? 512 : 800);
+        var H = Math.round(W / centerAspect);
+        final.width = W; final.height = H;
+        var scalePct = parseInt($('paddingRange').value, 10) / 100;
+        var itemAsp = cw / ch, boxAsp = W / H;
+        var dw, dh;
+        if (itemAsp > boxAsp) { dw = W * scalePct; dh = dw / itemAsp; }
+        else { dh = H * scalePct; dw = dh * itemAsp; }
+        fctx.imageSmoothingEnabled = true;
+        fctx.imageSmoothingQuality = 'high';
+        fctx.drawImage(region, 0, 0, cw, ch, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      } else {
+        var tw = outWInput > 0 ? outWInput : cw;
+        var th = Math.round(tw * ch / cw);
+        final.width = tw; final.height = th;
+        fctx.imageSmoothingEnabled = true;
+        fctx.imageSmoothingQuality = 'high';
+        fctx.drawImage(region, 0, 0, cw, ch, 0, 0, tw, th);
+      }
+      // JPEG / WebP は透過できないので白で塗りつぶす
+      if (format !== 'image/png') {
+        var flat = document.createElement('canvas');
+        flat.width = final.width; flat.height = final.height;
+        var fx2 = flat.getContext('2d');
+        fx2.fillStyle = '#ffffff';
+        fx2.fillRect(0, 0, flat.width, flat.height);
+        fx2.drawImage(final, 0, 0);
+        final = flat;
+      }
+      resCanvas.width = final.width;
+      resCanvas.height = final.height;
+      resCtx.clearRect(0, 0, final.width, final.height);
+      resCtx.drawImage(final, 0, 0);
+      $('outSizeInfo').textContent = final.width + ' × ' + final.height + ' px';
+      $('outInfo').textContent = 'プレビュー: ' + final.width + ' × ' + final.height + ' px';
+      var quality = parseInt($('qualityRange').value, 10) / 100;
+      final.toBlob(function (blob) {
+        if (seq !== renderSeq || !blob) return;
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = URL.createObjectURL(blob);
+        var kb = Math.max(1, Math.round(blob.size / 1024));
+        $('outInfo').textContent = 'プレビュー: ' + final.width + ' × ' + final.height + ' px ・ 約 ' + kb + ' KB';
+        $('btnDownload').disabled = false;
+      }, format, format === 'image/png' ? undefined : quality);
+    }
+
+    $('btnDownload').addEventListener('click', function () {
+      if (!downloadUrl) return;
+      var ext = format === 'image/jpeg' ? 'jpg' : (format === 'image/webp' ? 'webp' : 'png');
+      var now = new Date();
+      var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+      var name = 'image-cut_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
+        '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.' + ext;
+      var a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = name;
+      a.click();
+    });
+
+    // ===== 初期化 =====
+    loadSettings();
+    setMode('crop');
   </script>
 </body>
 </html>
