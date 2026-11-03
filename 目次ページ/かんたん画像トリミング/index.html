@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>かんたん画像トリミング</title>
-  <meta name="description" content="画像の切り取り（トリミング）をドラッグとスライダーだけで。読み込んだら自動で素材を選択、背景透過や傾き補正もプレビューを見ながら調整できます。">
+  <meta name="description" content="画像の切り取り（トリミング）をドラッグだけで。読み込んだら自動で素材を選択、プレビューを見ながら枠を合わせられます。">
   <style>
     :root {
       --primary: #4f46e5;
@@ -340,7 +340,7 @@
     <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
     <header>
       <h1>かんたん画像トリミング</h1>
-      <p class="subtitle">ドラッグとスライダーだけで、画像を切り取れます。</p>
+      <p class="subtitle">ドラッグだけで、画像を切り取れます。</p>
     </header>
 
     <div class="card">
@@ -373,39 +373,8 @@
           <button type="button" class="chip" data-aspect="1.3333">4:3</button>
         </div>
 
-        <label class="section-lbl">向きと傾き</label>
-        <div class="btn-row">
-          <button type="button" class="opt-btn" id="btnRotate">⟳ 回転する</button>
+        <div class="btn-row" style="margin-top:14px">
           <button type="button" class="opt-btn" id="btnDetect">🎯 素材に合わせる</button>
-        </div>
-        <div class="slider-box">
-          <div class="slider-head"><label>傾きを直す</label><button type="button" class="reset-btn" id="resetTiltBtn">リセット</button></div>
-          <input type="range" id="tiltRange" min="-45" max="45" value="0" step="0.5">
-          <span class="sub">左へ・右へ傾いた写真をまっすぐに</span>
-        </div>
-
-        <label class="section-lbl">背景</label>
-        <div class="btn-row">
-          <button type="button" class="opt-btn" id="btnChromaOn">背景を透明にする</button>
-          <button type="button" class="opt-btn active" id="btnChromaOff">そのまま</button>
-        </div>
-        <div class="slider-box hidden" id="tolBox">
-          <div class="slider-head"><label>消す強さ</label><button type="button" class="reset-btn" id="resetTolBtn">リセット</button></div>
-          <input type="range" id="tolRange" min="5" max="120" value="45">
-          <span class="sub">弱い ← → 強い（下のプレビューを見ながら調整）</span>
-          <div class="slider-head" style="margin-top:12px"><label>内側の背景（ドーナツ型の穴など）</label></div>
-          <div class="btn-row" style="margin-top:6px">
-            <button type="button" class="opt-btn" id="btnHoleOn">内側も抜く</button>
-            <button type="button" class="opt-btn active" id="btnHoleOff">内側は残す</button>
-          </div>
-          <span class="sub">「内側も抜く」と、端につながっていない背景色も透明になります。素材の中の同じ色も消えるので注意。</span>
-        </div>
-
-        <label class="section-lbl">大きさ</label>
-        <div class="slider-box">
-          <div class="slider-head"><label>出力サイズ: <span id="sizePct">100%</span></label><button type="button" class="reset-btn" id="resetSizeBtn">リセット</button></div>
-          <input type="range" id="sizeRange" min="20" max="100" value="100" step="5">
-          <span class="sub">小さくするとファイルも軽くなります</span>
         </div>
 
         <div class="preview-section">
@@ -424,8 +393,9 @@
 
         <div class="next-tools">
       <div class="nt-title">つぎのツール</div>
-      <a href="../グリーンバック透過ツール/"><span class="nt-icon">🖼️</span><span><span class="nt-name">グリーンバック透過</span><span class="nt-desc">背景だけを消したいとき</span></span><span class="nt-arrow">›</span></a>
-      <a href="../透過画像余白・比率調整ツール/"><span class="nt-icon">🔲</span><span><span class="nt-name">透過画像 余白・比率調整</span><span class="nt-desc">余白・比率を整える</span></span><span class="nt-arrow">›</span></a>
+      <a href="../画像の傾き補正ツール/"><span class="nt-icon">📐</span><span><span class="nt-name">画像の傾き補正</span><span class="nt-desc">傾きをまっすぐにする</span></span><span class="nt-arrow">›</span></a>
+      <a href="../背景透過ツール/"><span class="nt-icon">🪄</span><span><span class="nt-name">背景透過</span><span class="nt-desc">背景を透明にする</span></span><span class="nt-arrow">›</span></a>
+      <a href="../画像リサイズツール/"><span class="nt-icon">📏</span><span><span class="nt-name">画像リサイズ</span><span class="nt-desc">大きさを変える</span></span><span class="nt-arrow">›</span></a>
       <a href="../画像カット・センタリング調整ツール/"><span class="nt-icon">✂️</span><span><span class="nt-name">画像カット・センタリング調整</span><span class="nt-desc">もっと細かく調整したい方へ（開発者向け）</span></span><span class="nt-arrow">›</span></a>
     </div>
     <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
@@ -475,7 +445,7 @@
     }
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-    function tolSq() { var t = parseInt($('tolRange').value, 10); return t * t; }
+    function tolSq() { return 45 * 45; }
 
     function isBgData(d, i, bg, tSq) {
       if (d[i + 3] < 128) return true;
@@ -538,10 +508,7 @@
       hasImage = true;
       rot90 = 0;
       tilt = 0;
-      $('tiltRange').value = 0;
       bake();
-      // 背景がほぼ一色の素材だけ、最初から「透明にする」をONにする
-      setTransparent(isUniformBackground());
       crop = fullCrop();
       $('editorArea').classList.remove('hidden');
       $('stickyBar').classList.remove('hidden');
@@ -614,28 +581,6 @@
       }
     }
 
-    var tiltTimer = null;
-    $('tiltRange').addEventListener('input', function () {
-      tilt = parseFloat($('tiltRange').value);
-      clearTimeout(tiltTimer);
-      tiltTimer = setTimeout(function () { bake(true); draw(); renderOutput('preview'); }, 16);
-    });
-    $('resetTiltBtn').addEventListener('click', function () {
-      tilt = 0;
-      $('tiltRange').value = 0;
-      if (hasImage) { bake(); draw(); renderOutput(); }
-    });
-    $('btnRotate').addEventListener('click', function () {
-      if (!hasImage) return;
-      rot90 = (rot90 + 1) % 4;
-      bake();
-      crop = fullCrop();
-      var box = detectAllBox();
-      if (box && (box.w * box.h) < (srcC.width * srcC.height) * 0.98) crop = box;
-      if (aspect) fitAspectInside();
-      draw();
-      renderOutput();
-    });
     $('btnDetect').addEventListener('click', function () {
       if (!hasImage) return;
       var box = detectAllBox();
@@ -768,34 +713,6 @@
       }
       ctx.putImageData(frame, 0, 0);
     }
-
-    // ===== 背景透過の切替 =====
-    function setTransparent(on) {
-      transparentOn = on;
-      $('btnChromaOn').classList.toggle('active', on);
-      $('btnChromaOff').classList.toggle('active', !on);
-      $('tolBox').classList.toggle('hidden', !on);
-    }
-    $('btnChromaOn').addEventListener('click', function () { setTransparent(true); if (hasImage) renderOutput(); });
-    $('btnChromaOff').addEventListener('click', function () { setTransparent(false); if (hasImage) renderOutput(); });
-    $('tolRange').addEventListener('input', function () { scheduleRender(); });
-
-    // 内側の背景（ドーナツ型の穴など）も抜くかどうか
-    function setHoles(on) {
-      holesOn = on;
-      $('btnHoleOn').classList.toggle('active', on);
-      $('btnHoleOff').classList.toggle('active', !on);
-    }
-    $('btnHoleOn').addEventListener('click', function () { setHoles(true); if (hasImage) renderOutput(); });
-    $('btnHoleOff').addEventListener('click', function () { setHoles(false); if (hasImage) renderOutput(); });
-
-    // スライダーのリセット
-    $('resetTolBtn').addEventListener('click', function () { $('tolRange').value = 45; scheduleRender(); });
-    $('resetSizeBtn').addEventListener('click', function () {
-      $('sizeRange').value = 100;
-      $('sizePct').textContent = '100%';
-      scheduleRender();
-    });
 
     // ===== 表示 =====
     function displayScale() {
@@ -987,11 +904,6 @@
     });
 
     // ===== 出力（プレビューは常に最新に保つ） =====
-    $('sizeRange').addEventListener('input', function () {
-      $('sizePct').textContent = $('sizeRange').value + '%';
-      scheduleRender();
-    });
-
     var outTimer = null;
     function scheduleRender() {
       if (!hasImage) return;
@@ -1000,9 +912,6 @@
     }
 
     // スライダーを離したらフル解像度で確定する
-    $('tolRange').addEventListener('change', function () { renderOutput('full'); });
-    $('sizeRange').addEventListener('change', function () { renderOutput('full'); });
-    $('tiltRange').addEventListener('change', function () { clearTimeout(tiltTimer); bake(); draw(); renderOutput('full'); });
 
     var lastTier = 'full';
     var pendingDownload = false;
@@ -1021,7 +930,7 @@
       region.width = rw; region.height = rh;
       region.getContext('2d').drawImage(srcC, cx, cy, cw, ch, 0, 0, rw, rh);
       if (transparentOn) chromaRemove(region);
-      var pct = parseInt($('sizeRange').value, 10) / 100;
+      var pct = 1;
       var tw = Math.max(1, Math.round(cw / bakeScale * pct));
       var th = Math.max(1, Math.round(ch / bakeScale * pct));
       var dw = Math.max(1, Math.round(rw * pct)), dh = Math.max(1, Math.round(rh * pct));

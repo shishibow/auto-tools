@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像の傾き補正ツール</title>
+  <meta name="description" content="傾いた写真や画像をスライダーでまっすぐに。90度回転もワンタップ。はみ出す部分は自動で切り取られ、プレビューを見ながら調整できます。">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --primary-dark: #4338ca;
+      --accent: #16a34a;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f6f7fb;
+      --card-bg: #ffffff;
+      --border: #e6e8f0;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover, .upload-area.dragover { background: var(--primary-light); }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 6px; }
+    .upload-text { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .upload-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    input[type="file"] { display: none; }
+
+    .steps {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 4px;
+    }
+
+    .step.on {
+      color: var(--primary);
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .source-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      text-align: center;
+      max-height: 480px;
+      line-height: 0;
+    }
+
+    #viewCanvas {
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 100%;
+      height: auto;
+      cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+
+    label.section-lbl {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 14px 0 6px;
+    }
+
+    label.section-lbl:first-of-type { margin-top: 4px; }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .chip {
+      flex: 1;
+      min-width: 72px;
+      min-height: 52px;
+      padding: 8px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .chip:active { transform: scale(0.97); }
+
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .opt-btn {
+      flex: 1;
+      min-width: 100px;
+      min-height: 52px;
+      padding: 8px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .opt-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .opt-btn:active { transform: scale(0.97); }
+
+    .slider-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+
+    .slider-box label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .slider-box .sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-head label { margin-bottom: 0; }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .reset-btn:active { transform: scale(0.95); }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      min-height: 36px;
+    }
+
+    .preview-section { text-align: center; margin-top: 16px; }
+
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      max-width: 100%;
+      padding: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    #resultCanvas {
+      max-width: 100%;
+      max-height: 260px;
+      display: block;
+    }
+
+    .out-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active { transform: scale(0.98); }
+    .btn-download:disabled { opacity: 0.45; cursor: default; }
+
+    .hidden { display: none !important; }
+  </style>
+
+  <style id="portal-theme">
+    /* ===== 共通テーマ（ポータルと統一） ===== */
+    body{line-height:1.75;letter-spacing:.02em;line-break:strict}
+    h1{line-height:1.4}
+    .subtitle{line-height:1.7}
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    select, textarea{min-height:48px}
+    .btn-calc,.btn-action,.btn-download{min-height:52px}
+    .site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:6px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+    .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
+      display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+    .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 22px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
+    #stickyBar.hidden { display: none; }
+    #stickyCanvas { width: auto; height: auto; max-width: 100%; max-height: 260px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
+    .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+      text-align:center;font-size:.8rem;line-height:1.9}
+    .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+    .site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+  </style>
+  <style id="next-tools-style">
+    .next-tools{margin-top:26px;border:1.5px solid #e0e7ff;border-radius:16px;padding:14px;background:#fff}
+    .next-tools .nt-title{font-weight:800;font-size:.9rem;color:#4338ca;margin-bottom:6px}
+    .next-tools a{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:12px;text-decoration:none;color:inherit}
+    .next-tools a:active{background:#eef2ff}
+    .next-tools .nt-icon{font-size:1.3rem;flex-shrink:0}
+    .next-tools .nt-name{font-weight:700;font-size:.92rem;line-height:1.5}
+    .next-tools .nt-desc{display:block;font-size:.78rem;color:#64748b;line-height:1.5}
+    .next-tools .nt-arrow{margin-left:auto;color:#94a3b8;font-size:1.2rem;flex-shrink:0}
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
+    <header>
+      <h1>画像の傾き補正</h1>
+      <p class="subtitle">スライダーで、傾いた写真をまっすぐにできます。</p>
+    </header>
+
+    <div class="card">
+      <div class="steps">
+        <div class="step on" id="step1">1. 画像をえらぶ</div>
+        <div class="step" id="step2">2. 傾きを直す</div>
+        <div class="step" id="step3">3. 保存する</div>
+      </div>
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">画像をタップして選択</div>
+        <div class="upload-hint">ドラッグ＆ドロップ / 貼り付け（Ctrl+V）でも読み込めます</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div id="editorArea" class="hidden">
+      <div class="card">
+        <div class="source-wrapper">
+          <canvas id="viewCanvas"></canvas>
+        </div>
+        <p class="hint">下のスライダーで傾きを調整してください。傾けると、はみ出す部分は自動で切り取られます（枠の内側が保存されます）。</p>
+
+        <label class="section-lbl">回転と傾き</label>
+        <div class="btn-row">
+          <button type="button" class="opt-btn" id="btnRotate">⟳ 回転する</button>
+        </div>
+        <div class="slider-box">
+          <div class="slider-head"><label>傾きを直す</label><button type="button" class="reset-btn" id="resetTiltBtn">リセット</button></div>
+          <input type="range" id="tiltRange" min="-45" max="45" value="0" step="0.5">
+          <span class="sub">左へ・右へ傾いた写真をまっすぐに</span>
+        </div>
+
+        <div class="preview-section">
+          <div class="checkerboard">
+            <canvas id="resultCanvas"></canvas>
+          </div>
+          <p class="out-info" id="outInfo"></p>
+          <button type="button" class="btn-download" id="btnDownload" disabled>保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="stickyBar" class="hidden" title="タップで保存エリアへ移動">
+      <canvas id="stickyCanvas" width="64" height="64"></canvas>
+    </div>
+
+        <div class="next-tools">
+      <div class="nt-title">つぎのツール</div>
+      <a href="../かんたん画像トリミング/"><span class="nt-icon">✨</span><span><span class="nt-name">かんたん画像トリミング</span><span class="nt-desc">まっすぐにした画像を切り抜く</span></span><span class="nt-arrow">›</span></a>
+      <a href="../画像リサイズツール/"><span class="nt-icon">📏</span><span><span class="nt-name">画像リサイズ</span><span class="nt-desc">大きさを変える</span></span><span class="nt-arrow">›</span></a>
+      <a href="../背景透過ツール/"><span class="nt-icon">🪄</span><span><span class="nt-name">背景透過</span><span class="nt-desc">背景を透明にする</span></span><span class="nt-arrow">›</span></a>
+    </div>
+    <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    'use strict';
+
+    // ===== 状態 =====
+    var origC = document.createElement('canvas');   // 読み込んだままの画像
+    var origCtx = origC.getContext('2d');
+    var srcC = document.createElement('canvas');    // 回転・傾きを適用した作業画像
+    var srcCtx = srcC.getContext('2d', { willReadFrequently: true });
+    var crop = { x: 0, y: 0, w: 0, h: 0 };
+    var hasImage = false;
+    var aspect = null;
+    var rot90 = 0;          // 90度回転の回数
+    var tilt = 0;           // 傾き補正（度）
+    var bakeScale = 1;      // プレビュー焼き時の縮小率（1=フル解像度）
+    var frameW = 0, frameH = 0;  // 傾ける前のフレーム寸法（焼き時）
+    var transparentOn = false;
+    var holesOn = false;
+    var bgRGB = { r: 0, g: 0, b: 0 };
+    var downloadUrl = null;
+    var renderSeq = 0;
+
+    var $ = function (id) { return document.getElementById(id); };
+    var viewCanvas = $('viewCanvas');
+    var viewCtx = viewCanvas.getContext('2d');
+    var resCanvas = $('resultCanvas');
+    var resCtx = resCanvas.getContext('2d');
+    var stickyCanvas = $('stickyCanvas');
+    var stickyCtx = stickyCanvas.getContext('2d');
+
+    // 画面下の固定バーにも同じプレビューを小さく出す
+    function updateSticky() {
+      if (!resCanvas.width || !resCanvas.height) return;
+      var sk = Math.min(1, 640 / Math.max(resCanvas.width, resCanvas.height));
+      stickyCanvas.width = Math.max(1, Math.round(resCanvas.width * sk));
+      stickyCanvas.height = Math.max(1, Math.round(resCanvas.height * sk));
+      stickyCtx.drawImage(resCanvas, 0, 0, stickyCanvas.width, stickyCanvas.height);
+      document.body.style.paddingTop = $('stickyBar').offsetHeight + 'px';
+    }
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function tolSq() { return 45 * 45; }
+
+    function isBgData(d, i, bg, tSq) {
+      if (d[i + 3] < 128) return true;
+      var dr = d[i] - bg.r, dg = d[i + 1] - bg.g, db = d[i + 2] - bg.b;
+      return dr * dr + dg * dg + db * db < tSq;
+    }
+
+    // ===== 読み込み =====
+    $('uploadArea').addEventListener('click', function () { $('fileInput').click(); });
+    $('fileInput').addEventListener('change', function (e) {
+      if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    ['dragover', 'dragenter'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); $('uploadArea').classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); $('uploadArea').classList.remove('dragover'); });
+    });
+    document.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) loadFile(f);
+    });
+    document.addEventListener('paste', function (e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image/') === 0) {
+          var f = items[i].getAsFile();
+          if (f) { loadFile(f); e.preventDefault(); }
+          break;
+        }
+      }
+    });
+
+    function loadFile(file) {
+      if (file.type && file.type.indexOf('image/') !== 0) return;
+      var done = function (drawable, w, h) { setSource(drawable, w, h); };
+      if (window.createImageBitmap) {
+        createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) {
+          done(bmp, bmp.width, bmp.height);
+        }).catch(function () { loadViaImage(file, done); });
+      } else {
+        loadViaImage(file, done);
+      }
+    }
+
+    function loadViaImage(file, done) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { done(img, img.naturalWidth, img.naturalHeight); setTimeout(function () { URL.revokeObjectURL(url); }, 4000); };
+      img.onerror = function () { URL.revokeObjectURL(url); };
+      img.src = url;
+    }
+
+    function setSource(drawable, w, h) {
+      origC.width = w;
+      origC.height = h;
+      origCtx.drawImage(drawable, 0, 0);
+      hasImage = true;
+      rot90 = 0;
+      tilt = 0;
+      $('tiltRange').value = 0;
+      bake();
+      crop = inscribedCrop();
+      $('editorArea').classList.remove('hidden');
+      $('stickyBar').classList.remove('hidden');
+      document.body.classList.add('has-sticky');
+      $('step1').classList.remove('on');
+      $('step2').classList.add('on');
+      draw();
+      renderOutput();
+      $('editorArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function fullCrop() { return { x: 0, y: 0, w: srcC.width, h: srcC.height }; }
+
+    // 傾けた画像の中に収まる最大の矩形（元の縦横比）を返す
+    function inscribedCrop() {
+      var W = srcC.width, H = srcC.height;
+      var rad = Math.abs(tilt) * Math.PI / 180;
+      if (rad < 0.0001 || frameW < 1 || frameH < 1) return { x: 0, y: 0, w: W, h: H };
+      var c = Math.cos(rad), s = Math.sin(rad);
+      var k = Math.min(frameW / (frameW * c + frameH * s), frameH / (frameW * s + frameH * c));
+      var w = frameW * k, h = frameH * k;
+      return { x: (W - w) / 2, y: (H - h) / 2, w: w, h: h };
+    }
+
+    // ===== 回転・傾きの適用 =====
+    // 操作中(preview)は縮小サイズで焼いて軽くし、離したときにフル解像度で焼き直す
+    function bake(preview) {
+      var w = origC.width, h = origC.height;
+      var swapped = rot90 % 2 !== 0;
+      var fw = swapped ? h : w, fh = swapped ? w : h;
+      var rad = tilt * Math.PI / 180;
+      var cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+      var fullW = tilt === 0 ? fw : Math.round(fw * cos + fh * sin);
+      var fullH = tilt === 0 ? fh : Math.round(fw * sin + fh * cos);
+      var s = preview ? Math.min(1, 1024 / Math.max(fullW, fullH)) : 1;
+      if (hasImage && bakeScale !== s && crop.w > 0) {
+        var k = s / bakeScale;
+        crop = { x: crop.x * k, y: crop.y * k, w: crop.w * k, h: crop.h * k };
+      }
+      bakeScale = s;
+      var t = document.createElement('canvas');
+      var tctx = t.getContext('2d');
+      t.width = Math.max(1, Math.round(fw * s));
+      t.height = Math.max(1, Math.round(fh * s));
+      frameW = t.width; frameH = t.height;
+      tctx.translate(t.width / 2, t.height / 2);
+      tctx.rotate(rot90 * 90 * Math.PI / 180);
+      tctx.drawImage(origC, -w * s / 2, -h * s / 2, w * s, h * s);
+      if (tilt === 0) {
+        srcC.width = t.width; srcC.height = t.height;
+        srcCtx.drawImage(t, 0, 0);
+      } else {
+        srcC.width = Math.max(1, Math.round(fullW * s));
+        srcC.height = Math.max(1, Math.round(fullH * s));
+        srcCtx.save();
+        srcCtx.translate(srcC.width / 2, srcC.height / 2);
+        srcCtx.rotate(rad);
+        srcCtx.drawImage(t, -t.width / 2, -t.height / 2);
+        srcCtx.restore();
+      }
+      viewCanvas.width = srcC.width;
+      viewCanvas.height = srcC.height;
+      sampleBackground();
+      // 範囲がはみ出していたら収める。ほぼ全体を選んでいた場合は全体に合わせ直す
+      var wasFull = crop.w >= srcC.width * 0.98 && crop.h >= srcC.height * 0.98;
+      if (wasFull || crop.w < 1) crop = fullCrop();
+      else {
+        crop.x = clamp(crop.x, 0, srcC.width - 1);
+        crop.y = clamp(crop.y, 0, srcC.height - 1);
+        crop.w = clamp(crop.w, 1, srcC.width - crop.x);
+        crop.h = clamp(crop.h, 1, srcC.height - crop.y);
+      }
+    }
+
+    var tiltTimer = null;
+    $('tiltRange').addEventListener('input', function () {
+      tilt = parseFloat($('tiltRange').value);
+      clearTimeout(tiltTimer);
+      tiltTimer = setTimeout(function () { bake(true); crop = inscribedCrop(); draw(); renderOutput('preview'); }, 16);
+    });
+    $('resetTiltBtn').addEventListener('click', function () {
+      tilt = 0;
+      $('tiltRange').value = 0;
+      if (hasImage) { bake(); crop = inscribedCrop(); draw(); renderOutput(); }
+    });
+    $('btnRotate').addEventListener('click', function () {
+      if (!hasImage) return;
+      rot90 = (rot90 + 1) % 4;
+      bake();
+      crop = inscribedCrop();
+      draw();
+      renderOutput();
+    });
+    // ===== 背景色 =====
+    function edgePoints() {
+      var w = srcC.width, h = srcC.height;
+      return [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
+              [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
+    }
+
+    // 1点だけ読む（全体読み込みは重いので、サンプリングは点で済ませる）
+    function samplePoint(x, y) {
+      var d = srcCtx.getImageData(x, y, 1, 1).data;
+      return [d[0], d[1], d[2], d[3]];
+    }
+
+    function sampleBackground() {
+      var r = 0, g = 0, b = 0, n = 0;
+      edgePoints().forEach(function (p) {
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] >= 128) { r += px[0]; g += px[1]; b += px[2]; n++; }
+      });
+      if (n > 0) bgRGB = { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+    }
+
+    function isUniformBackground() {
+      var cols = [];
+      edgePoints().forEach(function (p) {
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] >= 128) cols.push([px[0], px[1], px[2]]);
+      });
+      if (cols.length < 3) return true;
+      var maxDist = 0;
+      for (var i = 0; i < cols.length; i++) {
+        for (var j = i + 1; j < cols.length; j++) {
+          var dr = cols[i][0] - cols[j][0], dg = cols[i][1] - cols[j][1], db = cols[i][2] - cols[j][2];
+          var dist = dr * dr + dg * dg + db * db;
+          if (dist > maxDist) maxDist = dist;
+        }
+      }
+      return maxDist < 900;
+    }
+
+    // ===== 自動検出（縮小で当たりを付け、原寸の縁で詰める） =====
+    function detectAllBox() {
+      var W = srcC.width, H = srcC.height;
+      var tSq = tolSq();
+      var scale = Math.min(1, 1200 / Math.max(W, H));
+      var sw = Math.max(1, Math.round(W * scale)), sh = Math.max(1, Math.round(H * scale));
+      var small = document.createElement('canvas');
+      small.width = sw; small.height = sh;
+      var sctx = small.getContext('2d', { willReadFrequently: true });
+      sctx.drawImage(srcC, 0, 0, sw, sh);
+      var sd = sctx.getImageData(0, 0, sw, sh).data;
+      var bx0 = sw, by0 = sh, bx1 = -1, by1 = -1;
+      for (var y = 0; y < sh; y++) {
+        for (var x = 0; x < sw; x++) {
+          if (!isBgData(sd, (y * sw + x) * 4, bgRGB, tSq)) {
+            if (x < bx0) bx0 = x;
+            if (x > bx1) bx1 = x;
+            if (y < by0) by0 = y;
+            if (y > by1) by1 = y;
+          }
+        }
+      }
+      if (bx1 < 0) return null;
+      var pad = Math.ceil(1 / scale) + 2;
+      var rx0 = clamp(Math.floor(bx0 / scale) - pad, 0, W - 1);
+      var ry0 = clamp(Math.floor(by0 / scale) - pad, 0, H - 1);
+      var rx1 = clamp(Math.ceil((bx1 + 1) / scale) + pad, 1, W);
+      var ry1 = clamp(Math.ceil((by1 + 1) / scale) + pad, 1, H);
+      var rw = rx1 - rx0, rh = ry1 - ry0;
+      if (rw * rh > 40000000) return { x: rx0, y: ry0, w: rw, h: rh };
+      var rd = srcCtx.getImageData(rx0, ry0, rw, rh).data;
+      var fx0 = rw, fy0 = rh, fx1 = -1, fy1 = -1;
+      for (var yy = 0; yy < rh; yy++) {
+        for (var xx = 0; xx < rw; xx++) {
+          if (!isBgData(rd, (yy * rw + xx) * 4, bgRGB, tSq)) {
+            if (xx < fx0) fx0 = xx;
+            if (xx > fx1) fx1 = xx;
+            if (yy < fy0) fy0 = yy;
+            if (yy > fy1) fy1 = yy;
+          }
+        }
+      }
+      if (fx1 < 0) return { x: rx0, y: ry0, w: rw, h: rh };
+      return { x: rx0 + fx0, y: ry0 + fy0, w: fx1 - fx0 + 1, h: fy1 - fy0 + 1 };
+    }
+
+    // 端につながった背景だけを透過する
+    function chromaRemove(canvas) {
+      var w = canvas.width, h = canvas.height;
+      if (w < 1 || h < 1) return;
+      var ctx = canvas.getContext('2d', { willReadFrequently: true });
+      var frame = ctx.getImageData(0, 0, w, h);
+      var d = frame.data;
+      var tSq = tolSq();
+      if (holesOn) {
+        // 内側も抜く: 端につながっていなくても、背景色なら全部透過する
+        for (var i = 0; i < d.length; i += 4) {
+          if (isBgData(d, i, bgRGB, tSq)) d[i + 3] = 0;
+        }
+        ctx.putImageData(frame, 0, 0);
+        return;
+      }
+      var visited = new Uint8Array(w * h);
+      var queue = [];
+      function push(x, y) {
+        var p = y * w + x;
+        if (visited[p]) return;
+        visited[p] = 1;
+        if (isBgData(d, p * 4, bgRGB, tSq)) queue.push(x, y);
+      }
+      for (var x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+      for (var y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+      var q = 0;
+      while (q < queue.length) {
+        var fx = queue[q++], fy = queue[q++];
+        d[(fy * w + fx) * 4 + 3] = 0;
+        if (fx > 0) push(fx - 1, fy);
+        if (fx < w - 1) push(fx + 1, fy);
+        if (fy > 0) push(fx, fy - 1);
+        if (fy < h - 1) push(fx, fy + 1);
+      }
+      ctx.putImageData(frame, 0, 0);
+    }
+
+    // ===== 表示 =====
+    function displayScale() {
+      var rect = viewCanvas.getBoundingClientRect();
+      return rect.width > 0 ? srcC.width / rect.width : 1;
+    }
+
+    function draw() {
+      if (!hasImage) return;
+      var w = srcC.width, h = srcC.height;
+      viewCtx.clearRect(0, 0, w, h);
+      viewCtx.drawImage(srcC, 0, 0);
+      if (crop.w < 1 || crop.h < 1) return;
+      var sc = displayScale();
+      viewCtx.beginPath();
+      viewCtx.rect(0, 0, w, h);
+      viewCtx.rect(crop.x, crop.y, crop.w, crop.h);
+      viewCtx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+      viewCtx.fill('evenodd');
+      viewCtx.strokeStyle = 'rgba(255,255,255,0.45)';
+      viewCtx.lineWidth = Math.max(1, sc);
+      viewCtx.beginPath();
+      for (var i = 1; i <= 2; i++) {
+        var gx = crop.x + (crop.w * i) / 3;
+        var gy = crop.y + (crop.h * i) / 3;
+        viewCtx.moveTo(gx, crop.y); viewCtx.lineTo(gx, crop.y + crop.h);
+        viewCtx.moveTo(crop.x, gy); viewCtx.lineTo(crop.x + crop.w, gy);
+      }
+      viewCtx.stroke();
+      viewCtx.strokeStyle = '#ffffff';
+      viewCtx.lineWidth = Math.max(1.5, sc * 2.5);
+      viewCtx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+      viewCtx.strokeStyle = '#4f46e5';
+      viewCtx.lineWidth = Math.max(1, sc * 1.2);
+      viewCtx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+      var hs = clamp(16 * sc, 6, 72);
+      viewCtx.fillStyle = '#ffffff';
+      viewCtx.strokeStyle = '#4f46e5';
+      handlePoints().forEach(function (p) {
+        viewCtx.beginPath();
+        viewCtx.rect(p.x - hs / 2, p.y - hs / 2, hs, hs);
+        viewCtx.fill();
+        viewCtx.stroke();
+      });
+    }
+
+    function handlePoints() {
+      var x0 = crop.x, y0 = crop.y, x1 = crop.x + crop.w, y1 = crop.y + crop.h;
+      var xm = crop.x + crop.w / 2, ym = crop.y + crop.h / 2;
+      return [
+        { k: 'nw', x: x0, y: y0 }, { k: 'n', x: xm, y: y0 }, { k: 'ne', x: x1, y: y0 },
+        { k: 'e', x: x1, y: ym }, { k: 'se', x: x1, y: y1 }, { k: 's', x: xm, y: y1 },
+        { k: 'sw', x: x0, y: y1 }, { k: 'w', x: x0, y: ym }
+      ];
+    }
+
+    // ===== ドラッグ操作 =====
+    var drag = null;
+
+    function canvasPos(e) {
+      var rect = viewCanvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (srcC.width / rect.width),
+        y: (e.clientY - rect.top) * (srcC.height / rect.height)
+      };
+    }
+
+    function hitHandle(p) {
+      var sc = displayScale();
+      var th = clamp(20 * sc, 10, 96);
+      var pts = handlePoints();
+      for (var i = 0; i < pts.length; i++) {
+        if (Math.abs(p.x - pts[i].x) <= th && Math.abs(p.y - pts[i].y) <= th) return pts[i].k;
+      }
+      return null;
+    }
+
+    function resizeCrop(drag, p) {
+      var o = drag.orig;
+      var x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+      var k = drag.handle;
+      if (k.indexOf('w') >= 0) x0 = p.x;
+      if (k.indexOf('e') >= 0) x1 = p.x;
+      if (k.indexOf('n') >= 0) y0 = p.y;
+      if (k.indexOf('s') >= 0) y1 = p.y;
+      if (aspect) {
+        if (k.length === 2) {
+          var nw = Math.abs(x1 - x0);
+          var nh = nw / aspect;
+          if (k.indexOf('n') >= 0) y0 = y1 - nh; else y1 = y0 + nh;
+        } else if (k === 'e' || k === 'w') {
+          var nh2 = Math.abs(x1 - x0) / aspect;
+          var cy = (y0 + y1) / 2;
+          y0 = cy - nh2 / 2; y1 = cy + nh2 / 2;
+        } else {
+          var nw2 = Math.abs(y1 - y0) * aspect;
+          var cx = (x0 + x1) / 2;
+          x0 = cx - nw2 / 2; x1 = cx + nw2 / 2;
+        }
+      }
+      crop = { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
+      normalizeCrop();
+    }
+
+    function normalizeCrop() {
+      crop.x = clamp(crop.x, 0, srcC.width - 1);
+      crop.y = clamp(crop.y, 0, srcC.height - 1);
+      crop.w = clamp(crop.w, 1, srcC.width - crop.x);
+      crop.h = clamp(crop.h, 1, srcC.height - crop.y);
+    }
+
+    function fitAspectInside() {
+      if (!aspect) return;
+      var cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2;
+      var w = crop.w, h = w / aspect;
+      if (h > crop.h) { h = crop.h; w = h * aspect; }
+      if (w > srcC.width) { w = srcC.width; h = w / aspect; }
+      if (h > srcC.height) { h = srcC.height; w = h * aspect; }
+      crop = {
+        x: clamp(cx - w / 2, 0, srcC.width - w),
+        y: clamp(cy - h / 2, 0, srcC.height - h),
+        w: w, h: h
+      };
+    }
+
+    // ===== 出力（プレビューは常に最新に保つ） =====
+    var outTimer = null;
+    function scheduleRender() {
+      if (!hasImage) return;
+      clearTimeout(outTimer);
+      outTimer = setTimeout(function () { renderOutput('preview'); }, 16);
+    }
+
+    // スライダーを離したらフル解像度で確定する
+    $('tiltRange').addEventListener('change', function () { clearTimeout(tiltTimer); bake(); crop = inscribedCrop(); draw(); renderOutput('full'); });
+
+    var lastTier = 'full';
+    var pendingDownload = false;
+
+    function renderOutput(tier) {
+      if (!hasImage || crop.w < 1 || crop.h < 1) return;
+      var preview = tier === 'preview';
+      var seq = ++renderSeq;
+      lastTier = preview ? 'preview' : 'full';
+      var cx = Math.round(crop.x), cy = Math.round(crop.y);
+      var cw = Math.max(1, Math.round(crop.w)), ch = Math.max(1, Math.round(crop.h));
+      // 操作中は縮小画像で処理して軽くする（見た目はほぼ同じ）。確定時はフル解像度
+      var ps = preview ? Math.min(1, 640 / Math.max(cw, ch)) : 1;
+      var rw = Math.max(1, Math.round(cw * ps)), rh = Math.max(1, Math.round(ch * ps));
+      var region = document.createElement('canvas');
+      region.width = rw; region.height = rh;
+      region.getContext('2d').drawImage(srcC, cx, cy, cw, ch, 0, 0, rw, rh);
+      if (transparentOn) chromaRemove(region);
+      var pct = 1;
+      var tw = Math.max(1, Math.round(cw / bakeScale * pct));
+      var th = Math.max(1, Math.round(ch / bakeScale * pct));
+      var dw = Math.max(1, Math.round(rw * pct)), dh = Math.max(1, Math.round(rh * pct));
+      resCanvas.width = dw;
+      resCanvas.height = dh;
+      resCtx.clearRect(0, 0, dw, dh);
+      resCtx.imageSmoothingEnabled = true;
+      resCtx.imageSmoothingQuality = 'high';
+      resCtx.drawImage(region, 0, 0, rw, rh, 0, 0, dw, dh);
+      $('outInfo').textContent = tw + ' × ' + th + ' px';
+      updateSticky();
+      if (preview) return;
+      resCanvas.toBlob(function (blob) {
+        if (seq !== renderSeq || !blob) return;
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = URL.createObjectURL(blob);
+        $('outInfo').textContent = tw + ' × ' + th + ' px ・ 約 ' + Math.max(1, Math.round(blob.size / 1024)) + ' KB';
+        $('btnDownload').disabled = false;
+        updateSticky();
+        if (pendingDownload) { pendingDownload = false; doDownload(); }
+      }, 'image/png');
+    }
+
+    function doDownload() {
+      if (!downloadUrl) return;
+      $('step2').classList.remove('on');
+      $('step3').classList.add('on');
+      var now = new Date();
+      var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+      var a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = 'tilt_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
+        '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.png';
+      a.click();
+    }
+
+    $('btnDownload').addEventListener('click', function () {
+      if (!hasImage) return;
+      if (lastTier !== 'full') { pendingDownload = true; renderOutput('full'); return; }
+      doDownload();
+    });
+
+    $('stickyBar').addEventListener('click', function () {
+      $('btnDownload').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    window.addEventListener('resize', function () {
+      if (hasImage) document.body.style.paddingTop = $('stickyBar').offsetHeight + 'px';
+    });
+  </script>
+</body>
+</html>
