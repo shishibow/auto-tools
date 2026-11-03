@@ -109,10 +109,29 @@
     .slider-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 0.85rem;
       font-weight: 700;
       margin-bottom: 6px;
       color: var(--text);
+    }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .reset-btn:active {
+      transform: scale(0.95);
     }
 
     input[type="range"] {
@@ -232,7 +251,7 @@
         
         <div class="slider-header">
           <span>本体のサイズ比率</span>
-          <span id="scaleVal" style="color:var(--primary); font-size:1rem;">80%</span>
+          <span><span id="scaleVal" style="color:var(--primary); font-size:1rem;">80%</span><button type="button" class="reset-btn" onclick="setScale(80)">リセット</button></span>
         </div>
         <input type="range" id="scaleRange" min="20" max="130" value="80" oninput="updateScale(this.value)">
 

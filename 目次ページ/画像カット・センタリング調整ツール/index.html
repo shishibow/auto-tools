@@ -705,15 +705,19 @@
       $('editorArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // ===== 背景色サンプリング =====
+    // ===== 背景色サンプリング（全体読み込みは重いので点で読む） =====
+    function samplePoint(x, y) {
+      var d = srcCtx.getImageData(x, y, 1, 1).data;
+      return [d[0], d[1], d[2], d[3]];
+    }
+
     function sampleBackground() {
       var w = srcC.width, h = srcC.height;
-      var d = srcCtx.getImageData(0, 0, w, h).data;
       var pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]];
       var r = 0, g = 0, b = 0, n = 0;
       pts.forEach(function (p) {
-        var i = (p[1] * w + p[0]) * 4;
-        if (d[i + 3] >= 128) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] >= 128) { r += px[0]; g += px[1]; b += px[2]; n++; }
       });
       if (n > 0) bgRGB = { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
       $('bgSwatch').style.background = 'rgb(' + bgRGB.r + ',' + bgRGB.g + ',' + bgRGB.b + ')';
@@ -723,14 +727,13 @@
     // 四隅＋各辺の中点の色がほぼそろっているか（スプライト系素材の目安）
     function isUniformBackground() {
       var w = srcC.width, h = srcC.height;
-      var d = srcCtx.getImageData(0, 0, w, h).data;
       var pts = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
                  [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
       var cols = [];
       pts.forEach(function (p) {
-        var i = (p[1] * w + p[0]) * 4;
-        if (d[i + 3] < 128) return; // 透明な隅は無視
-        cols.push([d[i], d[i + 1], d[i + 2]]);
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] < 128) return; // 透明な隅は無視
+        cols.push([px[0], px[1], px[2]]);
       });
       if (cols.length < 3) return true; // ほぼ透明＝透過素材
       var maxDist = 0;
@@ -1349,52 +1352,67 @@
     function scheduleRender() {
       if (!hasImage) return;
       clearTimeout(outTimer);
-      outTimer = setTimeout(renderOutput, 80);
+      outTimer = setTimeout(function () { renderOutput('preview'); }, 60);
     }
 
+    // スライダーを離したらフル解像度で確定する
+    $('toleranceRange').addEventListener('change', function () { renderOutput('full'); });
+    $('paddingRange').addEventListener('change', function () { renderOutput('full'); });
+    $('qualityRange').addEventListener('change', function () { renderOutput('full'); });
+
     // ===== 出力レンダリング =====
-    function renderOutput() {
+    var lastTier = 'full';
+    var pendingDownload = false;
+
+    function renderOutput(tier) {
       if (!hasImage || crop.w < 1 || crop.h < 1) return;
+      var preview = tier === 'preview';
       var seq = ++renderSeq;
+      lastTier = preview ? 'preview' : 'full';
       var cx = Math.round(crop.x), cy = Math.round(crop.y);
       var cw = Math.max(1, Math.round(crop.w)), ch = Math.max(1, Math.round(crop.h));
-      // 切り取り範囲をそのままの解像度で取り出す
+      // 操作中は縮小画像で処理して軽くする（見た目はほぼ同じ）。確定時はフル解像度
+      var ps = preview ? Math.min(1, 640 / Math.max(cw, ch)) : 1;
+      var rw = Math.max(1, Math.round(cw * ps)), rh = Math.max(1, Math.round(ch * ps));
       var region = document.createElement('canvas');
-      region.width = cw; region.height = ch;
+      region.width = rw; region.height = rh;
       var rctx = region.getContext('2d');
-      rctx.drawImage(srcC, cx, cy, cw, ch, 0, 0, cw, ch);
+      rctx.drawImage(srcC, cx, cy, cw, ch, 0, 0, rw, rh);
       if (transparentOn) chromaRemove(region);
 
       var outWInput = parseInt($('outWidth').value, 10);
-      var final = document.createElement('canvas');
-      var fctx = final.getContext('2d');
+      var fullW, fullH;
       if (outMode === 'center' && centerAspect !== 'fit') {
-        var W = outWInput > 0 ? outWInput : (centerAspect === 1 ? 512 : 800);
-        var H = Math.round(W / centerAspect);
-        final.width = W; final.height = H;
+        fullW = outWInput > 0 ? outWInput : (centerAspect === 1 ? 512 : 800);
+        fullH = Math.round(fullW / centerAspect);
+      } else {
+        fullW = outWInput > 0 ? outWInput : cw;
+        fullH = Math.round(fullW * ch / cw);
+      }
+      var fs = preview ? Math.min(1, 640 / Math.max(fullW, fullH)) : 1;
+      var W = Math.max(1, Math.round(fullW * fs)), H = Math.max(1, Math.round(fullH * fs));
+      var final = document.createElement('canvas');
+      final.width = W; final.height = H;
+      var fctx = final.getContext('2d');
+      fctx.imageSmoothingEnabled = true;
+      fctx.imageSmoothingQuality = 'high';
+      if (outMode === 'center' && centerAspect !== 'fit') {
         var scalePct = parseInt($('paddingRange').value, 10) / 100;
-        var itemAsp = cw / ch, boxAsp = W / H;
+        var itemAsp = cw / ch, boxAsp = fullW / fullH;
         var dw, dh;
         if (itemAsp > boxAsp) { dw = W * scalePct; dh = dw / itemAsp; }
         else { dh = H * scalePct; dw = dh * itemAsp; }
-        fctx.imageSmoothingEnabled = true;
-        fctx.imageSmoothingQuality = 'high';
-        fctx.drawImage(region, 0, 0, cw, ch, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        fctx.drawImage(region, 0, 0, rw, rh, (W - dw) / 2, (H - dh) / 2, dw, dh);
       } else {
-        var tw = outWInput > 0 ? outWInput : cw;
-        var th = Math.round(tw * ch / cw);
-        final.width = tw; final.height = th;
-        fctx.imageSmoothingEnabled = true;
-        fctx.imageSmoothingQuality = 'high';
-        fctx.drawImage(region, 0, 0, cw, ch, 0, 0, tw, th);
+        fctx.drawImage(region, 0, 0, rw, rh, 0, 0, W, H);
       }
       // JPEG / WebP は透過できないので白で塗りつぶす
       if (format !== 'image/png') {
         var flat = document.createElement('canvas');
-        flat.width = final.width; flat.height = final.height;
+        flat.width = W; flat.height = H;
         var fx2 = flat.getContext('2d');
         fx2.fillStyle = '#ffffff';
-        fx2.fillRect(0, 0, flat.width, flat.height);
+        fx2.fillRect(0, 0, W, H);
         fx2.drawImage(final, 0, 0);
         final = flat;
       }
@@ -1402,20 +1420,22 @@
       resCanvas.height = final.height;
       resCtx.clearRect(0, 0, final.width, final.height);
       resCtx.drawImage(final, 0, 0);
-      $('outSizeInfo').textContent = final.width + ' × ' + final.height + ' px';
-      $('outInfo').textContent = 'プレビュー: ' + final.width + ' × ' + final.height + ' px';
+      $('outSizeInfo').textContent = fullW + ' × ' + fullH + ' px';
+      $('outInfo').textContent = 'プレビュー: ' + fullW + ' × ' + fullH + ' px';
+      if (preview) return;
       var quality = parseInt($('qualityRange').value, 10) / 100;
       final.toBlob(function (blob) {
         if (seq !== renderSeq || !blob) return;
         if (downloadUrl) URL.revokeObjectURL(downloadUrl);
         downloadUrl = URL.createObjectURL(blob);
         var kb = Math.max(1, Math.round(blob.size / 1024));
-        $('outInfo').textContent = 'プレビュー: ' + final.width + ' × ' + final.height + ' px ・ 約 ' + kb + ' KB';
+        $('outInfo').textContent = 'プレビュー: ' + fullW + ' × ' + fullH + ' px ・ 約 ' + kb + ' KB';
         $('btnDownload').disabled = false;
+        if (pendingDownload) { pendingDownload = false; doDownload(); }
       }, format, format === 'image/png' ? undefined : quality);
     }
 
-    $('btnDownload').addEventListener('click', function () {
+    function doDownload() {
       if (!downloadUrl) return;
       var ext = format === 'image/jpeg' ? 'jpg' : (format === 'image/webp' ? 'webp' : 'png');
       var now = new Date();
@@ -1426,6 +1446,12 @@
       a.href = downloadUrl;
       a.download = name;
       a.click();
+    }
+
+    $('btnDownload').addEventListener('click', function () {
+      if (!hasImage) return;
+      if (lastTier !== 'full') { pendingDownload = true; renderOutput('full'); return; }
+      doDownload();
     });
 
     // ===== 初期化 =====

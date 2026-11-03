@@ -110,9 +110,28 @@
     .slider-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 0.85rem;
       font-weight: 600;
       margin-bottom: 6px;
+    }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .reset-btn:active {
+      transform: scale(0.95);
     }
 
     input[type="range"] {
@@ -202,7 +221,7 @@
       <div class="slider-group">
         <div class="slider-header">
           <span>文字数（長さ）</span>
-          <span id="lengthVal" style="color:var(--primary); font-weight:800;">14 文字</span>
+          <span><span id="lengthVal" style="color:var(--primary); font-weight:800;">14 文字</span><button type="button" class="reset-btn" onclick="resetLength()">リセット</button></span>
         </div>
         <input type="range" id="passLength" min="8" max="32" value="14" oninput="updateLength()">
       </div>
@@ -244,6 +263,11 @@
       const len = document.getElementById('passLength').value;
       document.getElementById('lengthVal').textContent = `${len} 文字`;
       generatePass();
+    }
+
+    function resetLength() {
+      document.getElementById('passLength').value = 14;
+      updateLength();
     }
 
     function generatePass() {

@@ -570,7 +570,7 @@
     $('tiltRange').addEventListener('input', function () {
       tilt = parseFloat($('tiltRange').value);
       clearTimeout(tiltTimer);
-      tiltTimer = setTimeout(function () { bake(); draw(); renderOutput(); }, 30);
+      tiltTimer = setTimeout(function () { bake(); draw(); renderOutput('preview'); }, 30);
     });
     $('resetTiltBtn').addEventListener('click', function () {
       tilt = 0;
@@ -604,24 +604,26 @@
               [w >> 1, 0], [w >> 1, h - 1], [0, h >> 1], [w - 1, h >> 1]];
     }
 
+    // 1点だけ読む（全体読み込みは重いので、サンプリングは点で済ませる）
+    function samplePoint(x, y) {
+      var d = srcCtx.getImageData(x, y, 1, 1).data;
+      return [d[0], d[1], d[2], d[3]];
+    }
+
     function sampleBackground() {
-      var w = srcC.width;
-      var d = srcCtx.getImageData(0, 0, w, srcC.height).data;
       var r = 0, g = 0, b = 0, n = 0;
       edgePoints().forEach(function (p) {
-        var i = (p[1] * w + p[0]) * 4;
-        if (d[i + 3] >= 128) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] >= 128) { r += px[0]; g += px[1]; b += px[2]; n++; }
       });
       if (n > 0) bgRGB = { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
     }
 
     function isUniformBackground() {
-      var w = srcC.width;
-      var d = srcCtx.getImageData(0, 0, w, srcC.height).data;
       var cols = [];
       edgePoints().forEach(function (p) {
-        var i = (p[1] * w + p[0]) * 4;
-        if (d[i + 3] >= 128) cols.push([d[i], d[i + 1], d[i + 2]]);
+        var px = samplePoint(p[0], p[1]);
+        if (px[3] >= 128) cols.push([px[0], px[1], px[2]]);
       });
       if (cols.length < 3) return true;
       var maxDist = 0;
@@ -946,38 +948,54 @@
     function scheduleRender() {
       if (!hasImage) return;
       clearTimeout(outTimer);
-      outTimer = setTimeout(renderOutput, 60);
+      outTimer = setTimeout(function () { renderOutput('preview'); }, 40);
     }
 
-    function renderOutput() {
+    // スライダーを離したらフル解像度で確定する
+    $('tolRange').addEventListener('change', function () { renderOutput('full'); });
+    $('sizeRange').addEventListener('change', function () { renderOutput('full'); });
+    $('tiltRange').addEventListener('change', function () { renderOutput('full'); });
+
+    var lastTier = 'full';
+    var pendingDownload = false;
+
+    function renderOutput(tier) {
       if (!hasImage || crop.w < 1 || crop.h < 1) return;
+      var preview = tier === 'preview';
       var seq = ++renderSeq;
+      lastTier = preview ? 'preview' : 'full';
       var cx = Math.round(crop.x), cy = Math.round(crop.y);
       var cw = Math.max(1, Math.round(crop.w)), ch = Math.max(1, Math.round(crop.h));
+      // 操作中は縮小画像で処理して軽くする（見た目はほぼ同じ）。確定時はフル解像度
+      var ps = preview ? Math.min(1, 640 / Math.max(cw, ch)) : 1;
+      var rw = Math.max(1, Math.round(cw * ps)), rh = Math.max(1, Math.round(ch * ps));
       var region = document.createElement('canvas');
-      region.width = cw; region.height = ch;
-      region.getContext('2d').drawImage(srcC, cx, cy, cw, ch, 0, 0, cw, ch);
+      region.width = rw; region.height = rh;
+      region.getContext('2d').drawImage(srcC, cx, cy, cw, ch, 0, 0, rw, rh);
       if (transparentOn) chromaRemove(region);
       var pct = parseInt($('sizeRange').value, 10) / 100;
       var tw = Math.max(1, Math.round(cw * pct));
       var th = Math.max(1, Math.round(ch * pct));
-      resCanvas.width = tw;
-      resCanvas.height = th;
-      resCtx.clearRect(0, 0, tw, th);
+      var dw = Math.max(1, Math.round(rw * pct)), dh = Math.max(1, Math.round(rh * pct));
+      resCanvas.width = dw;
+      resCanvas.height = dh;
+      resCtx.clearRect(0, 0, dw, dh);
       resCtx.imageSmoothingEnabled = true;
       resCtx.imageSmoothingQuality = 'high';
-      resCtx.drawImage(region, 0, 0, cw, ch, 0, 0, tw, th);
+      resCtx.drawImage(region, 0, 0, rw, rh, 0, 0, dw, dh);
       $('outInfo').textContent = tw + ' × ' + th + ' px';
+      if (preview) return;
       resCanvas.toBlob(function (blob) {
         if (seq !== renderSeq || !blob) return;
         if (downloadUrl) URL.revokeObjectURL(downloadUrl);
         downloadUrl = URL.createObjectURL(blob);
         $('outInfo').textContent = tw + ' × ' + th + ' px ・ 約 ' + Math.max(1, Math.round(blob.size / 1024)) + ' KB';
         $('btnDownload').disabled = false;
+        if (pendingDownload) { pendingDownload = false; doDownload(); }
       }, 'image/png');
     }
 
-    $('btnDownload').addEventListener('click', function () {
+    function doDownload() {
       if (!downloadUrl) return;
       $('step2').classList.remove('on');
       $('step3').classList.add('on');
@@ -988,6 +1006,12 @@
       a.download = 'trim_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
         '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.png';
       a.click();
+    }
+
+    $('btnDownload').addEventListener('click', function () {
+      if (!hasImage) return;
+      if (lastTier !== 'full') { pendingDownload = true; renderOutput('full'); return; }
+      doDownload();
     });
   </script>
 </body>
