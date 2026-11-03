@@ -315,6 +315,14 @@
     .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
       display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
     .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    #stickyBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.97); border-top: 1px solid #e0e7ff; box-shadow: 0 -4px 16px rgba(30,27,75,0.12); }
+    #stickyBar.hidden { display: none; }
+    #stickyCanvas { height: 54px; width: auto; max-width: 96px; border-radius: 8px; border: 1px solid #e2e8f0; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
+    .sticky-info { flex: 1; min-width: 0; font-size: 12px; color: #475569; line-height: 1.45; }
+    .sticky-title { display: block; font-size: 11px; font-weight: 700; color: #4338ca; letter-spacing: 0.04em; }
+    .sticky-dl { flex: 0 0 auto; min-height: 48px; padding: 10px 18px; border: none; border-radius: 999px; background: var(--primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .sticky-dl:active { transform: scale(0.97); }
+    body.has-sticky { padding-bottom: 88px; }
     .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
       text-align:center;font-size:.8rem;line-height:1.9}
     .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
@@ -405,6 +413,12 @@
       </div>
     </div>
 
+    <div id="stickyBar" class="hidden">
+      <canvas id="stickyCanvas" width="64" height="64"></canvas>
+      <div class="sticky-info"><span class="sticky-title">出力プレビュー</span><span id="stickyInfo"></span></div>
+      <button type="button" class="sticky-dl" id="stickyDownload">保存する</button>
+    </div>
+
     <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
   </div>
 
@@ -426,6 +440,7 @@
     var aspect = null;
     var rot90 = 0;          // 90度回転の回数
     var tilt = 0;           // 傾き補正（度）
+    var bakeScale = 1;      // プレビュー焼き時の縮小率（1=フル解像度）
     var transparentOn = false;
     var holesOn = false;
     var bgRGB = { r: 0, g: 0, b: 0 };
@@ -437,6 +452,18 @@
     var viewCtx = viewCanvas.getContext('2d');
     var resCanvas = $('resultCanvas');
     var resCtx = resCanvas.getContext('2d');
+    var stickyCanvas = $('stickyCanvas');
+    var stickyCtx = stickyCanvas.getContext('2d');
+
+    // 画面下の固定バーにも同じプレビューを小さく出す
+    function updateSticky() {
+      if (!resCanvas.width || !resCanvas.height) return;
+      var sk = Math.min(1, 128 / Math.max(resCanvas.width, resCanvas.height));
+      stickyCanvas.width = Math.max(1, Math.round(resCanvas.width * sk));
+      stickyCanvas.height = Math.max(1, Math.round(resCanvas.height * sk));
+      stickyCtx.drawImage(resCanvas, 0, 0, stickyCanvas.width, stickyCanvas.height);
+      $('stickyInfo').textContent = $('outInfo').textContent;
+    }
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
     function tolSq() { var t = parseInt($('tolRange').value, 10); return t * t; }
@@ -508,6 +535,8 @@
       setTransparent(isUniformBackground());
       crop = fullCrop();
       $('editorArea').classList.remove('hidden');
+      $('stickyBar').classList.remove('hidden');
+      document.body.classList.add('has-sticky');
       $('step1').classList.remove('on');
       $('step2').classList.add('on');
       draw();
@@ -528,26 +557,36 @@
     function fullCrop() { return { x: 0, y: 0, w: srcC.width, h: srcC.height }; }
 
     // ===== 回転・傾きの適用 =====
-    function bake() {
+    // 操作中(preview)は縮小サイズで焼いて軽くし、離したときにフル解像度で焼き直す
+    function bake(preview) {
       var w = origC.width, h = origC.height;
+      var swapped = rot90 % 2 !== 0;
+      var fw = swapped ? h : w, fh = swapped ? w : h;
+      var rad = tilt * Math.PI / 180;
+      var cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+      var fullW = tilt === 0 ? fw : Math.round(fw * cos + fh * sin);
+      var fullH = tilt === 0 ? fh : Math.round(fw * sin + fh * cos);
+      var s = preview ? Math.min(1, 1024 / Math.max(fullW, fullH)) : 1;
+      if (hasImage && bakeScale !== s && crop.w > 0) {
+        var k = s / bakeScale;
+        crop = { x: crop.x * k, y: crop.y * k, w: crop.w * k, h: crop.h * k };
+      }
+      bakeScale = s;
       var t = document.createElement('canvas');
       var tctx = t.getContext('2d');
-      if (rot90 % 2 === 0) { t.width = w; t.height = h; }
-      else { t.width = h; t.height = w; }
+      t.width = Math.max(1, Math.round(fw * s));
+      t.height = Math.max(1, Math.round(fh * s));
       tctx.translate(t.width / 2, t.height / 2);
       tctx.rotate(rot90 * 90 * Math.PI / 180);
-      tctx.drawImage(origC, -w / 2, -h / 2);
+      tctx.drawImage(origC, -w * s / 2, -h * s / 2, w * s, h * s);
       if (tilt === 0) {
         srcC.width = t.width; srcC.height = t.height;
         srcCtx.drawImage(t, 0, 0);
       } else {
-        var rad = tilt * Math.PI / 180;
-        var cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
-        var bw = Math.round(t.width * cos + t.height * sin);
-        var bh = Math.round(t.width * sin + t.height * cos);
-        srcC.width = bw; srcC.height = bh;
+        srcC.width = Math.max(1, Math.round(fullW * s));
+        srcC.height = Math.max(1, Math.round(fullH * s));
         srcCtx.save();
-        srcCtx.translate(bw / 2, bh / 2);
+        srcCtx.translate(srcC.width / 2, srcC.height / 2);
         srcCtx.rotate(rad);
         srcCtx.drawImage(t, -t.width / 2, -t.height / 2);
         srcCtx.restore();
@@ -570,7 +609,7 @@
     $('tiltRange').addEventListener('input', function () {
       tilt = parseFloat($('tiltRange').value);
       clearTimeout(tiltTimer);
-      tiltTimer = setTimeout(function () { bake(); draw(); renderOutput('preview'); }, 30);
+      tiltTimer = setTimeout(function () { bake(true); draw(); renderOutput('preview'); }, 16);
     });
     $('resetTiltBtn').addEventListener('click', function () {
       tilt = 0;
@@ -948,13 +987,13 @@
     function scheduleRender() {
       if (!hasImage) return;
       clearTimeout(outTimer);
-      outTimer = setTimeout(function () { renderOutput('preview'); }, 40);
+      outTimer = setTimeout(function () { renderOutput('preview'); }, 16);
     }
 
     // スライダーを離したらフル解像度で確定する
     $('tolRange').addEventListener('change', function () { renderOutput('full'); });
     $('sizeRange').addEventListener('change', function () { renderOutput('full'); });
-    $('tiltRange').addEventListener('change', function () { renderOutput('full'); });
+    $('tiltRange').addEventListener('change', function () { clearTimeout(tiltTimer); bake(); draw(); renderOutput('full'); });
 
     var lastTier = 'full';
     var pendingDownload = false;
@@ -974,8 +1013,8 @@
       region.getContext('2d').drawImage(srcC, cx, cy, cw, ch, 0, 0, rw, rh);
       if (transparentOn) chromaRemove(region);
       var pct = parseInt($('sizeRange').value, 10) / 100;
-      var tw = Math.max(1, Math.round(cw * pct));
-      var th = Math.max(1, Math.round(ch * pct));
+      var tw = Math.max(1, Math.round(cw / bakeScale * pct));
+      var th = Math.max(1, Math.round(ch / bakeScale * pct));
       var dw = Math.max(1, Math.round(rw * pct)), dh = Math.max(1, Math.round(rh * pct));
       resCanvas.width = dw;
       resCanvas.height = dh;
@@ -984,6 +1023,7 @@
       resCtx.imageSmoothingQuality = 'high';
       resCtx.drawImage(region, 0, 0, rw, rh, 0, 0, dw, dh);
       $('outInfo').textContent = tw + ' × ' + th + ' px';
+      updateSticky();
       if (preview) return;
       resCanvas.toBlob(function (blob) {
         if (seq !== renderSeq || !blob) return;
@@ -991,6 +1031,7 @@
         downloadUrl = URL.createObjectURL(blob);
         $('outInfo').textContent = tw + ' × ' + th + ' px ・ 約 ' + Math.max(1, Math.round(blob.size / 1024)) + ' KB';
         $('btnDownload').disabled = false;
+        updateSticky();
         if (pendingDownload) { pendingDownload = false; doDownload(); }
       }, 'image/png');
     }
@@ -1009,6 +1050,12 @@
     }
 
     $('btnDownload').addEventListener('click', function () {
+      if (!hasImage) return;
+      if (lastTier !== 'full') { pendingDownload = true; renderOutput('full'); return; }
+      doDownload();
+    });
+
+    $('stickyDownload').addEventListener('click', function () {
       if (!hasImage) return;
       if (lastTier !== 'full') { pendingDownload = true; renderOutput('full'); return; }
       doDownload();
