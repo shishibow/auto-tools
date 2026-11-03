@@ -6,16 +6,16 @@
   <title>割引・セール価格計算機 - 〇%OFF・〇割引を一発計算</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-light: #eff6ff;
-      --primary-dark: #1d4ed8;
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --primary-dark: #4338ca;
       --accent: #ef4444;
-      --text: #1e293b;
+      --text: #0f172a;
       --text-muted: #64748b;
-      --bg: #f8fafc;
+      --bg: #f6f7fb;
       --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --radius: 12px;
+      --border: #e6e8f0;
+      --radius: 16px;
     }
 
     * {
@@ -148,7 +148,7 @@
       font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
     }
 
     .btn-calc:active {
@@ -208,10 +208,30 @@
       margin-top: 2px;
     }
   </style>
+
+  <style id="portal-theme">
+    /* ===== 共通テーマ（ポータルと統一） ===== */
+    body{line-height:1.75;letter-spacing:.02em;line-break:strict}
+    h1{line-height:1.4}
+    .subtitle{line-height:1.7}
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    select, textarea{min-height:48px}
+    .btn-calc,.btn-action,.btn-download{min-height:52px}
+    .site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:6px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+    .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
+      display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+    .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+      text-align:center;font-size:.8rem;line-height:1.9}
+    .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+    .site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+  </style>
 </head>
 <body>
 
   <div class="container">
+    <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../money.html">💰 お金・買い物の一覧</a></nav>
     <header>
       <h1>割引・セール価格計算機</h1>
       <p class="subtitle">値引き後の支払額とお得になった金額を即計算</p>
@@ -261,6 +281,7 @@
         </div>
       </div>
     </div>
+      <footer class="site-foot"><a href="../money.html">← お金・買い物のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
   </div>
 
   <!-- 忍者AdMax広告コード -->
