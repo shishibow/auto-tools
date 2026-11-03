@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>動画編集ツール（開発者向け） - カット・解像度・fps・ビットレート一括変換</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --primary-dark: #4338ca;
+      --accent: #16a34a;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f6f7fb;
+      --card-bg: #ffffff;
+      --border: #e6e8f0;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 12px 0 6px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover {
+      background: #f1f5f9;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .control-panel {
+      margin-top: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    video {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+      display: block;
+      margin-top: 12px;
+      max-height: 240px;
+    }
+
+    .btn-compress {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    }
+
+    .btn-compress:disabled {
+      background: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-compress:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .status-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active {
+      transform: scale(0.98);
+    }
+
+    .time-control-group {
+      margin-top: 14px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-wrapper input[type="number"] {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .unit {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .btn-set {
+      width: 100%;
+      margin-top: 6px;
+      min-height: 40px;
+      padding: 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn-set:active {
+      transform: scale(0.97);
+    }
+
+    .clip-info {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-top: 8px;
+    }
+
+    .result-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+
+  <style id="portal-theme">
+    /* ===== 共通テーマ（ポータルと統一） ===== */
+    body{line-height:1.75;letter-spacing:.02em;line-break:strict}
+    h1{line-height:1.4}
+    .subtitle{line-height:1.7}
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    select, textarea{min-height:48px}
+    .btn-calc,.btn-action,.btn-download{min-height:52px}
+    .site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:6px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+    .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
+      display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+    .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+      text-align:center;font-size:.8rem;line-height:1.9}
+    .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+    .site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+  </style>
+  <style id="next-tools-style">
+    .next-tools{margin-top:26px;border:1.5px solid #e0e7ff;border-radius:16px;padding:14px;background:#fff}
+    .next-tools .nt-title{font-weight:800;font-size:.9rem;color:#4338ca;margin-bottom:6px}
+    .next-tools a{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:12px;text-decoration:none;color:inherit}
+    .next-tools a:active{background:#eef2ff}
+    .next-tools .nt-icon{font-size:1.3rem;flex-shrink:0}
+    .next-tools .nt-name{font-weight:700;font-size:.92rem;line-height:1.5}
+    .next-tools .nt-desc{display:block;font-size:.78rem;color:#64748b;line-height:1.5}
+    .next-tools .nt-arrow{margin-left:auto;color:#94a3b8;font-size:1.2rem;flex-shrink:0}
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../dev.html">💻 開発者向けの一覧</a></nav>
+    <header>
+      <h1>動画編集（開発者向け）</h1>
+      <p class="subtitle">前後カットと解像度・fps・ビットレートを一括設定して書き出し</p>
+    </header>
+
+    <div class="card">
+      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">🗜️</div>
+        <div class="upload-text">動画ファイルを選択</div>
+        <div class="upload-hint">MP4 / WebM 対応（完全端末内処理・安全）</div>
+      </div>
+      <input type="file" id="fileInput" accept="video/*" onchange="loadVideo(event)">
+
+      <div id="editorArea" style="display: none;" class="control-panel">
+        <video id="videoPreview" controls playsinline></video>
+
+        <div class="time-control-group">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startTime">開始秒数</label>
+              <div class="input-wrapper">
+                <input type="number" id="startTime" step="0.1" min="0" value="0">
+                <span class="unit">秒</span>
+              </div>
+              <button type="button" class="btn-set" onclick="setStartToCurrent()">現在の位置を開始に設定</button>
+            </div>
+
+            <div class="form-group">
+              <label for="endTime">終了秒数</label>
+              <div class="input-wrapper">
+                <input type="number" id="endTime" step="0.1" min="0" value="0">
+                <span class="unit">秒</span>
+              </div>
+              <button type="button" class="btn-set" onclick="setEndToCurrent()">現在の位置を終了に設定</button>
+            </div>
+          </div>
+          <p class="clip-info" id="clipInfo"></p>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <div class="form-group">
+            <label for="resolutionSelect">出力解像度（画質）</label>
+            <select id="resolutionSelect">
+              <option value="original">元の解像度を維持</option>
+              <option value="1080">フルHD (1080p)</option>
+              <option value="720">HD (720p)</option>
+              <option value="480" selected>中画質 (480p) - おすすめ</option>
+              <option value="360">低画質 (360p) - 軽量</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="fpsSelect">フレームレート (fps)</label>
+            <select id="fpsSelect">
+              <option value="original">元のfps相当 (30)</option>
+              <option value="60">60 fps</option>
+              <option value="30" selected>30 fps (標準)</option>
+              <option value="24">24 fps</option>
+              <option value="15">15 fps (軽め)</option>
+              <option value="10">10 fps (最小限)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="bitrateSelect">ビットレート（容量に直結）</label>
+            <select id="bitrateSelect">
+              <option value="auto" selected>自動（ブラウザ標準）</option>
+              <option value="16">16 Mbps（高画質）</option>
+              <option value="8">8 Mbps</option>
+              <option value="5">5 Mbps</option>
+              <option value="2.5">2.5 Mbps</option>
+              <option value="1">1 Mbps（最小）</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="button" class="btn-compress" id="exportBtn" onclick="startExport()">書き出し開始（再生しながら処理）</button>
+
+        <div class="status-box" id="statusBox">書き出し中... 動画を再生しながら処理しています</div>
+
+        <div id="downloadArea" style="display: none;">
+          <p class="result-info" id="resultInfo"></p>
+          <button type="button" class="btn-download" onclick="downloadExported()">書き出した動画をダウンロード</button>
+        </div>
+      </div>
+    </div>
+          <div class="next-tools">
+      <div class="nt-title">つぎのツール</div>
+      <a href="../動画トリミング・前後カットツール/"><span class="nt-icon">✂️</span><span><span class="nt-name">動画トリミング・前後カット</span><span class="nt-desc">カットだけならこちら</span></span><span class="nt-arrow">›</span></a>
+      <a href="../動画軽量化・画質fps低下ツール/"><span class="nt-icon">🗜️</span><span><span class="nt-name">動画軽量化・画質fps低下</span><span class="nt-desc">軽量化だけならこちら</span></span><span class="nt-arrow">›</span></a>
+      <a href="../画像カット・センタリング調整ツール/"><span class="nt-icon">✂️</span><span><span class="nt-name">画像カット・センタリング調整</span><span class="nt-desc">開発者向けの画像編集</span></span><span class="nt-arrow">›</span></a>
+    </div>
+    <footer class="site-foot"><a href="../dev.html">← 開発者向けのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    const video = document.getElementById('videoPreview');
+    const startInput = document.getElementById('startTime');
+    const endInput = document.getElementById('endTime');
+    const statusBox = document.getElementById('statusBox');
+    const downloadArea = document.getElementById('downloadArea');
+    const exportBtn = document.getElementById('exportBtn');
+    const clipInfo = document.getElementById('clipInfo');
+
+    let videoFile = null;
+    let exportBlob = null;
+
+    function fmtSize(bytes) {
+      if (bytes === null || bytes === undefined) return '-';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function updateClipInfo() {
+      if (!video.duration || isNaN(video.duration)) { clipInfo.textContent = ''; return; }
+      const start = parseFloat(startInput.value) || 0;
+      let end = parseFloat(endInput.value) || 0;
+      if (end <= 0) end = video.duration;
+      const len = Math.max(0, end - start);
+      clipInfo.textContent = '選択範囲: ' + len.toFixed(1) + ' 秒（全体 ' + video.duration.toFixed(1) + ' 秒）';
+    }
+
+    function loadVideo(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      videoFile = file;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.onloadedmetadata = () => {
+        document.getElementById('editorArea').style.display = 'block';
+        downloadArea.style.display = 'none';
+        statusBox.style.display = 'none';
+        startInput.value = 0;
+        endInput.value = Math.floor(video.duration * 10) / 10;
+        endInput.max = video.duration;
+        updateClipInfo();
+      };
+    }
+
+    startInput.addEventListener('input', updateClipInfo);
+    endInput.addEventListener('input', updateClipInfo);
+
+    function setStartToCurrent() {
+      startInput.value = video.currentTime.toFixed(1);
+      updateClipInfo();
+    }
+
+    function setEndToCurrent() {
+      endInput.value = video.currentTime.toFixed(1);
+      updateClipInfo();
+    }
+
+    async function startExport() {
+      const start = Math.max(0, parseFloat(startInput.value) || 0);
+      let end = parseFloat(endInput.value) || 0;
+      if (end <= 0 || end > video.duration) end = video.duration;
+      if (start >= end) {
+        alert('終了秒数は開始秒数より大きく設定してください。');
+        return;
+      }
+
+      exportBtn.disabled = true;
+      downloadArea.style.display = 'none';
+      statusBox.style.display = 'block';
+      statusBox.textContent = '書き出し中... 動画を再生しながら処理しています';
+
+      const resVal = document.getElementById('resolutionSelect').value;
+      const fpsVal = document.getElementById('fpsSelect').value;
+      const brVal = document.getElementById('bitrateSelect').value;
+
+      let targetW = video.videoWidth;
+      let targetH = video.videoHeight;
+      if (resVal !== 'original') {
+        const maxH = parseInt(resVal);
+        if (targetH > maxH) {
+          targetW = Math.round((targetW * maxH) / targetH);
+          targetH = maxH;
+        }
+      }
+      // エンコーダが扱いやすい偶数寸法にそろえる
+      targetW = Math.max(2, targetW - (targetW % 2));
+      targetH = Math.max(2, targetH - (targetH % 2));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      const fps = fpsVal === 'original' ? 30 : parseInt(fpsVal);
+      const stream = canvas.captureStream(fps);
+
+      if (video.captureStream) {
+        const vStream = video.captureStream();
+        const audioTracks = vStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          stream.addTrack(audioTracks[0]);
+        }
+      }
+
+      let options = { mimeType: 'video/webm;codecs=vp8,opus' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: 'video/webm' };
+      }
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options = { mimeType: '' };
+      }
+      if (brVal !== 'auto') {
+        options.videoBitsPerSecond = Math.round(parseFloat(brVal) * 1000000);
+        options.audioBitsPerSecond = 128000;
+      }
+
+      const recorder = new MediaRecorder(stream, options);
+      const chunks = [];
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        video.pause();
+        if (recorder.state === 'recording') recorder.stop();
+      };
+
+      recorder.onstop = () => {
+        exportBlob = new Blob(chunks, { type: 'video/webm' });
+        statusBox.style.display = 'none';
+        downloadArea.style.display = 'block';
+        document.getElementById('resultInfo').textContent =
+          '元: ' + fmtSize(videoFile ? videoFile.size : null) + ' → 出力: ' + fmtSize(exportBlob.size) +
+          '（' + targetW + '×' + targetH + ' / ' + (end - start).toFixed(1) + '秒）';
+        exportBtn.disabled = false;
+      };
+
+      video.currentTime = start;
+      await new Promise(r => { video.onseeked = r; });
+
+      recorder.start();
+      video.play();
+
+      function drawFrame() {
+        if (finished) return;
+        ctx.drawImage(video, 0, 0, targetW, targetH);
+        if (video.currentTime >= end || video.ended) { finish(); return; }
+        requestAnimationFrame(drawFrame);
+      }
+      drawFrame();
+
+      const guard = setInterval(() => {
+        if (finished) { clearInterval(guard); return; }
+        if (video.currentTime >= end || video.ended) { clearInterval(guard); finish(); }
+      }, 250);
+    }
+
+    function downloadExported() {
+      if (!exportBlob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(exportBlob);
+      a.download = `video_edit_${Date.now()}.webm`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

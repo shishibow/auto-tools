@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>画像カット＆センタリング調整ツール</title>
-  <meta name="description" content="画像の切り取り（トリミング）とセンタリング調整。ドラッグ指定・タップ自動検出・回転・反転・背景透過・リサイズ・PNG/JPEG/WebP出力に対応。">
+  <meta name="description" content="開発者向けの画像編集。切り取り・センタリング・背景透過（グリーン/ブルーバック対応）・余白調整・回転・反転・リサイズ・一括ZIP書き出し・PNG/JPEG/WebP出力に対応。">
   <style>
     :root {
       --primary: #4f46e5;
@@ -426,7 +426,7 @@
     <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../dev.html">💻 開発者向けの一覧</a></nav>
     <header>
       <h1>画像カット＆センタリング調整</h1>
-      <p class="subtitle">ドラッグで切り取り、タップで素材を自動検出。回転・反転・背景透過・出力形式の変更まで。</p>
+      <p class="subtitle">切り抜き・センタリング・各種透過・余白調整をまとめて処理</p>
     </header>
 
     <div class="card" id="loadCard">
@@ -491,6 +491,9 @@
           <button type="button" class="opt-btn" id="btnDetectAll">素材全体を検出</button>
           <button type="button" class="opt-btn" id="btnCenter">中央に配置</button>
         </div>
+        <div class="btn-row" style="margin-top:6px">
+          <button type="button" class="opt-btn" id="btnPadPreset">🔲 余白・比率調整（全体を正方形キャンバスに配置）</button>
+        </div>
         <p class="hint">キーボードの矢印キーで1pxずつ移動（Shift同時押しで10px）。</p>
       </div>
 
@@ -524,6 +527,13 @@
           <button type="button" class="opt-btn active" id="btnHoleOff">内側は残す</button>
         </div>
         <p class="hint">通常は画像の端につながっている背景色だけを透過します。「内側も透過する」にすると端につながっていない背景色も透過しますが、素材の内側にある同じ色も消えます。</p>
+        <label class="section-lbl">抜き方</label>
+        <div class="btn-row">
+          <button type="button" class="opt-btn active" id="keyModeColor">背景色で抜く</button>
+          <button type="button" class="opt-btn" id="keyModeGreen">グリーンバック</button>
+          <button type="button" class="opt-btn" id="keyModeBlue">ブルーバック</button>
+        </div>
+        <p class="hint">グリーン/ブルーバックは緑・青の撮影背景専用の抜き方です。色の優位性で判定し、境界をなめらかにします（画像全体に効くので「内側」の設定は使われません）。許容度スライダーがそのまま効きます。</p>
       </div>
 
       <div class="card">
@@ -577,8 +587,8 @@
         <div class="next-tools">
       <div class="nt-title">つぎのツール</div>
       <a href="../かんたん画像トリミング/"><span class="nt-icon">✨</span><span><span class="nt-name">かんたん画像トリミング</span><span class="nt-desc">簡単に済ませたい方はこちら</span></span><span class="nt-arrow">›</span></a>
-      <a href="../グリーンバック透過ツール/"><span class="nt-icon">🖼️</span><span><span class="nt-name">グリーンバック透過</span><span class="nt-desc">背景だけを透過したいとき</span></span><span class="nt-arrow">›</span></a>
-      <a href="../透過画像余白・比率調整ツール/"><span class="nt-icon">🔲</span><span><span class="nt-name">透過画像 余白・比率調整</span><span class="nt-desc">余白と比率を整える</span></span><span class="nt-arrow">›</span></a>
+      <a href="../グリーンバック透過ツール/"><span class="nt-icon">🖼️</span><span><span class="nt-name">グリーンバック透過</span><span class="nt-desc">緑・青の背景だけを透過</span></span><span class="nt-arrow">›</span></a>
+      <a href="../開発者向け動画編集ツール/"><span class="nt-icon">🎞️</span><span><span class="nt-name">動画編集（開発者向け）</span><span class="nt-desc">動画のカット・軽量化はこちら</span></span><span class="nt-arrow">›</span></a>
     </div>
     <footer class="site-foot"><a href="../dev.html">← 開発者向けのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
   </div>
@@ -603,6 +613,7 @@
     var format = 'image/png';
     var transparentOn = true;
     var holesOn = false;
+    var keyMode = 'color';                              // 背景の抜き方: 'color' | 'green' | 'blue'
     var batch = [];          // まとめて保存するアイコンの範囲リスト
     var zipBusy = false;
     var stickyCanvas = null;
@@ -651,6 +662,7 @@
           tol: $('toleranceRange').value,
           transparentOn: transparentOn,
           hole: holesOn,
+          keyMode: keyMode,
           outMode: outMode
         }));
       } catch (e) {}
@@ -664,6 +676,7 @@
         if (s.tol) { $('toleranceRange').value = s.tol; $('toleranceVal').textContent = s.tol; }
         if (typeof s.transparentOn === 'boolean') setTransparent(s.transparentOn, false);
         if (typeof s.hole === 'boolean') setHoles(s.hole, false);
+        if (s.keyMode) setKeyMode(s.keyMode, false);
         if (s.outMode) setOutMode(s.outMode, false);
       } catch (e) {}
     }
@@ -1111,6 +1124,17 @@
       if (aspect) fitAspectInside();
       draw(); updateRangeInfo(); renderOutput();
     });
+    $('btnPadPreset').addEventListener('click', function () {
+      if (!hasImage) return;
+      crop = { x: 0, y: 0, w: srcC.width, h: srcC.height };
+      setOutMode('center');
+      centerAspect = 1;
+      Array.prototype.forEach.call($('centerAspectChips').children, function (c) {
+        c.classList.toggle('active', c.getAttribute('data-caspect') === '1');
+      });
+      draw(); updateRangeInfo(); renderOutput();
+      $('previewSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
     $('btnCenter').addEventListener('click', function () {
       if (!hasImage) return;
       crop.x = (srcC.width - crop.w) / 2;
@@ -1352,6 +1376,19 @@
     $('btnHoleOn').addEventListener('click', function () { setHoles(true); });
     $('btnHoleOff').addEventListener('click', function () { setHoles(false); });
 
+    // 抜き方（背景色 / グリーンバック / ブルーバック）
+    function setKeyMode(m, save) {
+      keyMode = m;
+      $('keyModeColor').classList.toggle('active', m === 'color');
+      $('keyModeGreen').classList.toggle('active', m === 'green');
+      $('keyModeBlue').classList.toggle('active', m === 'blue');
+      if (save !== false) saveSettings();
+      if (hasImage) renderOutput();
+    }
+    $('keyModeColor').addEventListener('click', function () { setKeyMode('color'); });
+    $('keyModeGreen').addEventListener('click', function () { setKeyMode('green'); });
+    $('keyModeBlue').addEventListener('click', function () { setKeyMode('blue'); });
+
     // 端につながった背景色だけを透過する（素材内部の同色は残る）
     function chromaRemove(canvas) {
       var w = canvas.width, h = canvas.height;
@@ -1360,6 +1397,18 @@
       var frame = ctx.getImageData(0, 0, w, h);
       var d = frame.data;
       var tol = tolerance(), tolSq = tol * tol;
+      if (keyMode !== 'color') {
+        // グリーン/ブルーバック: 色の優位性で判定し、境界をなめらかにする（元ツールから移植）
+        var thr = tol * 1.8, band = 45;
+        for (var di = 0; di < d.length; di += 4) {
+          var diff = keyMode === 'green' ? d[di + 1] - Math.max(d[di], d[di + 2])
+                                         : d[di + 2] - Math.max(d[di], d[di + 1]);
+          if (diff > thr) d[di + 3] = 0;
+          else if (diff > thr - band) d[di + 3] = Math.round(d[di + 3] * (1 - (diff - (thr - band)) / band));
+        }
+        ctx.putImageData(frame, 0, 0);
+        return;
+      }
       if (holesOn) {
         // 内側も透過: 端につながっていなくても、背景色なら全部透過する
         for (var i = 0; i < d.length; i += 4) {
