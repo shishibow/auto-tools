@@ -119,6 +119,24 @@
       accent-color: var(--primary);
     }
 
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .reset-btn:active {
+      transform: scale(0.95);
+    }
+
     .color-select-row {
       display: flex;
       gap: 8px;
@@ -235,7 +253,7 @@
         <div class="control-group">
           <div class="slider-header">
             <span>透過の強さ（許容度）</span>
-            <span id="toleranceVal">80</span>
+            <span><span id="toleranceVal">80</span><button type="button" class="reset-btn" onclick="resetTolerance()">リセット</button></span>
           </div>
           <input type="range" id="tolerance" min="20" max="150" value="80" oninput="updateTolerance(this.value)">
         </div>
@@ -289,6 +307,11 @@
       tolerance = parseInt(val);
       document.getElementById('toleranceVal').textContent = val;
       processChroma();
+    }
+
+    function resetTolerance() {
+      document.getElementById('tolerance').value = 80;
+      updateTolerance(80);
     }
 
     function processChroma() {

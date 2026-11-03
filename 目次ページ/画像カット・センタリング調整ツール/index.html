@@ -286,6 +286,30 @@
       margin-bottom: 4px;
     }
 
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-head label { margin-bottom: 0; }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .reset-btn:active { transform: scale(0.95); }
+
     input[type="range"] {
       width: 100%;
       accent-color: var(--primary);
@@ -469,10 +493,15 @@
           <button type="button" class="opt-btn" id="btnChromaOff">背景を残す</button>
         </div>
         <div class="slider-box" id="toleranceBox">
-          <label>背景除去の許容度: <span id="toleranceVal">45</span></label>
+          <div class="slider-head"><label>背景除去の許容度: <span id="toleranceVal">45</span></label><button type="button" class="reset-btn" id="resetTolBtn">リセット</button></div>
           <input type="range" id="toleranceRange" min="5" max="120" value="45">
         </div>
-        <p class="hint">画像の端につながっている背景色だけを透過します。素材の内側にある同じ色は残ります。</p>
+        <label class="section-lbl">内側の背景色（ドーナツ型の穴など）</label>
+        <div class="btn-row">
+          <button type="button" class="opt-btn" id="btnHoleOn">内側も透過する</button>
+          <button type="button" class="opt-btn active" id="btnHoleOff">内側は残す</button>
+        </div>
+        <p class="hint">通常は画像の端につながっている背景色だけを透過します。「内側も透過する」にすると端につながっていない背景色も透過しますが、素材の内側にある同じ色も消えます。</p>
       </div>
 
       <div class="card">
@@ -491,7 +520,7 @@
             <button type="button" class="chip" data-caspect="1.3333">標準 (4:3)</button>
           </div>
           <div class="slider-box">
-            <label>本体サイズ（余白比率）: <span id="paddingVal">85%</span></label>
+            <div class="slider-head"><label>本体サイズ（余白比率）: <span id="paddingVal">85%</span></label><button type="button" class="reset-btn" id="resetPadBtn">リセット</button></div>
             <input type="range" id="paddingRange" min="30" max="100" value="85">
           </div>
         </div>
@@ -502,7 +531,7 @@
           <button type="button" class="chip" data-format="image/webp">WebP</button>
         </div>
         <div class="slider-box" id="qualityBox" style="opacity:.4;pointer-events:none">
-          <label>画質: <span id="qualityVal">90</span></label>
+          <div class="slider-head"><label>画質: <span id="qualityVal">90</span></label><button type="button" class="reset-btn" id="resetQualityBtn">リセット</button></div>
           <input type="range" id="qualityRange" min="10" max="100" value="90">
         </div>
         <div class="num-grid" style="grid-template-columns:1fr 1fr">
@@ -541,6 +570,7 @@
     var outMode = 'direct';                              // 'direct' | 'center'
     var format = 'image/png';
     var transparentOn = true;
+    var holesOn = false;
     var bgRGB = { r: 0, g: 0, b: 0 };
     var zoom = 1;
     var downloadUrl = null;
@@ -572,6 +602,7 @@
           quality: $('qualityRange').value,
           tol: $('toleranceRange').value,
           transparentOn: transparentOn,
+          hole: holesOn,
           outMode: outMode
         }));
       } catch (e) {}
@@ -584,6 +615,7 @@
         if (s.quality) { $('qualityRange').value = s.quality; $('qualityVal').textContent = s.quality; }
         if (s.tol) { $('toleranceRange').value = s.tol; $('toleranceVal').textContent = s.tol; }
         if (typeof s.transparentOn === 'boolean') setTransparent(s.transparentOn, false);
+        if (typeof s.hole === 'boolean') setHoles(s.hole, false);
         if (s.outMode) setOutMode(s.outMode, false);
       } catch (e) {}
     }
@@ -1197,6 +1229,23 @@
       saveSettings();
       scheduleRender();
     });
+    $('resetTolBtn').addEventListener('click', function () {
+      $('toleranceRange').value = 45;
+      $('toleranceVal').textContent = '45';
+      saveSettings();
+      scheduleRender();
+    });
+
+    // 内側の背景色（ドーナツ型の穴など）も透過するかどうか
+    function setHoles(on, save) {
+      holesOn = on;
+      $('btnHoleOn').classList.toggle('active', on);
+      $('btnHoleOff').classList.toggle('active', !on);
+      if (save !== false) saveSettings();
+      if (hasImage) renderOutput();
+    }
+    $('btnHoleOn').addEventListener('click', function () { setHoles(true); });
+    $('btnHoleOff').addEventListener('click', function () { setHoles(false); });
 
     // 端につながった背景色だけを透過する（素材内部の同色は残る）
     function chromaRemove(canvas) {
@@ -1206,6 +1255,14 @@
       var frame = ctx.getImageData(0, 0, w, h);
       var d = frame.data;
       var tol = tolerance(), tolSq = tol * tol;
+      if (holesOn) {
+        // 内側も透過: 端につながっていなくても、背景色なら全部透過する
+        for (var i = 0; i < d.length; i += 4) {
+          if (isBgData(d, i, bgRGB, tolSq)) d[i + 3] = 0;
+        }
+        ctx.putImageData(frame, 0, 0);
+        return;
+      }
       var visited = new Uint8Array(w * h);
       var queue = [];
       function push(x, y) {
@@ -1254,6 +1311,11 @@
       $('paddingVal').textContent = $('paddingRange').value + '%';
       scheduleRender();
     });
+    $('resetPadBtn').addEventListener('click', function () {
+      $('paddingRange').value = 85;
+      $('paddingVal').textContent = '85%';
+      scheduleRender();
+    });
 
     function setFormat(mime, save) {
       format = mime;
@@ -1272,6 +1334,12 @@
     });
     $('qualityRange').addEventListener('input', function () {
       $('qualityVal').textContent = $('qualityRange').value;
+      saveSettings();
+      scheduleRender();
+    });
+    $('resetQualityBtn').addEventListener('click', function () {
+      $('qualityRange').value = 90;
+      $('qualityVal').textContent = '90';
       saveSettings();
       scheduleRender();
     });

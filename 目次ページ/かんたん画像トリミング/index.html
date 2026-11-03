@@ -218,6 +218,30 @@
       color: var(--text-muted);
     }
 
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-head label { margin-bottom: 0; }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .reset-btn:active { transform: scale(0.95); }
+
     input[type="range"] {
       width: 100%;
       accent-color: var(--primary);
@@ -342,7 +366,7 @@
           <button type="button" class="opt-btn" id="btnDetect">🎯 素材に合わせる</button>
         </div>
         <div class="slider-box">
-          <label>傾きを直す</label>
+          <div class="slider-head"><label>傾きを直す</label><button type="button" class="reset-btn" id="resetTiltBtn">リセット</button></div>
           <input type="range" id="tiltRange" min="-45" max="45" value="0" step="0.5">
           <span class="sub">左へ・右へ傾いた写真をまっすぐに</span>
         </div>
@@ -353,14 +377,20 @@
           <button type="button" class="opt-btn active" id="btnChromaOff">そのまま</button>
         </div>
         <div class="slider-box hidden" id="tolBox">
-          <label>消す強さ</label>
+          <div class="slider-head"><label>消す強さ</label><button type="button" class="reset-btn" id="resetTolBtn">リセット</button></div>
           <input type="range" id="tolRange" min="5" max="120" value="45">
           <span class="sub">弱い ← → 強い（下のプレビューを見ながら調整）</span>
+          <div class="slider-head" style="margin-top:12px"><label>内側の背景（ドーナツ型の穴など）</label></div>
+          <div class="btn-row" style="margin-top:6px">
+            <button type="button" class="opt-btn" id="btnHoleOn">内側も抜く</button>
+            <button type="button" class="opt-btn active" id="btnHoleOff">内側は残す</button>
+          </div>
+          <span class="sub">「内側も抜く」と、端につながっていない背景色も透明になります。素材の中の同じ色も消えるので注意。</span>
         </div>
 
         <label class="section-lbl">大きさ</label>
         <div class="slider-box">
-          <label>出力サイズ: <span id="sizePct">100%</span></label>
+          <div class="slider-head"><label>出力サイズ: <span id="sizePct">100%</span></label><button type="button" class="reset-btn" id="resetSizeBtn">リセット</button></div>
           <input type="range" id="sizeRange" min="20" max="100" value="100" step="5">
           <span class="sub">小さくするとファイルも軽くなります</span>
         </div>
@@ -397,6 +427,7 @@
     var rot90 = 0;          // 90度回転の回数
     var tilt = 0;           // 傾き補正（度）
     var transparentOn = false;
+    var holesOn = false;
     var bgRGB = { r: 0, g: 0, b: 0 };
     var downloadUrl = null;
     var renderSeq = 0;
@@ -541,6 +572,11 @@
       clearTimeout(tiltTimer);
       tiltTimer = setTimeout(function () { bake(); draw(); renderOutput(); }, 30);
     });
+    $('resetTiltBtn').addEventListener('click', function () {
+      tilt = 0;
+      $('tiltRange').value = 0;
+      if (hasImage) { bake(); draw(); renderOutput(); }
+    });
     $('btnRotate').addEventListener('click', function () {
       if (!hasImage) return;
       rot90 = (rot90 + 1) % 4;
@@ -653,6 +689,14 @@
       var frame = ctx.getImageData(0, 0, w, h);
       var d = frame.data;
       var tSq = tolSq();
+      if (holesOn) {
+        // 内側も抜く: 端につながっていなくても、背景色なら全部透過する
+        for (var i = 0; i < d.length; i += 4) {
+          if (isBgData(d, i, bgRGB, tSq)) d[i + 3] = 0;
+        }
+        ctx.putImageData(frame, 0, 0);
+        return;
+      }
       var visited = new Uint8Array(w * h);
       var queue = [];
       function push(x, y) {
@@ -685,6 +729,23 @@
     $('btnChromaOn').addEventListener('click', function () { setTransparent(true); if (hasImage) renderOutput(); });
     $('btnChromaOff').addEventListener('click', function () { setTransparent(false); if (hasImage) renderOutput(); });
     $('tolRange').addEventListener('input', function () { scheduleRender(); });
+
+    // 内側の背景（ドーナツ型の穴など）も抜くかどうか
+    function setHoles(on) {
+      holesOn = on;
+      $('btnHoleOn').classList.toggle('active', on);
+      $('btnHoleOff').classList.toggle('active', !on);
+    }
+    $('btnHoleOn').addEventListener('click', function () { setHoles(true); if (hasImage) renderOutput(); });
+    $('btnHoleOff').addEventListener('click', function () { setHoles(false); if (hasImage) renderOutput(); });
+
+    // スライダーのリセット
+    $('resetTolBtn').addEventListener('click', function () { $('tolRange').value = 45; scheduleRender(); });
+    $('resetSizeBtn').addEventListener('click', function () {
+      $('sizeRange').value = 100;
+      $('sizePct').textContent = '100%';
+      scheduleRender();
+    });
 
     // ===== 表示 =====
     function displayScale() {
