@@ -150,6 +150,7 @@
     }
 
     .opt-btn:active { transform: scale(0.97); }
+    .opt-btn:disabled { opacity: 0.45; cursor: default; }
 
     .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 
@@ -437,6 +438,14 @@
         </div>
         <p class="range-info" id="rangeInfo"></p>
         <p class="hint" id="modeHint"></p>
+        <div id="batchBar" class="hidden" style="margin-top:10px">
+          <p class="range-info" id="batchInfo">まとめて保存リスト: 0個選択中</p>
+          <div class="btn-row">
+            <button type="button" class="opt-btn" id="btnZip" disabled>📦 まとめてZIPで保存</button>
+            <button type="button" class="opt-btn" id="btnBatchClear">リストを消す</button>
+          </div>
+          <p class="hint">保存すると、選んだアイコンがそれぞれ「センタリング＋背景透過」された画像になり、ZIPにまとめて入ります。比率と本体サイズは「出力」欄のセンタリング設定（未設定時は正方形・85%）を使います。</p>
+        </div>
         <div class="zoom-row">
           <span class="section-lbl" style="margin:0">表示倍率</span>
           <input type="range" id="zoomRange" min="25" max="400" value="100" step="5">
@@ -571,6 +580,8 @@
     var format = 'image/png';
     var transparentOn = true;
     var holesOn = false;
+    var batch = [];          // まとめて保存するアイコンの範囲リスト
+    var zipBusy = false;
     var bgRGB = { r: 0, g: 0, b: 0 };
     var zoom = 1;
     var downloadUrl = null;
@@ -674,6 +685,7 @@
       srcCtx.drawImage(drawable, 0, 0);
       hasImage = true;
       crop = { x: 0, y: 0, w: w, h: h };
+      batch = [];
       if (aspect) fitAspectInside();
       viewCanvas.width = w;
       viewCanvas.height = h;
@@ -799,6 +811,20 @@
         viewCtx.moveTo(crop.x, gy); viewCtx.lineTo(crop.x + crop.w, gy);
       }
       viewCtx.stroke();
+      // まとめて保存リストの枠（番号付き）
+      batch.forEach(function (b, idx) {
+        viewCtx.strokeStyle = 'rgba(79,70,229,0.9)';
+        viewCtx.lineWidth = Math.max(1.5, sc * 2);
+        viewCtx.strokeRect(b.x, b.y, b.w, b.h);
+        var badge = clamp(20 * sc, 11, 72);
+        viewCtx.fillStyle = '#4f46e5';
+        viewCtx.fillRect(b.x, b.y, badge, badge);
+        viewCtx.fillStyle = '#ffffff';
+        viewCtx.font = '700 ' + Math.round(badge * 0.62) + 'px sans-serif';
+        viewCtx.textAlign = 'center';
+        viewCtx.textBaseline = 'middle';
+        viewCtx.fillText(String(idx + 1), b.x + badge / 2, b.y + badge / 2 + 1);
+      });
       // 枠線
       viewCtx.strokeStyle = '#ffffff';
       viewCtx.lineWidth = Math.max(1.5, sc * 2.5);
@@ -847,8 +873,9 @@
       $('modeDetectBtn').classList.toggle('active', m === 'detect');
       viewCanvas.style.cursor = m === 'detect' ? 'pointer' : 'crosshair';
       $('modeHint').textContent = m === 'detect'
-        ? '画像の中の素材をタップすると、その素材の範囲を自動で検出します。検出後は「切り取り」モードで微調整できます。'
+        ? '画像の中の素材をタップすると、その素材の範囲を自動で検出します。複数タップすると「まとめて保存リスト」に入り、センタリング＋透過した画像をZIPでまとめて保存できます。同じ素材をもう一度タップすると外れます。'
         : 'ドラッグで範囲を指定します。枠の中をドラッグで移動、角と辺の四角をドラッグで大きさ変更。';
+      updateBatchUI();
     }
     $('modeCropBtn').addEventListener('click', function () { setMode('crop'); });
     $('modeDetectBtn').addEventListener('click', function () { setMode('detect'); });
@@ -948,6 +975,7 @@
       if (wasTap && mode === 'detect' && hasImage) {
         var box = detectTapBox(Math.round(tapX), Math.round(tapY));
         if (box) {
+          toggleBatch(box);
           crop = box;
           if (aspect) fitAspectInside();
           draw();
@@ -1181,6 +1209,39 @@
       return { x: rx0 + fx0, y: ry0 + fy0, w: fx1 - fx0 + 1, h: fy1 - fy0 + 1 };
     }
 
+    // ===== まとめて保存リスト =====
+    function boxIou(a, b) {
+      var x0 = Math.max(a.x, b.x), y0 = Math.max(a.y, b.y);
+      var x1 = Math.min(a.x + a.w, b.x + b.w), y1 = Math.min(a.y + a.h, b.y + b.h);
+      if (x1 <= x0 || y1 <= y0) return 0;
+      var inter = (x1 - x0) * (y1 - y0);
+      return inter / (a.w * a.h + b.w * b.h - inter);
+    }
+
+    function toggleBatch(box) {
+      for (var i = 0; i < batch.length; i++) {
+        if (boxIou(box, batch[i]) > 0.7) {
+          batch.splice(i, 1);
+          updateBatchUI();
+          return;
+        }
+      }
+      batch.push({ x: box.x, y: box.y, w: box.w, h: box.h });
+      updateBatchUI();
+    }
+
+    function updateBatchUI() {
+      $('batchBar').classList.toggle('hidden', mode !== 'detect');
+      $('batchInfo').textContent = 'まとめて保存リスト: ' + batch.length + '個選択中';
+      $('btnZip').disabled = batch.length === 0 || zipBusy;
+    }
+
+    $('btnBatchClear').addEventListener('click', function () {
+      batch = [];
+      updateBatchUI();
+      draw();
+    });
+
     // ===== 回転・反転（作業画像に焼き込み、範囲は全体にリセット） =====
     function bakeTransform(kind) {
       if (!hasImage) return;
@@ -1204,6 +1265,8 @@
       viewCanvas.width = srcC.width;
       viewCanvas.height = srcC.height;
       crop = { x: 0, y: 0, w: srcC.width, h: srcC.height };
+      batch = [];
+      updateBatchUI();
       if (aspect) fitAspectInside();
       sampleBackground();
       applyZoom();
@@ -1288,6 +1351,149 @@
       }
       ctx.putImageData(frame, 0, 0);
     }
+
+    // ===== まとめて保存（センタリング＋透過 → ZIP） =====
+    // 1アイコン分の出力キャンバスを作る（センタリング合成）
+    function composeCentered(box) {
+      var bw = Math.max(1, Math.round(box.w)), bh = Math.max(1, Math.round(box.h));
+      var region = document.createElement('canvas');
+      region.width = bw; region.height = bh;
+      region.getContext('2d').drawImage(srcC, Math.round(box.x), Math.round(box.y), bw, bh, 0, 0, bw, bh);
+      if (transparentOn) chromaRemove(region);
+      var asp = (outMode === 'center' && centerAspect !== 'fit') ? centerAspect : 1;
+      var padPct = (outMode === 'center' ? parseInt($('paddingRange').value, 10) : 85) / 100;
+      var outWInput = parseInt($('outWidth').value, 10);
+      var W = outWInput > 0 ? outWInput : (asp === 1 ? 512 : 800);
+      var H = Math.round(W / asp);
+      var final = document.createElement('canvas');
+      final.width = W; final.height = H;
+      var fctx = final.getContext('2d');
+      var itemAsp = bw / bh, boxAsp = W / H;
+      var dw, dh;
+      if (itemAsp > boxAsp) { dw = W * padPct; dh = dw / itemAsp; }
+      else { dh = H * padPct; dw = dh * itemAsp; }
+      fctx.imageSmoothingEnabled = true;
+      fctx.imageSmoothingQuality = 'high';
+      fctx.drawImage(region, 0, 0, bw, bh, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      if (format !== 'image/png') {
+        var flat = document.createElement('canvas');
+        flat.width = W; flat.height = H;
+        var fx2 = flat.getContext('2d');
+        fx2.fillStyle = '#ffffff';
+        fx2.fillRect(0, 0, W, H);
+        fx2.drawImage(final, 0, 0);
+        final = flat;
+      }
+      return final;
+    }
+
+    // ZIP（無圧縮STORE形式）の最小実装
+    var crcTable = null;
+    function crc32(bytes) {
+      if (!crcTable) {
+        crcTable = new Int32Array(256);
+        for (var n = 0; n < 256; n++) {
+          var c = n;
+          for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          crcTable[n] = c;
+        }
+      }
+      var crc = -1;
+      for (var i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
+      return (crc ^ -1) >>> 0;
+    }
+
+    function makeZip(files) {
+      var enc = new TextEncoder();
+      var chunks = [];
+      var central = [];
+      var offset = 0;
+      var now = new Date();
+      var dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+      var dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+      files.forEach(function (f) {
+        var nameBytes = enc.encode(f.name);
+        var crc = crc32(f.data);
+        var local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(6, 0x0800, true);
+        local.setUint16(8, 0, true);
+        local.setUint16(10, dosTime, true);
+        local.setUint16(12, dosDate, true);
+        local.setUint32(14, crc, true);
+        local.setUint32(18, f.data.length, true);
+        local.setUint32(22, f.data.length, true);
+        local.setUint16(26, nameBytes.length, true);
+        local.setUint16(28, 0, true);
+        chunks.push(new Uint8Array(local.buffer), nameBytes, f.data);
+        var cen = new DataView(new ArrayBuffer(46));
+        cen.setUint32(0, 0x02014b50, true);
+        cen.setUint16(4, 20, true);
+        cen.setUint16(6, 20, true);
+        cen.setUint16(8, 0x0800, true);
+        cen.setUint16(10, 0, true);
+        cen.setUint16(12, dosTime, true);
+        cen.setUint16(14, dosDate, true);
+        cen.setUint32(16, crc, true);
+        cen.setUint32(20, f.data.length, true);
+        cen.setUint32(24, f.data.length, true);
+        cen.setUint16(28, nameBytes.length, true);
+        cen.setUint32(42, offset, true);
+        central.push(new Uint8Array(cen.buffer), nameBytes);
+        offset += 30 + nameBytes.length + f.data.length;
+      });
+      var centralSize = central.reduce(function (a, c) { return a + c.length; }, 0);
+      var end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, files.length, true);
+      end.setUint16(10, files.length, true);
+      end.setUint32(12, centralSize, true);
+      end.setUint32(16, offset, true);
+      return new Blob(chunks.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
+    }
+
+    $('btnZip').addEventListener('click', function () {
+      if (!batch.length || zipBusy) return;
+      zipBusy = true;
+      updateBatchUI();
+      var btn = $('btnZip');
+      var quality = parseInt($('qualityRange').value, 10) / 100;
+      var ext = format === 'image/jpeg' ? 'jpg' : (format === 'image/webp' ? 'webp' : 'png');
+      var files = [];
+      var i = 0;
+      btn.textContent = '生成中… 0/' + batch.length;
+      function finish() {
+        var blob = makeZip(files);
+        var url = URL.createObjectURL(blob);
+        var now = new Date();
+        var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'icons_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
+          '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.zip';
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        zipBusy = false;
+        btn.textContent = '📦 まとめてZIPで保存';
+        updateBatchUI();
+      }
+      function next() {
+        if (i >= batch.length) { finish(); return; }
+        var canvas = composeCentered(batch[i]);
+        canvas.toBlob(function (b) {
+          if (!b) { i++; next(); return; }
+          b.arrayBuffer().then(function (buf) {
+            var num = (i + 1 < 10 ? '0' : '') + (i + 1);
+            files.push({ name: 'icon_' + num + '.' + ext, data: new Uint8Array(buf) });
+            i++;
+            btn.textContent = '生成中… ' + i + '/' + batch.length;
+            next();
+          });
+        }, format, format === 'image/png' ? undefined : quality);
+      }
+      next();
+    });
 
     // ===== 出力設定 =====
     function setOutMode(m, save) {
