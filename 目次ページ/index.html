@@ -2,572 +2,270 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="google-site-verification" content="-6wVpKBLuMbzI1EvJouNAwWOBqw4uWqgvaJI9H3sK64" />
   <title>実用Web便利ツール集 - スマホ・PCで即座に使える計算・変換まとめ</title>
   <meta name="description" content="日常、仕事、学業、創作で役立つ実用的なWeb計算・変換・画像編集ツールのポータルサイト。">
+  <meta name="theme-color" content="#ffffff">
   <style>
-    :root {
-      --primary: #2563eb;
-      --primary-light: #eff6ff;
-      --primary-dark: #1d4ed8;
-      --accent: #16a34a;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --radius: 12px;
+    :root{
+      --indigo:#4f46e5; --violet:#7c3aed; --sky:#0284c7;
+      --text:#0f172a; --muted:#64748b;
+      --bg:#f6f7fb; --card:#ffffff; --border:#e6e8f0;
+      --shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px -12px rgba(15,23,42,.12);
+      --shadow-hover:0 2px 4px rgba(15,23,42,.06),0 16px 32px -12px rgba(79,70,229,.25);
+      --radius:18px;
+      --tint:#eef2ff;
     }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --text:#e2e8f0; --muted:#94a3b8;
+        --bg:#0b1120; --card:#131c31; --border:#22304d;
+        --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+        --shadow-hover:0 2px 4px rgba(0,0,0,.5),0 16px 32px -12px rgba(124,58,237,.45);
+        --tint:#1e2547;
+      }
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+      background:var(--bg); color:var(--text); line-height:1.75;
+      letter-spacing:.02em; line-break:strict; overflow-wrap:break-word;
+      padding-bottom:96px;
+    }
+    .container{max-width:1024px;margin:0 auto;padding:0 16px}
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+    /* ===== Hero ===== */
+    .hero{padding:28px 0 6px}
+    .hero-inner{max-width:1024px;margin:0 auto;padding:0 16px}
+    h1{font-size:clamp(1.5rem,5.5vw,2rem);font-weight:900;letter-spacing:-.01em;line-height:1.4;text-wrap:balance}
+    .subtitle{font-size:.88rem;color:var(--muted);margin-top:8px;line-height:1.8;text-wrap:pretty}
+    .subtitle .phrase{display:inline-block}
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      padding-bottom: 90px;
+    /* ===== Sticky search + tabs ===== */
+    .stickybar{
+      position:sticky;top:0;z-index:20;
+      background:color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--border);
+      padding:10px 0 8px;margin-bottom:18px;
     }
+    .search-wrap{position:relative;max-width:1024px;margin:0 auto;padding:0 16px}
+    .search-wrap .icon{
+      position:absolute;left:30px;top:50%;transform:translateY(-50%);
+      font-size:1rem;pointer-events:none;opacity:.55;
+    }
+    #searchInput{
+      width:100%;height:52px;border-radius:16px;
+      border:1.5px solid var(--border);background:var(--card);color:var(--text);
+      font-size:1rem;padding:0 44px 0 46px;outline:none;
+      box-shadow:var(--shadow);transition:border-color .2s, box-shadow .2s;
+      appearance:none;-webkit-appearance:none;
+    }
+    #searchInput:focus{border-color:var(--indigo);box-shadow:0 0 0 4px rgba(79,70,229,.18)}
+    #searchClear{
+      position:absolute;right:24px;top:50%;transform:translateY(-50%);
+      width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;
+      background:var(--tint);color:var(--muted);font-size:.95rem;display:none;
+      align-items:center;justify-content:center;
+    }
+    .category-tabs{
+      display:flex;gap:8px;overflow-x:auto;padding:10px 16px 2px;
+      max-width:1024px;margin:0 auto;scrollbar-width:none;
+    }
+    .category-tabs::-webkit-scrollbar{display:none}
+    .tab-btn{
+      flex-shrink:0;min-height:40px;
+      background:var(--card);border:1.5px solid var(--border);border-radius:999px;
+      padding:8px 16px;font-size:.83rem;font-weight:700;color:var(--muted);
+      cursor:pointer;white-space:nowrap;transition:all .18s;font-family:inherit;
+    }
+    .tab-btn:active{transform:scale(.96)}
+    .tab-btn.active{background:var(--indigo);color:#fff;border-color:var(--indigo)}
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 16px;
+    /* ===== Special banner ===== */
+    .special{
+      background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+      box-shadow:var(--shadow);padding:18px;margin-bottom:22px;
     }
+    .special h2{font-size:.95rem;font-weight:800;margin-bottom:6px;line-height:1.6}
+    .special p{font-size:.82rem;color:var(--muted);margin-bottom:12px;line-height:1.75;text-wrap:pretty}
+    .special-list{list-style:none;display:grid;gap:10px}
+    @media(min-width:640px){.special-list{grid-template-columns:1fr 1fr}}
+    .special-list a{
+      display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;
+      background:var(--tint);
+      border:1.5px solid var(--border);border-radius:14px;padding:13px 14px;
+      font-weight:800;font-size:.87rem;transition:transform .15s, box-shadow .15s;min-height:56px;
+    }
+    .special-list a:active{transform:scale(.98)}
+    .special-list .desc{display:block;font-weight:500;font-size:.76rem;color:var(--muted);margin-top:3px;line-height:1.6;text-wrap:pretty}
+    .special-list .ext{margin-left:auto;color:var(--indigo);flex-shrink:0}
 
-    header {
-      text-align: center;
-      margin-bottom: 16px;
-      padding: 12px 0 4px;
+    /* ===== Sections & cards ===== */
+    .result-count{font-size:.8rem;color:var(--muted);margin:0 2px 12px;min-height:1.2em;line-height:1.6}
+    .category-section{margin-bottom:28px}
+    .category-section[hidden]{display:none}
+    .section-title{
+      font-size:1rem;font-weight:900;display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-left:2px;
+      line-height:1.6;text-wrap:balance;
     }
-
-    h1 {
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: var(--primary);
-      letter-spacing: -0.5px;
+    .section-title .count{
+      font-size:.7rem;font-weight:800;color:var(--indigo);background:var(--tint);
+      border-radius:999px;padding:2px 9px;
     }
-
-    .subtitle {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 4px;
+    .tool-list{display:grid;gap:10px;grid-template-columns:1fr}
+    @media(min-width:640px){.tool-list{grid-template-columns:1fr 1fr}}
+    @media(min-width:960px){.tool-list{grid-template-columns:1fr 1fr 1fr}}
+    .tool-card{
+      position:relative;display:flex;align-items:flex-start;gap:14px;
+      background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+      padding:16px 46px 16px 16px;text-decoration:none;color:inherit;
+      box-shadow:var(--shadow);min-height:72px;
+      transition:transform .15s, box-shadow .2s, border-color .2s;
     }
-
-    /* 特化版バナー */
-    .special-banner {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius);
-      padding: 14px;
-      margin-bottom: 16px;
+    .tool-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);border-color:rgba(99,102,241,.4)}
+    .tool-card:active{transform:scale(.985)}
+    .tool-card[hidden]{display:none}
+    .tool-icon{
+      width:48px;height:48px;flex-shrink:0;border-radius:14px;margin-top:2px;
+      display:flex;align-items:center;justify-content:center;font-size:1.35rem;
+      background:var(--tint);
     }
-
-    .special-banner h3 {
-      font-size: 0.95rem;
-      color: #1e3a8a;
-      margin-bottom: 6px;
+    [data-cat="media"] .tool-icon{background:linear-gradient(135deg,#ede9fe,#fae8ff)}
+    [data-cat="money"] .tool-icon{background:linear-gradient(135deg,#fef3c7,#dcfce7)}
+    [data-cat="time"] .tool-icon{background:linear-gradient(135deg,#dbeafe,#e0f2fe)}
+    [data-cat="lifestyle"] .tool-icon{background:linear-gradient(135deg,#ccfbf1,#fef9c3)}
+    [data-cat="utility"] .tool-icon{background:linear-gradient(135deg,#e0e7ff,#f1f5f9)}
+    @media (prefers-color-scheme: dark){
+      [data-cat="media"] .tool-icon,[data-cat="money"] .tool-icon,
+      [data-cat="time"] .tool-icon,[data-cat="lifestyle"] .tool-icon,
+      [data-cat="utility"] .tool-icon{background:var(--tint)}
     }
-
-    .special-banner p {
-      font-size: 0.8rem;
-      color: #475569;
-      margin-bottom: 10px;
+    .tool-info{flex:1;min-width:0}
+    .tool-title{font-size:.93rem;font-weight:800;line-height:1.55;text-wrap:balance}
+    .tool-desc{
+      font-size:.78rem;color:var(--muted);margin-top:3px;line-height:1.7;
+      text-wrap:pretty;
     }
-
-    .special-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .arrow{display:none}
+    @media (prefers-color-scheme: dark){.arrow{color:#3b4a68}}
+    .fav-btn{
+      position:absolute;top:6px;right:6px;width:34px;height:34px;
+      border:none;background:transparent;cursor:pointer;font-size:1rem;line-height:1;
+      color:#c3c9d6;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      transition:transform .15s,color .15s;z-index:2;
     }
-
-    .special-list li a {
-      color: var(--primary);
-      font-weight: 700;
-      font-size: 0.85rem;
-      text-decoration: none;
+    .fav-btn:active{transform:scale(1.3)}
+    .fav-btn.on{color:#f59e0b}
+    .empty{
+      display:none;text-align:center;padding:44px 16px;color:var(--muted);line-height:1.9;
+      background:var(--card);border:1.5px dashed var(--border);border-radius:var(--radius);
     }
-
-    /* カテゴリタブ（横スクロール可能） */
-    .category-tabs-wrapper {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: var(--bg);
-      padding: 8px 0;
-      margin: 0 -16px 16px -16px;
-      border-bottom: 1px solid var(--border);
+    .empty .big{font-size:2rem;margin-bottom:8px}
+    .empty.show{display:block}
+    footer{
+      margin-top:36px;text-align:center;font-size:.74rem;color:var(--muted);line-height:1.7;padding:0 16px;
     }
-
-    .category-tabs {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding: 0 16px;
-      scrollbar-width: none;
-    }
-
-    .category-tabs::-webkit-scrollbar {
-      display: none;
-    }
-
-    .tab-btn {
-      flex-shrink: 0;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-    }
-
-    /* セクション */
-    .category-section {
-      margin-bottom: 24px;
-    }
-
-    .section-title {
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding-left: 4px;
-    }
-
-    /* ツールカード一覧 */
-    .tool-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .tool-card {
-      display: flex;
-      align-items: center;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-      transition: transform 0.1s, border-color 0.2s;
-    }
-
-    .tool-card:active {
-      transform: scale(0.98);
-      background: #f8fafc;
-    }
-
-    .tool-icon {
-      font-size: 1.4rem;
-      margin-right: 12px;
-      flex-shrink: 0;
-    }
-
-    .tool-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .tool-title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .tool-desc {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-    }
-
-    .arrow {
-      font-size: 1rem;
-      color: #cbd5e1;
-      margin-left: 8px;
-      flex-shrink: 0;
-    }
-  </style>
+    footer .lock{font-weight:700;color:var(--text)}
+  
+    /* ===== Top bar & side drawer (v4) ===== */
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+      max-width:1024px;margin:0 auto;padding:14px 16px 0}
+    .site-name{font-size:1.05rem;font-weight:900;color:inherit;text-decoration:none;line-height:1.4}
+    .menu-btn{flex-shrink:0;min-width:52px;height:52px;border-radius:16px;cursor:pointer;
+      border:1.5px solid var(--border);background:var(--card);color:var(--text);
+      font-size:1.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+      box-shadow:var(--shadow);font-family:inherit}
+    .menu-btn small{font-size:.58rem;font-weight:700;color:var(--muted);line-height:1}
+    .menu-btn:active{transform:scale(.95)}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:40;
+      opacity:0;pointer-events:none;transition:opacity .25s}
+    .overlay.open{opacity:1;pointer-events:auto}
+    .drawer{position:fixed;top:0;right:0;z-index:50;height:100dvh;width:min(320px,86vw);
+      background:var(--card);box-shadow:-12px 0 32px rgba(15,23,42,.18);
+      transform:translateX(105%);transition:transform .28s ease;overflow-y:auto;
+      padding:16px 16px 32px}
+    .drawer.open{transform:none}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .drawer-head .t{font-weight:900;font-size:1rem}
+    .drawer-close{width:44px;height:44px;border:none;border-radius:50%;cursor:pointer;
+      background:var(--tint);color:var(--text);font-size:1rem}
+    .nav-item{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;
+      padding:14px 12px;border-radius:14px;font-weight:800;font-size:.95rem;line-height:1.5;min-height:56px}
+    .nav-item:active{background:var(--tint)}
+    .nav-item.active{background:var(--tint);color:var(--indigo)}
+    .nav-item .n-icon{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:var(--tint);
+      display:flex;align-items:center;justify-content:center;font-size:1.15rem}
+    .nav-item.active .n-icon{background:var(--card)}
+    .nav-item .n-count{margin-left:auto;font-size:.72rem;font-weight:800;color:var(--indigo);
+      background:var(--tint);border-radius:999px;padding:2px 9px}
+    .nav-item.active .n-count{background:var(--card)}
+    .nav-sep{border:none;border-top:1px solid var(--border);margin:10px 0}
+    body.locked{overflow:hidden}
+    /* ===== Home: category cards ===== */
+    .cat-list{display:grid;gap:10px;grid-template-columns:1fr;margin-top:6px}
+    @media(min-width:640px){.cat-list{grid-template-columns:1fr 1fr}}
+    .cat-card{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;
+      background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+      padding:18px 16px;box-shadow:var(--shadow);min-height:84px;transition:transform .15s, box-shadow .2s}
+    .cat-card:active{transform:scale(.985)}
+    .cat-card .c-icon{width:52px;height:52px;flex-shrink:0;border-radius:14px;background:var(--tint);
+      display:flex;align-items:center;justify-content:center;font-size:1.5rem}
+    .cat-card .c-title{font-weight:900;font-size:1rem;line-height:1.55}
+    .cat-card .c-desc{display:block;font-size:.78rem;color:var(--muted);line-height:1.7;margin-top:2px;text-wrap:pretty}
+    .cat-card .c-arrow{margin-left:auto;color:var(--muted);font-size:1.3rem;flex-shrink:0}
+    .page-head{padding:10px 0 4px}
+    .page-head h1{font-size:clamp(1.35rem,5vw,1.8rem)}
+    .back-link{display:inline-flex;align-items:center;gap:6px;margin-top:22px;
+      color:var(--indigo);font-weight:800;font-size:.88rem;text-decoration:none;min-height:44px}
+</style>
 </head>
 <body>
 
-  <div class="container">
-    <header>
+  <div class="topbar">
+    <a class="site-name" href="./index.html">実用Webツール集</a>
+    <button type="button" class="menu-btn" id="menuBtn" aria-label="メニューを開く" aria-expanded="false">☰<small>メニュー</small></button>
+  </div>
+  <div class="overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="メニュー">
+    <div class="drawer-head"><span class="t">分野から探す</span>
+      <button type="button" class="drawer-close" id="drawerClose" aria-label="メニューを閉じる">✕</button></div>
+    <a class="nav-item active" href="./index.html"><span class="n-icon">🏠</span>トップ</a>
+    <hr class="nav-sep">
+    <a class="nav-item" href="./media.html"><span class="n-icon">🎨</span>画像・動画<span class="n-count">6</span></a>
+    <a class="nav-item" href="./money.html"><span class="n-icon">💰</span>お金・買い物<span class="n-count">8</span></a>
+    <a class="nav-item" href="./time.html"><span class="n-icon">⏱️</span>時間・日程<span class="n-count">6</span></a>
+    <a class="nav-item" href="./lifestyle.html"><span class="n-icon">🍳</span>生活・健康・移動<span class="n-count">8</span></a>
+    <a class="nav-item" href="./utility.html"><span class="n-icon">🛠️</span>テキスト・便利機能<span class="n-count">7</span></a>
+    <a class="nav-item" href="./fav.html"><span class="n-icon">⭐</span>お気に入り</a>
+  </aside>
+  <div class="hero">
+    <div class="hero-inner">
       <h1>実用Webツール集</h1>
-      <p class="subtitle">日常・仕事・創作で役立つ便利な計算・変換・画像ツールまとめ</p>
-    </header>
-
-    <!-- 特化版ツールの案内ブロック -->
-    <section class="special-banner">
-      <h3>🔥 スマホ対応・高機能特化版ツール</h3>
-      <p>日常の計算をよりスムーズに行える専用ページです。</p>
+      <p class="subtitle"><span class="phrase">日常・仕事・創作で役立つ、</span><span class="phrase">計算・変換・画像ツールのまとめ</span></p>
+    </div>
+  </div>
+  <div class="container">
+    <p class="subtitle" style="margin:14px 2px 10px">分野を選んでください。右上のメニューからも移動できます。</p>
+    <div class="cat-list">
+        <a class="cat-card" href="./media.html"><span class="c-icon">🎨</span><span><span class="c-title">画像・動画（6）</span><span class="c-desc">画像編集や動画の加工に使うツール</span></span><span class="c-arrow">›</span></a>
+        <a class="cat-card" href="./money.html"><span class="c-icon">💰</span><span><span class="c-title">お金・買い物（8）</span><span class="c-desc">割り勘、割引、税金などの計算</span></span><span class="c-arrow">›</span></a>
+        <a class="cat-card" href="./time.html"><span class="c-icon">⏱️</span><span><span class="c-title">時間・日程（6）</span><span class="c-desc">タイマーや日付・時間の計算</span></span><span class="c-arrow">›</span></a>
+        <a class="cat-card" href="./lifestyle.html"><span class="c-icon">🍳</span><span><span class="c-title">生活・健康・移動（8）</span><span class="c-desc">料理、健康、移動にかかる計算</span></span><span class="c-arrow">›</span></a>
+        <a class="cat-card" href="./utility.html"><span class="c-icon">🛠️</span><span><span class="c-title">テキスト・便利機能（7）</span><span class="c-desc">文字の変換やパスワード生成など</span></span><span class="c-arrow">›</span></a>
+    </div>
+    <div style="height:22px"></div>
+    <section class="special" id="specialBanner">
+      <h2>特化版ツール</h2>
+      <p>別ページで公開している専用ツールです。</p>
       <ul class="special-list">
-        <li>
-          👉 <a href="https://shishibow.github.io/baito-keisan/" target="_blank" rel="noopener">バイト実働・休憩・給与計算ツール ↗</a>
-          <span style="font-size: 0.75rem; color: #64748b;">（深夜割増・法定休憩の自動計算）</span>
-        </li>
-        <li>
-          👉 <a href="https://shishibow.github.io/date-keisan/" target="_blank" rel="noopener">日数・日付計算ツール ↗</a>
-          <span style="font-size: 0.75rem; color: #64748b;">（あと何日？・〇日後の日付・差分）</span>
-        </li>
+        <li><a href="https://shishibow.github.io/baito-keisan/" target="_blank" rel="noopener">🧮 バイト実働・休憩・給与計算<span class="desc">深夜割増・法定休憩の自動計算</span><span class="ext">↗</span></a></li>
+        <li><a href="https://shishibow.github.io/date-keisan/" target="_blank" rel="noopener">📅 日数・日付計算ツール<span class="desc">あと何日？・〇日後の日付・日付の差分</span><span class="ext">↗</span></a></li>
       </ul>
     </section>
-
-    <!-- カテゴリ切り替えタブ（固定スクロール） -->
-    <div class="category-tabs-wrapper">
-      <div class="category-tabs">
-        <button type="button" class="tab-btn active" onclick="filterCategory('all', this)">すべて</button>
-        <button type="button" class="tab-btn" onclick="filterCategory('media', this)">🎨 画像・動画</button>
-        <button type="button" class="tab-btn" onclick="filterCategory('money', this)">💰 お金・買い物</button>
-        <button type="button" class="tab-btn" onclick="filterCategory('time', this)">⏱️ 時間・日程</button>
-        <button type="button" class="tab-btn" onclick="filterCategory('lifestyle', this)">🍳 生活・健康・移動</button>
-        <button type="button" class="tab-btn" onclick="filterCategory('utility', this)">🛠️ テキスト・便利機能</button>
-      </div>
-    </div>
-
-    <!-- 1. 画像・動画・メディア制作 -->
-    <section class="category-section" data-cat="media">
-      <div class="section-title">🎨 画像・動画・メディア制作</div>
-      <div class="tool-list">
-        <a href="./透過画像余白・比率調整ツール/" class="tool-card">
-          <div class="tool-icon">🔲</div>
-          <div class="tool-info">
-            <div class="tool-title">透過画像 余白・比率調整ツール</div>
-            <div class="tool-desc">正方形枠を維持したまま、本体のサイズ・余白比率を微調整</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./グリーンバック透過ツール/" class="tool-card">
-          <div class="tool-icon">🖼️</div>
-          <div class="tool-info">
-            <div class="tool-title">グリーンバック透過ツール</div>
-            <div class="tool-desc">緑・青の背景をワンタップで透過して透明PNGを保存</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./動画トリミング・前後カットツール/" class="tool-card">
-          <div class="tool-icon">✂️</div>
-          <div class="tool-info">
-            <div class="tool-title">動画トリミング・前後カットツール</div>
-            <div class="tool-desc">不要な前後をブラウザ上で安全＆瞬時に切り取り</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./画像カット・センタリング調整ツール/" class="tool-card">
-          <div class="tool-icon">✂️</div>
-          <div class="tool-info">
-            <div class="tool-title">画像カット・センタリング調整</div>
-            <div class="tool-desc">ドラッグで自由トリミング＆ワンタップで中央配置</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./動画軽量化・画質fps低下ツール/" class="tool-card">
-          <div class="tool-icon">🗜️</div>
-          <div class="tool-info">
-            <div class="tool-title">動画軽量化・画質fps低下ツール</div>
-            <div class="tool-desc">解像度やフレームレートを落として動画ファイル容量を削減</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-
-         <a href="./倍速再生・動画視聴時間計算機/" class="tool-card">
-          <div class="tool-icon">⏩</div>
-          <div class="tool-info">
-            <div class="tool-title">倍速再生・動画視聴時間計算機</div>
-            <div class="tool-desc">講義・YouTube・映画の倍速視聴時間と短縮分を即算出</div>
-          </div>
-          <span class="arrow">›</span>
-         </a>
-      </div>
-    </section>
-
-    <!-- 2. お金・買い物・精算 -->
-    <section class="category-section" data-cat="money">
-      <div class="section-title">💰 お金・買い物・精算</div>
-      <div class="tool-list">
-        <a href="./実質時給計算/" class="tool-card">
-          <div class="tool-icon">⌛</div>
-          <div class="tool-info">
-            <div class="tool-title">実質時給計算機</div>
-            <div class="tool-desc">通勤時間・準備時間・交通費を含めた「本当の時給」を算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./端数スッキリ割り勘計算機/" class="tool-card">
-          <div class="tool-icon">👥</div>
-          <div class="tool-info">
-            <div class="tool-title">端数スッキリ割り勘計算機</div>
-            <div class="tool-desc">100円・500円単位でキレイに丸めて傾斜配分もできる割り勘ツール</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./お釣り・硬貨紙幣計算機/" class="tool-card">
-          <div class="tool-icon">🪙</div>
-          <div class="tool-info">
-            <div class="tool-title">お釣り・硬貨紙幣計算機</div>
-            <div class="tool-desc">請求額とお預かり金額からお釣りの最小枚数を即算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./メルカリ・フリマ利益計算機/" class="tool-card">
-          <div class="tool-icon">📦</div>
-          <div class="tool-info">
-            <div class="tool-title">メルカリ・フリマ利益計算機</div>
-            <div class="tool-desc">販売価格・手数料・送料・原価から手元に残る純利益と利益率を即算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./割引・セール価格計算機/" class="tool-card">
-          <div class="tool-icon">🏷️</div>
-          <div class="tool-info">
-            <div class="tool-title">割引・セール価格計算機</div>
-            <div class="tool-desc">「〇%OFF」「〇割引」の値下げ後価格とお得額を即計算</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./単価・コスパ比較計算機/" class="tool-card">
-          <div class="tool-icon">⚖️</div>
-          <div class="tool-info">
-            <div class="tool-title">単価・コスパ比較計算機</div>
-            <div class="tool-desc">内容量とお値段から「1g・1個あたりどちらが安いか」を判定</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./消費税・税込税抜計算機/" class="tool-card">
-          <div class="tool-icon">🧾</div>
-          <div class="tool-info">
-            <div class="tool-title">消費税・税込税抜計算機</div>
-            <div class="tool-desc">標準税率10%・軽減税率8%の税込・税抜価格と税額を即算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./奨学金・借金返済シミュレーター/" class="tool-card">
-          <div class="tool-icon">📉</div>
-          <div class="tool-info">
-            <div class="tool-title">奨学金・返済シミュレーター</div>
-            <div class="tool-desc">借入残高と利息から、毎月の返済額・総支払利息をシミュレーション</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- 3. 時間・日程・スケジュール -->
-    <section class="category-section" data-cat="time">
-      <div class="section-title">⏱️ 時間・日程・スケジュール</div>
-      <div class="tool-list">
-        <a href="./時間計算・タイムカード合計ツール/" class="tool-card">
-          <div class="tool-icon">⏰</div>
-          <div class="tool-info">
-            <div class="tool-title">時間計算・タイムカード合計ツール</div>
-            <div class="tool-desc">開始・終了時刻の差分や休憩引き後の実働時間を即算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./ポモドーロタイマー/" class="tool-card">
-          <div class="tool-icon">🍅</div>
-          <div class="tool-info">
-            <div class="tool-title">ポモドーロタイマー</div>
-            <div class="tool-desc">25分集中＋5分休憩の黄金サイクルで集中力を持続するタイマー</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./推し活・イベントカウントダウンタイマー/" class="tool-card">
-          <div class="tool-icon">✨</div>
-          <div class="tool-info">
-            <div class="tool-title">推し活・イベントカウントダウン</div>
-            <div class="tool-desc">ライブ・記念日・締め切りまでの日・時間・分・秒をリアルタイム表示</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./日数計算・日付カウントツール/" class="tool-card">
-          <div class="tool-icon">📅</div>
-          <div class="tool-info">
-            <div class="tool-title">日数計算・日付カウントツール</div>
-            <div class="tool-desc">2つの日付の間の日数差や「今日から〇日後」の正確な日付を算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./睡眠サイクル計算機/" class="tool-card">
-          <div class="tool-icon">🌙</div>
-          <div class="tool-info">
-            <div class="tool-title">睡眠サイクル計算機</div>
-            <div class="tool-desc">90分周期のレム睡眠に合わせて「スッキリ起きられる就寝・起床時間」を逆算</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./経過年数・勤続年数計算機/" class="tool-card">
-          <div class="tool-icon">⏳</div>
-          <div class="tool-info">
-            <div class="tool-title">経過年数・勤続年数計算機</div>
-            <div class="tool-desc">入社日や記念日からの「〇年〇ヶ月〇日」を瞬時に算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- 4. 生活・健康・移動 -->
-    <section class="category-section" data-cat="lifestyle">
-      <div class="section-title">🍳 生活・健康・移動</div>
-      <div class="tool-list">
-        <a href="./徒歩・移動時間計算機/" class="tool-card">
-          <div class="tool-icon">🚶</div>
-          <div class="tool-info">
-            <div class="tool-title">徒歩・移動時間計算機</div>
-            <div class="tool-desc">距離から正確な所要時間・推定歩数・消費カロリーを算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./ガソリン代・燃費計算機/" class="tool-card">
-          <div class="tool-icon">⛽</div>
-          <div class="tool-info">
-            <div class="tool-title">ガソリン代・燃費計算機</div>
-            <div class="tool-desc">走行距離とガソリン価格から合計費用＆1km単価を算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./電気代・家電消費電力計算機/" class="tool-card">
-          <div class="tool-icon">💡</div>
-          <div class="tool-info">
-            <div class="tool-title">電気代・家電消費電力計算機</div>
-            <div class="tool-desc">消費電力(W)と使用時間から1時間・1日・1ヶ月の電気代を算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./料理の分量・大さじ小さじ換算機/" class="tool-card">
-          <div class="tool-icon">🍳</div>
-          <div class="tool-info">
-            <div class="tool-title">料理の分量・大さじ小さじ換算機</div>
-            <div class="tool-desc">大さじ・小さじ・カップの容量と調味料別の重さ(g)を即換算</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./長さ・重さ単位換算機/" class="tool-card">
-          <div class="tool-icon">📏</div>
-          <div class="tool-info">
-            <div class="tool-title">長さ・重さ単位換算機</div>
-            <div class="tool-desc">インチ・センチ・ポンド・kgなどをリアルタイム相互換算</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./BMI・適正体重計算機/" class="tool-card">
-          <div class="tool-icon">⚖️</div>
-          <div class="tool-info">
-            <div class="tool-title">BMI・適正体重計算機</div>
-            <div class="tool-desc">身長と体重から肥満度・適正体重・美容体重を即時算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./基礎代謝・消費カロリー計算機/" class="tool-card">
-          <div class="tool-icon">🔥</div>
-          <div class="tool-info">
-            <div class="tool-title">基礎代謝・消費カロリー計算機</div>
-            <div class="tool-desc">年齢・性別・活動量から1日の推定消費カロリーと維持カロリーを算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./アルコール分解時間計算機/" class="tool-card">
-          <div class="tool-icon">🍺</div>
-          <div class="tool-info">
-            <div class="tool-title">アルコール分解時間計算機</div>
-            <div class="tool-desc">お酒の量・度数・体重から身体からアルコールが抜ける目安時間を算出</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- 5. テキスト・便利機能・事務 -->
-    <section class="category-section" data-cat="utility">
-      <div class="section-title">🛠️ テキスト・便利機能・事務</div>
-      <div class="tool-list">
-        <a href="./文字数・原稿用紙カウントツール/" class="tool-card">
-          <div class="tool-icon">📝</div>
-          <div class="tool-info">
-            <div class="tool-title">文字数・原稿用紙カウントツール</div>
-            <div class="tool-desc">空白除外文字数・行数・400字詰め原稿用紙の枚数換算をリアルタイム表示</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./全角半角・大文字小文字変換ツール/" class="tool-card">
-          <div class="tool-icon">🔤</div>
-          <div class="tool-info">
-            <div class="tool-title">全角半角・大文字小文字変換</div>
-            <div class="tool-desc">英数・カナ・大文字・小文字をワンタップで一括変換</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./履歴書・入学卒業年計算機/" class="tool-card">
-          <div class="tool-icon">🎓</div>
-          <div class="tool-info">
-            <div class="tool-title">履歴書・入学卒業年計算機</div>
-            <div class="tool-desc">生年月日を選ぶだけ！履歴書用の学歴（入学・卒業年）を自動作成</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./年齢・和暦西暦早見計算機/" class="tool-card">
-          <div class="tool-icon">🗓️</div>
-          <div class="tool-info">
-            <div class="tool-title">年齢・和暦西暦早見計算機</div>
-            <div class="tool-desc">生年月日から現在の満年齢・干支・令和/平成/昭和の和暦を即座に相互変換</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./パーセント・割合計算機/" class="tool-card">
-          <div class="tool-icon">％</div>
-          <div class="tool-info">
-            <div class="tool-title">パーセント・割合計算機</div>
-            <div class="tool-desc">「AのB%は？」「AはBの何%？」日常の割合を迷わずワンタップ計算</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./パスワード生成ツール/" class="tool-card">
-          <div class="tool-icon">🔑</div>
-          <div class="tool-info">
-            <div class="tool-title">強力パスワード生成ツール</div>
-            <div class="tool-desc">英大文字・小文字・数字・記号を組み合わせた安全なパスワードを自動生成</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-        <a href="./乱数・くじ引き生成ツール/" class="tool-card">
-          <div class="tool-icon">🎲</div>
-          <div class="tool-info">
-            <div class="tool-title">乱数・くじ引き生成ツール</div>
-            <div class="tool-desc">指定範囲の数字ランダム抽出やルーレット形式の抽選ツール</div>
-          </div>
-          <span class="arrow">›</span>
-        </a>
-      </div>
-    </section>
+    <footer><p>実用Webツール集</p></footer>
   </div>
 
   <!-- 忍者AdMax広告コード -->
@@ -576,20 +274,25 @@
   <!-- admax -->
 
   <script>
-    function filterCategory(cat, btn) {
-      const tabs = document.querySelectorAll('.tab-btn');
-      tabs.forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+    (function(){
+      'use strict';
 
-      const sections = document.querySelectorAll('.category-section');
-      sections.forEach(sec => {
-        if (cat === 'all' || sec.getAttribute('data-cat') === cat) {
-          sec.style.display = 'block';
-        } else {
-          sec.style.display = 'none';
-        }
-      });
-    }
+      var drawer = document.getElementById('drawer');
+      var overlay = document.getElementById('drawerOverlay');
+      var menuBtn = document.getElementById('menuBtn');
+      function setDrawer(open){
+        drawer.classList.toggle('open', open);
+        overlay.classList.toggle('open', open);
+        document.body.classList.toggle('locked', open);
+        drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      menuBtn.addEventListener('click', function(){ setDrawer(true); });
+      document.getElementById('drawerClose').addEventListener('click', function(){ setDrawer(false); });
+      overlay.addEventListener('click', function(){ setDrawer(false); });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setDrawer(false); });
+
+    })();
   </script>
 </body>
 </html>
