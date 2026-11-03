@@ -151,10 +151,10 @@
 
     .opt-btn:active { transform: scale(0.97); }
     .opt-btn:disabled { opacity: 0.45; cursor: default; }
-    #stickyBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; justify-content: center; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.97); border-top: 1px solid #e0e7ff; box-shadow: 0 -4px 16px rgba(30,27,75,0.12); cursor: pointer; }
+    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
     #stickyBar.hidden { display: none; }
-    #stickyCanvas { width: auto; height: auto; max-width: 60vw; max-height: 72px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
-    body.has-sticky { padding-bottom: 96px; }
+    #stickyCanvas { width: auto; height: auto; max-width: 80vw; max-height: 120px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
+    body.has-sticky { padding-top: 140px; }
 
     .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 
@@ -598,7 +598,7 @@
       var rc = $('resultCanvas');
       if (!rc || !rc.width || !rc.height) return;
       if (!stickyCanvas) { stickyCanvas = $('stickyCanvas'); stickyCtx = stickyCanvas.getContext('2d'); }
-      var sk = Math.min(1, 160 / Math.max(rc.width, rc.height));
+      var sk = Math.min(1, 256 / Math.max(rc.width, rc.height));
       stickyCanvas.width = Math.max(1, Math.round(rc.width * sk));
       stickyCanvas.height = Math.max(1, Math.round(rc.height * sk));
       stickyCtx.drawImage(rc, 0, 0, stickyCanvas.width, stickyCanvas.height);
