@@ -315,10 +315,9 @@
     .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
       display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
     .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
-    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
+    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 22px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
     #stickyBar.hidden { display: none; }
-    #stickyCanvas { width: auto; height: auto; max-width: 80vw; max-height: 120px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
-    body.has-sticky { padding-top: 140px; }
+    #stickyCanvas { width: auto; height: auto; max-width: 100%; max-height: 260px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
     .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
       text-align:center;font-size:.8rem;line-height:1.9}
     .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
@@ -452,10 +451,11 @@
     // 画面下の固定バーにも同じプレビューを小さく出す
     function updateSticky() {
       if (!resCanvas.width || !resCanvas.height) return;
-      var sk = Math.min(1, 256 / Math.max(resCanvas.width, resCanvas.height));
+      var sk = Math.min(1, 640 / Math.max(resCanvas.width, resCanvas.height));
       stickyCanvas.width = Math.max(1, Math.round(resCanvas.width * sk));
       stickyCanvas.height = Math.max(1, Math.round(resCanvas.height * sk));
       stickyCtx.drawImage(resCanvas, 0, 0, stickyCanvas.width, stickyCanvas.height);
+      document.body.style.paddingTop = $('stickyBar').offsetHeight + 'px';
     }
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -1050,6 +1050,9 @@
 
     $('stickyBar').addEventListener('click', function () {
       $('btnDownload').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    window.addEventListener('resize', function () {
+      if (hasImage) document.body.style.paddingTop = $('stickyBar').offsetHeight + 'px';
     });
   </script>
 </body>
