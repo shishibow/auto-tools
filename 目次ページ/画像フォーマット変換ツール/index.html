@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像フォーマット変換ツール - PNG・JPEG・WebPを相互変換</title>
+<meta name="description" content="画像を読み込んでPNG・JPEG・WebPに変換して保存できます。処理はブラウザの中だけで行います。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+.upload{border:2px dashed #94a3b8;border-radius:var(--radius);padding:28px 16px;text-align:center;cursor:pointer;background:#f8fafc;min-height:120px}
+.upload input{display:none}
+canvas{max-width:100%;display:block;margin:0 auto}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{flex:1;min-height:48px;min-width:84px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+.chips button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+input[type=range]{width:100%}
+.row{display:flex;gap:8px;align-items:center}
+.row button{flex:1}
+button.primary{min-height:48px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;padding:10px}
+button.ghost{min-height:48px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;padding:10px}
+button:disabled{opacity:.5;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+<style id="next-tools-style">
+.next-tools{margin-top:26px;border:1.5px solid #e0e7ff;border-radius:16px;padding:14px;background:#fff}
+.next-tools .nt-title{font-weight:800;font-size:.9rem;color:#4338ca;margin-bottom:6px}
+.next-tools a{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:12px;text-decoration:none;color:inherit}
+.next-tools a:active{background:#eef2ff}
+.next-tools .nt-icon{font-size:1.3rem;flex-shrink:0}
+.next-tools .nt-name{font-weight:700;font-size:.92rem;line-height:1.5}
+.next-tools .nt-desc{display:block;font-size:.78rem;color:#64748b;line-height:1.5}
+.next-tools .nt-arrow{margin-left:auto;color:#94a3b8;font-size:1.2rem;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
+<header><h1>画像フォーマット変換</h1><p class="subtitle">画像をPNG・JPEG・WebPに変換して保存できます</p></header>
+<div class="card">
+<label>画像をえらぶ</label>
+<label class="upload" id="drop">タップして画像をえらぶ<input type="file" id="file" accept="image/*"></label>
+<div id="preview" style="margin-top:14px"></div>
+</div>
+<div class="card">
+<label>変換先の形式</label>
+<div class="chips" id="fmtChips">
+<button data-fmt="image/png" class="on">PNG</button>
+<button data-fmt="image/jpeg">JPEG</button>
+<button data-fmt="image/webp">WebP</button>
+</div>
+<div id="qWrap" style="display:none;margin-top:14px">
+<div class="row"><label style="margin:0">画質 <span id="qVal">90</span>%</label><button class="ghost" id="qReset" style="flex:0 0 auto;padding:6px 12px;min-height:36px">リセット</button></div>
+<input type="range" id="quality" min="10" max="100" value="90">
+</div>
+<p class="hint" id="note">PNGは画質設定がありません。JPEG・WebPに変換するときは背景が白くなります（透過情報は残りません）。</p>
+<button class="primary" id="dl" disabled style="width:100%;margin-top:14px">変換して保存する</button>
+<p class="hint" id="msg"></p>
+</div>
+<div class="next-tools">
+<div class="nt-title">つぎのツール</div>
+<a href="../画像圧縮ツール/"><span class="nt-icon">🗜️</span><span><span class="nt-name">画像圧縮</span><span class="nt-desc">容量を小さくする</span></span><span class="nt-arrow">›</span></a>
+<a href="../画像リサイズツール/"><span class="nt-icon">📏</span><span><span class="nt-name">画像リサイズ</span><span class="nt-desc">大きさを変える</span></span><span class="nt-arrow">›</span></a>
+<a href="../かんたん画像トリミング/"><span class="nt-icon">✨</span><span><span class="nt-name">かんたん画像トリミング</span><span class="nt-desc">画像を切り抜く</span></span><span class="nt-arrow">›</span></a>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var img=null, fmt='image/png', ext='png';
+var fileEl=document.getElementById('file');
+document.getElementById('drop').addEventListener('click',function(){fileEl.click();});
+fileEl.addEventListener('change',function(){
+  var f=fileEl.files[0]; if(!f) return;
+  var url=URL.createObjectURL(f);
+  var im=new Image();
+  im.onload=function(){
+    img=im;
+    document.getElementById('preview').innerHTML='';
+    var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+    c.getContext('2d').drawImage(im,0,0);
+    document.getElementById('preview').appendChild(c);
+    document.getElementById('dl').disabled=false;
+    document.getElementById('msg').textContent=im.naturalWidth+' × '+im.naturalHeight+' px を読み込みました。';
+  };
+  im.src=url;
+});
+document.getElementById('fmtChips').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#fmtChips button').forEach(function(x){x.classList.remove('on');});
+  b.classList.add('on'); fmt=b.dataset.fmt;
+  ext=fmt==='image/png'?'png':(fmt==='image/jpeg'?'jpg':'webp');
+  document.getElementById('qWrap').style.display=(fmt==='image/png')?'none':'block';
+});
+var q=document.getElementById('quality');
+q.addEventListener('input',function(){document.getElementById('qVal').textContent=q.value;});
+document.getElementById('qReset').addEventListener('click',function(){q.value=90;document.getElementById('qVal').textContent='90';});
+document.getElementById('dl').addEventListener('click',function(){
+  if(!img) return;
+  var c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+  var ctx=c.getContext('2d');
+  if(fmt!=='image/png'){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,c.width,c.height);}
+  ctx.drawImage(img,0,0);
+  c.toBlob(function(blob){
+    if(!blob){document.getElementById('msg').textContent='このブラウザではその形式に変換できませんでした。';return;}
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='converted.'+ext; a.click();
+  },fmt,fmt==='image/png'?undefined:q.value/100);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポイント還元計算ツール - 実質価格をすぐ計算</title>
+<meta name="description" content="購入金額とポイント還元率から、もらえるポイントと実質価格を計算します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+input{min-height:48px;width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem}
+.result-item{display:flex;justify-content:space-between;gap:10px;padding:12px 2px;border-top:1px solid var(--border);font-size:1rem}
+.result-item:first-child{border-top:none}
+.result-item .unit-name{font-weight:700}
+.result-item .unit-val{font-variant-numeric:tabular-nums;font-weight:800}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../money.html">💰 お金・買い物の一覧</a></nav>
+<header><h1>ポイント還元計算</h1><p class="subtitle">購入金額と還元率から、実質価格が分かります</p></header>
+<div class="card">
+<label for="price">購入金額（円）</label>
+<input type="number" id="price" value="10000" inputmode="numeric" min="0">
+<label for="rate" style="margin-top:14px">ポイント還元率（%）</label>
+<input type="number" id="rate" value="10" inputmode="decimal" min="0" step="any">
+<div id="result" style="margin-top:14px"></div>
+<p class="hint">もらえるポイント＝購入金額×還元率、実質価格＝購入金額−もらえるポイントで計算しています。ポイントの有効期限や対象外商品はお店の条件で変わります。</p>
+</div>
+<footer class="site-foot"><a href="../money.html">← お金・買い物のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+function yen(v){return Math.round(v).toLocaleString('ja-JP')+'円';}
+function render(){
+  var p=parseFloat(document.getElementById('price').value)||0;
+  var r=parseFloat(document.getElementById('rate').value)||0;
+  var pts=p*r/100;
+  document.getElementById('result').innerHTML=
+    '<div class="result-item"><span class="unit-name">もらえるポイント</span><span class="unit-val">'+yen(pts)+'</span></div>'+
+    '<div class="result-item"><span class="unit-name">実質価格</span><span class="unit-val">'+yen(p-pts)+'</span></div>';
+}
+document.getElementById('price').addEventListener('input',render);
+document.getElementById('rate').addEventListener('input',render);
+render();
+</script>
+</body>
+</html>

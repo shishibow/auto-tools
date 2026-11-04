@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>運動消費カロリー計算ツール - 運動別に消費カロリーを計算</title>
+<meta name="description" content="運動の種類・体重・時間から消費カロリーの目安を計算します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+input,select{min-height:48px;width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem}
+.big{font-size:1.6rem;font-weight:800;color:var(--primary);text-align:center;margin-top:8px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🌿 生活・健康・移動の一覧</a></nav>
+<header><h1>運動消費カロリー計算</h1><p class="subtitle">運動・体重・時間から消費カロリーの目安が分かります</p></header>
+<div class="card">
+<label for="act">運動の種類</label>
+<select id="act">
+<option value="3.5">ウォーキング（ゆっくり）</option>
+<option value="4.3">ウォーキング（速歩き）</option>
+<option value="7.0">ジョギング</option>
+<option value="9.8">ランニング</option>
+<option value="6.8">自転車（軽め）</option>
+<option value="6.0">水泳（ゆっくり）</option>
+<option value="2.5">ヨガ</option>
+<option value="3.5">筋力トレーニング</option>
+<option value="3.0">掃除・家事</option>
+</select>
+<label for="weight" style="margin-top:14px">体重（kg）</label>
+<input type="number" id="weight" value="60" inputmode="decimal" min="0" step="any">
+<label for="mins" style="margin-top:14px">時間（分）</label>
+<input type="number" id="mins" value="30" inputmode="numeric" min="0">
+<div class="big" id="result"></div>
+<p class="hint">計算式は「METs × 体重(kg) × 時間(時間) × 1.05」です。METsは運動強度の目安で、実際の消費量は体質や運動の仕方で変わります。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 生活・健康・移動のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+function render(){
+  var met=parseFloat(document.getElementById('act').value)||0;
+  var w=parseFloat(document.getElementById('weight').value)||0;
+  var m=parseFloat(document.getElementById('mins').value)||0;
+  var kcal=met*w*(m/60)*1.05;
+  document.getElementById('result').textContent='約 '+Math.round(kcal)+' kcal';
+}
+['act','weight','mins'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',render);
+  document.getElementById(id).addEventListener('change',render);
+});
+render();
+</script>
+</body>
+</html>

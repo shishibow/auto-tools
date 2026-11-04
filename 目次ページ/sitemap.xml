@@ -264,4 +264,28 @@
     <loc>https://shishibow.github.io/auto-tools/目次ページ/メトロノームツール/</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像フォーマット変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/ポイント還元計算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/時間単位換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/運動消費カロリー計算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/面積単位換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/テキスト置換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テキスト置換ツール - 文字をまとめて置き換え・コピー</title>
+<meta name="description" content="文章の中の文字をまとめて別の文字に置き換えます。置き換えた文章はコピーできます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+textarea,input{min-height:48px;width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1rem}
+textarea{min-height:140px;line-height:1.75}
+button.primary{min-height:48px;width:100%;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;padding:10px}
+button.ghost{min-height:48px;width:100%;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;padding:10px;margin-top:8px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ テキスト・便利機能の一覧</a></nav>
+<header><h1>テキスト置換</h1><p class="subtitle">文章の中の文字をまとめて置き換えます</p></header>
+<div class="card">
+<label for="src">元の文章</label>
+<textarea id="src" placeholder="ここに文章を入力してください"></textarea>
+<label for="find" style="margin-top:14px">探す文字</label>
+<input type="text" id="find" placeholder="例：株式会社">
+<label for="rep" style="margin-top:14px">置き換える文字</label>
+<input type="text" id="rep" placeholder="例：（株）">
+<button class="primary" id="doReplace" style="margin-top:14px">置き換える</button>
+<label for="out" style="margin-top:14px">置き換えた文章</label>
+<textarea id="out" readonly></textarea>
+<button class="ghost" id="copy">コピーする</button>
+<p class="hint" id="msg">文字はそのままの文字列として扱います（正規表現ではありません）。探す文字が空のときは何もしません。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+document.getElementById('doReplace').addEventListener('click',function(){
+  var src=document.getElementById('src').value;
+  var find=document.getElementById('find').value;
+  var rep=document.getElementById('rep').value;
+  if(!find){document.getElementById('msg').textContent='探す文字を入力してください。';return;}
+  var count=src.split(find).length-1;
+  document.getElementById('out').value=src.split(find).join(rep);
+  document.getElementById('msg').textContent=count+'件置き換えました。';
+});
+document.getElementById('copy').addEventListener('click',function(){
+  var out=document.getElementById('out');
+  out.select();
+  try{document.execCommand('copy');document.getElementById('msg').textContent='コピーしました。';}
+  catch(e){document.getElementById('msg').textContent='コピーできませんでした。文章を選んで手動でコピーしてください。';}
+});
+</script>
+</body>
+</html>
