@@ -1397,9 +1397,9 @@
       var frame = ctx.getImageData(0, 0, w, h);
       var d = frame.data;
       var tol = tolerance(), tolSq = tol * tol;
-      // 輪郭の色かぶり（フリンジ）除去: 背景色が混ざった輪郭ピクセルの色を復元し、背景寄りの強いものは抜く
+      // 輪郭の色かぶり（フリンジ）除去: 背景が混ざったピクセルは「キー色の突き出し量」の比率で
+      // 混ざり割合を推定し、色を復元する。透過部分と画像の縁から、混ざりのあるピクセルを伝って内側へ進む
       function cleanFringe() {
-        // キー色のチャンネル（0=R,1=G,2=B）と背景色を決める
         var kc = -1, B = null;
         if (keyMode === 'green') { kc = 1; B = { r: 0, g: 255, b: 0 }; }
         else if (keyMode === 'blue') { kc = 2; B = { r: 0, g: 0, b: 255 }; }
@@ -1409,61 +1409,88 @@
           if (spb[bk] >= 30) { kc = bk; B = { r: bgRGB.r, g: bgRGB.g, b: bgRGB.b }; }
           else if (keyMode === 'color') { kc = -1; B = null; }
         }
-        // 処理ゾーン: 透過・半透過ピクセルと、その近傍2ピクセル
-        var zone = new Uint8Array(w * h);
-        var i, x, y;
-        for (i = 0; i < w * h; i++) if (d[i * 4 + 3] < 255) zone[i] = 1;
-        for (var pass = 0; pass < 4; pass++) {
-          var add = [];
-          for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-            var p0 = y * w + x;
-            if (zone[p0]) continue;
-            if ((x > 0 && zone[p0 - 1]) || (x < w - 1 && zone[p0 + 1]) || (y > 0 && zone[p0 - w]) || (y < h - 1 && zone[p0 + w])) add.push(p0);
-          }
-          for (var a = 0; a < add.length; a++) zone[add[a]] = 1;
-        }
+        var bArr = B ? [B.r, B.g, B.b] : null;
+        var spillB = (kc >= 0 && bArr) ? bArr[kc] - Math.max(bArr[(kc + 1) % 3], bArr[(kc + 2) % 3]) : 0;
+        var useSpill = spillB >= 30;
+        var extSq = Math.pow(tol * 1.8, 2);
         function spillAt(i) {
           if (kc === 0) return d[i] - Math.max(d[i + 1], d[i + 2]);
           if (kc === 1) return d[i + 1] - Math.max(d[i], d[i + 2]);
           return d[i + 2] - Math.max(d[i], d[i + 1]);
         }
-        if (kc >= 0 && B) {
-          var bArr = [B.r, B.g, B.b];
-          var spillB = bArr[kc] - Math.max(bArr[(kc + 1) % 3], bArr[(kc + 2) % 3]);
-          if (spillB >= 30) {
-            for (var p1 = 0; p1 < w * h; p1++) {
-              if (!zone[p1]) continue;
-              var i1 = p1 * 4;
-              if (d[i1 + 3] === 0) continue;
-              var t = spillAt(i1) / spillB;
-              if (t >= 0.55) { d[i1 + 3] = 0; continue; }
-              if (t > 0.02) {
-                var inv = 1 / (1 - t);
-                for (var c = 0; c < 3; c++) {
-                  var v = (d[i1 + c] - bArr[c] * t) * inv;
-                  d[i1 + c] = v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
-                }
-                // まだキー色が強く残る場合は彩度を落として中立に近づける
-                var s2 = spillAt(i1);
-                if (s2 > 10) {
-                  var lum = Math.round((d[i1] + d[i1 + 1] + d[i1 + 2]) / 3);
-                  var f = 10 / s2;
-                  for (var c2 = 0; c2 < 3; c2++) d[i1 + c2] = Math.round(lum + (d[i1 + c2] - lum) * f);
-                }
-              }
-            }
+        function unblend(i1, t) {
+          var inv = 1 / (1 - t);
+          for (var c = 0; c < 3; c++) {
+            var v = (d[i1 + c] - bArr[c] * t) * inv;
+            d[i1 + c] = v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+          }
+          var s2 = spillAt(i1);
+          if (s2 > 10) {
+            var lum = Math.round((d[i1] + d[i1 + 1] + d[i1 + 2]) / 3);
+            var f = 10 / s2;
+            for (var c2 = 0; c2 < 3; c2++) d[i1 + c2] = Math.round(lum + (d[i1 + c2] - lum) * f);
           }
         }
-        if (keyMode === 'color') {
-          // 背景色モード: 透過に接していて背景色に近いピクセルは一緒に抜く（色の薄い背景用）
-          var extSq = Math.pow(tol * 1.8, 2);
+        if (useSpill) {
+          // 深さつきBFS: 透過部分（深さ0）と画像の縁にある強い混ざりから開始し、混ざりのあるピクセルだけを伝う
+          var depthArr = new Int16Array(w * h).fill(-1);
+          var queue = [];
+          function seed(p0, dep) {
+            if (depthArr[p0] >= 0) return;
+            depthArr[p0] = dep;
+            queue.push(p0);
+          }
+          var x, y, p0;
+          for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+            p0 = y * w + x;
+            if (d[p0 * 4 + 3] < 255) seed(p0, 0);
+          }
+          for (x = 0; x < w; x++) {
+            if (d[x * 4 + 3] > 0 && spillAt(x * 4) / spillB >= 0.3) seed(x, 0);
+            var pb = (h - 1) * w + x;
+            if (d[pb * 4 + 3] > 0 && spillAt(pb * 4) / spillB >= 0.3) seed(pb, 0);
+          }
+          for (y = 0; y < h; y++) {
+            var pl = y * w, pr = y * w + w - 1;
+            if (d[pl * 4 + 3] > 0 && spillAt(pl * 4) / spillB >= 0.3) seed(pl, 0);
+            if (d[pr * 4 + 3] > 0 && spillAt(pr * 4) / spillB >= 0.3) seed(pr, 0);
+          }
+          var q = 0;
+          while (q < queue.length) {
+            var p1 = queue[q++], i1 = p1 * 4, dep = depthArr[p1];
+            if (d[i1 + 3] > 0) {
+              var t = spillAt(i1) / spillB;
+              if (t >= 0.55 && (keyMode !== 'color' || dep <= 2)) d[i1 + 3] = 0;
+              else if (t > 0.02) unblend(i1, t);
+              else if (keyMode === 'color' && dep <= 2 && isBgData(d, i1, bgRGB, extSq)) d[i1 + 3] = 0;
+            }
+            if (dep >= 6) continue;
+            var px = p1 % w, py = (p1 / w) | 0;
+            var nb = [px > 0 ? p1 - 1 : -1, px < w - 1 ? p1 + 1 : -1, py > 0 ? p1 - w : -1, py < h - 1 ? p1 + w : -1];
+            for (var n = 0; n < 4; n++) {
+              var pn = nb[n];
+              if (pn < 0 || depthArr[pn] >= 0) continue;
+              var in2 = pn * 4;
+              if (d[in2 + 3] === 0) { seed(pn, dep + 1); continue; }
+              if (spillAt(in2) / spillB > 0.02) seed(pn, dep + 1);
+            }
+          }
+          // 半透過ピクセル（優勢モードの境界）は場所によらず色かぶりを取る
+          for (var p2 = 0; p2 < w * h; p2++) {
+            var i2 = p2 * 4;
+            if (d[i2 + 3] === 0 || d[i2 + 3] === 255 || depthArr[p2] >= 0) continue;
+            var t2 = spillAt(i2) / spillB;
+            if (t2 > 0.02 && t2 < 0.55) unblend(i2, t2);
+          }
+        } else if (keyMode === 'color') {
+          // 背景にキー色の突き出しがない（白・グレー背景など）: 近い色を抜く従来方式のみ
           var kill = [];
-          for (var y2 = 0; y2 < h; y2++) for (var x2 = 0; x2 < w; x2++) {
-            var p2 = y2 * w + x2, i2 = p2 * 4;
-            if (d[i2 + 3] === 0 || !zone[p2]) continue;
-            var adj = (x2 > 0 && d[i2 - 1] === 0) || (x2 < w - 1 && d[i2 + 7] === 0) ||
-                      (y2 > 0 && d[i2 - w * 4 + 3] === 0) || (y2 < h - 1 && d[i2 + w * 4 + 3] === 0);
-            if (adj && isBgData(d, i2, bgRGB, extSq)) kill.push(i2);
+          for (var y3 = 0; y3 < h; y3++) for (var x3 = 0; x3 < w; x3++) {
+            var p3 = y3 * w + x3, i3 = p3 * 4;
+            if (d[i3 + 3] === 0) continue;
+            var adj = (x3 > 0 && d[i3 - 1] < 255) || (x3 < w - 1 && d[i3 + 7] < 255) ||
+                      (y3 > 0 && d[i3 - w * 4 + 3] < 255) || (y3 < h - 1 && d[i3 + w * 4 + 3] < 255);
+            if (adj && isBgData(d, i3, bgRGB, extSq)) kill.push(i3);
           }
           for (var k = 0; k < kill.length; k++) d[kill[k] + 3] = 0;
         }
