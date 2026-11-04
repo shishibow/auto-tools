@@ -1432,7 +1432,7 @@
           }
         }
         if (useSpill) {
-          // 深さつきBFS: 透過部分（深さ0）と画像の縁にある強い混ざりから開始し、混ざりのあるピクセルだけを伝う
+          // 深さつきBFS: 透過部分（深さ0）と画像の縁から開始し、混ざりのあるピクセルだけを伝って内側へ進む
           var depthArr = new Int16Array(w * h).fill(-1);
           var queue = [];
           function seed(p0, dep) {
@@ -1446,14 +1446,14 @@
             if (d[p0 * 4 + 3] < 255) seed(p0, 0);
           }
           for (x = 0; x < w; x++) {
-            if (d[x * 4 + 3] > 0 && spillAt(x * 4) / spillB >= 0.3) seed(x, 0);
+            if (d[x * 4 + 3] > 0 && spillAt(x * 4) / spillB > 0.02) seed(x, 0);
             var pb = (h - 1) * w + x;
-            if (d[pb * 4 + 3] > 0 && spillAt(pb * 4) / spillB >= 0.3) seed(pb, 0);
+            if (d[pb * 4 + 3] > 0 && spillAt(pb * 4) / spillB > 0.02) seed(pb, 0);
           }
           for (y = 0; y < h; y++) {
             var pl = y * w, pr = y * w + w - 1;
-            if (d[pl * 4 + 3] > 0 && spillAt(pl * 4) / spillB >= 0.3) seed(pl, 0);
-            if (d[pr * 4 + 3] > 0 && spillAt(pr * 4) / spillB >= 0.3) seed(pr, 0);
+            if (d[pl * 4 + 3] > 0 && spillAt(pl * 4) / spillB > 0.02) seed(pl, 0);
+            if (d[pr * 4 + 3] > 0 && spillAt(pr * 4) / spillB > 0.02) seed(pr, 0);
           }
           var q = 0;
           while (q < queue.length) {
