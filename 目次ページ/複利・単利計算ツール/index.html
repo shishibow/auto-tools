@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複利・単利計算ツール - 利息の増え方を比較</title>
+<meta name="description" content="元金・年利・年数を入れるだけ。単利と複利の最終金額と利息を並べて比較できます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input{width:100%;min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem}
+.result-row{display:flex;justify-content:space-between;gap:10px;padding:12px 2px;border-top:1px solid var(--border);font-size:1rem}
+.result-row:first-child{border-top:none}
+.result-row .big{font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
+.diff{text-align:center;font-weight:800;color:var(--primary);padding-top:10px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../money.html">💰 お金・買い物の一覧</a></nav>
+<header><h1>複利・単利計算</h1><p class="subtitle">同じ条件で、単利と複利の増え方の差が一目で分かります</p></header>
+<div class="card">
+<label for="principal">元金（円）</label>
+<input type="number" id="principal" value="1000000" step="any" inputmode="decimal">
+<label for="rate">年利（%）</label>
+<input type="number" id="rate" value="3" step="any" inputmode="decimal">
+<label for="years">期間（年）</label>
+<input type="number" id="years" value="10" step="any" inputmode="decimal">
+</div>
+<div class="card">
+<div class="result-row"><span>単利の最終金額</span><span class="big" id="simpleTotal">—</span></div>
+<div class="result-row"><span>単利の利息</span><span id="simpleInt">—</span></div>
+<div class="result-row"><span>複利の最終金額</span><span class="big" id="compoundTotal">—</span></div>
+<div class="result-row"><span>複利の利息</span><span id="compoundInt">—</span></div>
+<div class="diff" id="diff">—</div>
+<p class="hint">単利＝元金×（1＋年利×年数）、複利＝元金×（1＋年利）^年数で計算しています。税金・手数料は含みません。</p>
+</div>
+<footer class="site-foot"><a href="../money.html">← お金・買い物のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+function yen(v){return Math.round(v).toLocaleString()+'円';}
+function render(){
+  var p=parseFloat(document.getElementById('principal').value)||0;
+  var r=(parseFloat(document.getElementById('rate').value)||0)/100;
+  var t=parseFloat(document.getElementById('years').value)||0;
+  var s=p*(1+r*t), c=p*Math.pow(1+r,t);
+  document.getElementById('simpleTotal').textContent=yen(s);
+  document.getElementById('simpleInt').textContent=yen(s-p);
+  document.getElementById('compoundTotal').textContent=yen(c);
+  document.getElementById('compoundInt').textContent=yen(c-p);
+  document.getElementById('diff').textContent='複利のほうが '+yen(c-s)+' 多い';
+}
+['principal','rate','years'].forEach(function(id){document.getElementById(id).addEventListener('input',render);});
+render();
+</script>
+</body>
+</html>

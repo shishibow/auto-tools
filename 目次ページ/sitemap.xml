@@ -288,4 +288,28 @@
     <loc>https://shishibow.github.io/auto-tools/目次ページ/テキスト置換ツール/</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/為替換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/複利・単利計算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/インターバルタイマー/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/進数変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/速度単位換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/体積単位換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>

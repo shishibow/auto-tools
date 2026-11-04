@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>進数変換ツール - 2進数・8進数・10進数・16進数を相互変換</title>
+<meta name="description" content="数値と進数を選ぶだけ。2進数・8進数・10進数・16進数を一気に相互変換できます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1;min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem;min-width:0;font-family:ui-monospace,monospace}
+.input-row select{min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:1rem;font-weight:700}
+.result-row{display:flex;justify-content:space-between;gap:10px;padding:12px 2px;border-top:1px solid var(--border);font-size:1rem}
+.result-row:first-child{border-top:none}
+.result-row .val{font-family:ui-monospace,monospace;word-break:break-all;text-align:right}
+.err{color:#dc2626;font-weight:700;text-align:center;padding-top:10px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ テキスト・便利機能の一覧</a></nav>
+<header><h1>進数変換</h1><p class="subtitle">数値と元の進数を入れれば、4つの進数にまとめて変換されます</p></header>
+<div class="card">
+<label for="numVal">数値</label>
+<div class="input-row">
+<input type="text" id="numVal" value="255" inputmode="text" autocapitalize="off" spellcheck="false">
+<select id="numBase"><option value="2">2進数</option><option value="8">8進数</option><option value="10" selected>10進数</option><option value="16">16進数</option></select>
+</div>
+<div id="results"></div>
+<div class="err" id="err"></div>
+<p class="hint">整数のみ対応しています。16進数は a〜f（大文字・小文字どちらでも可）が使えます。安全な整数（2^53未満）の範囲で計算します。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var BASES=[[2,'2進数',/^[01]+$/],[8,'8進数',/^[0-7]+$/],[10,'10進数',/^[0-9]+$/],[16,'16進数',/^[0-9a-fA-F]+$/]];
+function render(){
+  var raw=document.getElementById('numVal').value.trim();
+  var base=parseInt(document.getElementById('numBase').value,10);
+  var rule=BASES.filter(function(b){return b[0]===base;})[0];
+  var err=document.getElementById('err'), out=document.getElementById('results');
+  if(!raw){out.innerHTML='';err.textContent='';return;}
+  if(!rule[2].test(raw)){out.innerHTML='';err.textContent='その進数では使えない文字が入っています';return;}
+  var n=parseInt(raw,base);
+  if(!isFinite(n)||n>=Math.pow(2,53)){out.innerHTML='';err.textContent='大きすぎます（2^53未満にしてください）';return;}
+  err.textContent='';
+  out.innerHTML=BASES.map(function(b){
+    return '<div class="result-row"><span>'+b[1]+'</span><span class="val">'+n.toString(b[0]).toUpperCase()+'</span></div>';
+  }).join('');
+}
+document.getElementById('numVal').addEventListener('input',render);
+document.getElementById('numBase').addEventListener('change',render);
+render();
+</script>
+</body>
+</html>

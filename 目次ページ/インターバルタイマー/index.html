@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>インターバルタイマー - 運動・勉強の繰り返しタイマー</title>
+<meta name="description" content="作業時間・休憩時間・セット数を決めるだけ。運動や勉強のインターバルを自動で繰り返し、音で知らせます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input{width:100%;min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem}
+.phase{text-align:center;font-weight:800;font-size:1.1rem;color:var(--primary)}
+.time{font-size:3.2rem;font-weight:800;text-align:center;line-height:1.2;font-variant-numeric:tabular-nums}
+.setinfo{text-align:center;color:var(--text-muted);font-size:.9rem}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏰ 時間・日程の一覧</a></nav>
+<header><h1>インターバルタイマー</h1><p class="subtitle">作業と休憩を自動で繰り返します。運動・勉強・家事の合間に</p></header>
+<div class="card">
+<label for="workSec">作業時間（秒）</label>
+<input type="number" id="workSec" value="30" min="1" inputmode="numeric">
+<label for="restSec">休憩時間（秒）</label>
+<input type="number" id="restSec" value="10" min="0" inputmode="numeric">
+<label for="sets">セット数</label>
+<input type="number" id="sets" value="8" min="1" inputmode="numeric">
+</div>
+<div class="card">
+<div class="phase" id="phase">待機中</div>
+<div class="time" id="time">0:00</div>
+<div class="setinfo" id="setinfo">セット - / -</div>
+<div class="btn-row">
+<button class="btn-main" id="startBtn">スタート</button>
+<button class="btn-sub" id="resetBtn">リセット</button>
+</div>
+<p class="hint">切り替え時と終了時に音が鳴ります（ブラウザの音声許可が必要です）。画面を閉じると止まるので、使う間はこのページを開いたままにしてください。</p>
+</div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var timer=null, running=false, phase='work', remain=0, setNo=1, totalSets=8, ctx=null;
+function beep(times){
+  try{
+    if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+    var t=ctx.currentTime;
+    for(var i=0;i<times;i++){
+      var o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=880;g.gain.value=0.15;
+      o.start(t+i*0.25);o.stop(t+i*0.25+0.18);
+    }
+  }catch(e){}
+}
+function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function show(){
+  document.getElementById('time').textContent=fmt(remain);
+  document.getElementById('phase').textContent=running?(phase==='work'?'作業中':'休憩中'):'待機中';
+  document.getElementById('setinfo').textContent=running?('セット '+setNo+' / '+totalSets):'セット - / -';
+  document.getElementById('startBtn').textContent=running?'一時停止':'スタート';
+}
+function tick(){
+  remain--;
+  if(remain>0){show();return;}
+  if(phase==='work'){
+    if(setNo>=totalSets){stopAll();document.getElementById('phase').textContent='完了！お疲れさまでした';beep(3);return;}
+    phase='rest';remain=parseInt(document.getElementById('restSec').value,10)||0;
+    beep(1);
+    if(remain<=0){phase='work';setNo++;remain=parseInt(document.getElementById('workSec').value,10)||30;beep(1);}
+  }else{
+    phase='work';setNo++;remain=parseInt(document.getElementById('workSec').value,10)||30;beep(2);
+  }
+  show();
+}
+function stopAll(){clearInterval(timer);timer=null;running=false;show();}
+document.getElementById('startBtn').addEventListener('click',function(){
+  if(running){clearInterval(timer);timer=null;running=false;show();return;}
+  if(!timer&&remain<=0){phase='work';setNo=1;totalSets=parseInt(document.getElementById('sets').value,10)||1;remain=parseInt(document.getElementById('workSec').value,10)||30;}
+  running=true;show();
+  timer=setInterval(tick,1000);
+});
+document.getElementById('resetBtn').addEventListener('click',function(){stopAll();remain=0;setNo=1;document.getElementById('phase').textContent='待機中';document.getElementById('time').textContent='0:00';document.getElementById('setinfo').textContent='セット - / -';});
+show();
+</script>
+</body>
+</html>
