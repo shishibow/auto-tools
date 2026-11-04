@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>温度変換ツール - 摂氏・華氏・ケルビンを相互換算</title>
+<meta name="description" content="摂氏・華氏・ケルビンを入力するだけですぐ相互換算。海外の天気やレシピの温度も一発で分かります。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin:14px 0 6px}
+label:first-child{margin-top:0}
+input[type=number]{width:100%;min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1.1rem}
+.unit{font-size:.85rem;color:var(--text-muted);margin-left:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chips button{min-height:48px;padding:8px 14px;border:1.5px solid var(--border);border-radius:999px;background:#f1f5f9;font-weight:700;cursor:pointer}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🍳 生活・健康・移動の一覧</a></nav>
+<header><h1>温度変換ツール</h1><p class="subtitle">どれか1つ入力すれば、残りも自動で換算されます</p></header>
+<div class="card">
+<label for="c">摂氏（℃）</label><input type="number" id="c" value="25" step="any" inputmode="decimal">
+<label for="f">華氏（℉）</label><input type="number" id="f" step="any" inputmode="decimal">
+<label for="k">ケルビン（K）</label><input type="number" id="k" step="any" inputmode="decimal">
+<div class="chips">
+<button type="button" data-c="0">氷点 0℃</button>
+<button type="button" data-c="25">室温 25℃</button>
+<button type="button" data-c="36.5">体温 36.5℃</button>
+<button type="button" data-c="100">沸点 100℃</button>
+</div>
+<p class="hint">華氏 ＝ 摂氏 × 9 ÷ 5 ＋ 32 ／ ケルビン ＝ 摂氏 ＋ 273.15 で計算しています。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 生活・健康・移動のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var syncing=false;
+function fmt(v){return Math.round(v*100)/100;}
+function setFromC(c){syncing=true;document.getElementById('c').value=fmt(c);document.getElementById('f').value=fmt(c*9/5+32);document.getElementById('k').value=fmt(c+273.15);syncing=false;}
+document.getElementById('c').addEventListener('input',function(){if(syncing)return;var v=parseFloat(this.value);if(!isNaN(v))setFromC(v);});
+document.getElementById('f').addEventListener('input',function(){if(syncing)return;var v=parseFloat(this.value);if(!isNaN(v))setFromC((v-32)*5/9);});
+document.getElementById('k').addEventListener('input',function(){if(syncing)return;var v=parseFloat(this.value);if(!isNaN(v))setFromC(v-273.15);});
+document.querySelectorAll('.chips button').forEach(function(b){b.addEventListener('click',function(){setFromC(parseFloat(b.dataset.c));});});
+setFromC(25);
+</script>
+</body>
+</html>

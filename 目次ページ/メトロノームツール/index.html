@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メトロノームツール - テンポに合わせて練習</title>
+<meta name="description" content="スライダーでテンポを決めてスタートするだけのメトロノーム。タップでテンポを合わせることもできます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;text-align:center}
+.bpm{font-size:3rem;font-weight:800;color:var(--primary);line-height:1.2}
+.bpm small{font-size:1rem;color:var(--text-muted)}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.dots{display:flex;justify-content:center;gap:14px;margin:18px 0}
+.dot{width:44px;height:44px;border-radius:50%;background:#e6e8f0;transition:background .05s}
+.dot.on{background:var(--primary)}
+.dot.on.accent{background:#dc2626}
+.row{display:flex;gap:8px}
+.row button{flex:1;min-height:56px;border:none;border-radius:12px;font-weight:800;font-size:1rem;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:#f1f5f9;color:var(--text)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏱️ 時間・日程の一覧</a></nav>
+<header><h1>メトロノーム</h1><p class="subtitle">テンポを決めてスタートするだけ。楽器の練習に</p></header>
+<div class="card">
+<div class="bpm"><span id="bpmVal">120</span><small> BPM</small></div>
+<input type="range" id="bpmRange" min="40" max="208" value="120">
+<div class="dots" id="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<div class="row"><button type="button" class="btn-main" id="btnStart">スタート</button><button type="button" class="btn-sub" id="btnTap">タップでテンポ合わせ</button></div>
+<p class="hint">1拍目だけ高い音で鳴ります。タップは4回以上リズムよく押すと、その間隔からテンポを計算します。</p>
+</div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var bpm=120,running=false,ctx=null,timer=null,beat=0,nextTime=0,taps=[];
+var range=document.getElementById('bpmRange'),val=document.getElementById('bpmVal');
+function setBpm(v){bpm=Math.max(40,Math.min(208,Math.round(v)));range.value=bpm;val.textContent=bpm;}
+range.addEventListener('input',function(){setBpm(+range.value);});
+function click(at,accent){
+  var o=ctx.createOscillator(),g=ctx.createGain();
+  o.type='square';o.frequency.value=accent?1568:1046;
+  g.gain.setValueAtTime(0.25,at);g.gain.exponentialRampToValueAtTime(0.001,at+0.06);
+  o.connect(g);g.connect(ctx.destination);o.start(at);o.stop(at+0.08);
+}
+function flash(b){
+  var dots=document.querySelectorAll('.dot');
+  dots.forEach(function(d,i){d.classList.toggle('on',i===b);d.classList.toggle('accent',i===b&&b===0);});
+}
+function schedule(){
+  while(nextTime<ctx.currentTime+0.12){
+    var b=beat%4;click(nextTime,b===0);
+    var delay=Math.max(0,(nextTime-ctx.currentTime)*1000);
+    setTimeout((function(bb){return function(){if(running)flash(bb);};})(b),delay);
+    nextTime+=60/bpm;beat++;
+  }
+}
+document.getElementById('btnStart').addEventListener('click',function(){
+  if(!running){
+    ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==='suspended')ctx.resume();
+    running=true;beat=0;nextTime=ctx.currentTime+0.06;
+    timer=setInterval(schedule,25);schedule();
+    this.textContent='ストップ';
+  }else{
+    running=false;clearInterval(timer);
+    document.querySelectorAll('.dot').forEach(function(d){d.classList.remove('on','accent');});
+    this.textContent='スタート';
+  }
+});
+document.getElementById('btnTap').addEventListener('click',function(){
+  var now=performance.now();taps.push(now);
+  taps=taps.filter(function(t){return now-t<3000;});
+  if(taps.length>=2){
+    var gaps=[];for(var i=1;i<taps.length;i++)gaps.push(taps[i]-taps[i-1]);
+    var avg=gaps.reduce(function(a,b){return a+b;},0)/gaps.length;
+    if(avg>200&&avg<2000)setBpm(60000/avg);
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カラーコード変換ツール</title>
+  <meta name="description" content="HEX・RGB・HSLのカラーコードを相互変換。色見本プレビューとコピー機能つき。">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --primary-dark: #4338ca;
+      --accent: #16a34a;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f6f7fb;
+      --card-bg: #ffffff;
+      --border: #e6e8f0;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover, .upload-area.dragover { background: var(--primary-light); }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 6px; }
+    .upload-text { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .upload-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    input[type="file"] { display: none; }
+
+    .steps {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 4px;
+    }
+
+    .step.on {
+      color: var(--primary);
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .source-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      text-align: center;
+      max-height: 480px;
+      line-height: 0;
+    }
+
+    #viewCanvas {
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 100%;
+      height: auto;
+      cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+
+    label.section-lbl {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 14px 0 6px;
+    }
+
+    label.section-lbl:first-of-type { margin-top: 4px; }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .chip {
+      flex: 1;
+      min-width: 72px;
+      min-height: 52px;
+      padding: 8px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .chip:active { transform: scale(0.97); }
+
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .opt-btn {
+      flex: 1;
+      min-width: 100px;
+      min-height: 52px;
+      padding: 8px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .opt-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .opt-btn:active { transform: scale(0.97); }
+
+    .slider-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+
+    .slider-box label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .slider-box .sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-head label { margin-bottom: 0; }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .reset-btn:active { transform: scale(0.95); }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      min-height: 36px;
+    }
+
+    .preview-section { text-align: center; margin-top: 16px; }
+
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      max-width: 100%;
+      padding: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    #resultCanvas {
+      max-width: 100%;
+      max-height: 260px;
+      display: block;
+    }
+
+    .out-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active { transform: scale(0.98); }
+    .btn-download:disabled { opacity: 0.45; cursor: default; }
+
+    .hidden { display: none !important; }
+  </style>
+
+  <style id="portal-theme">
+    /* ===== 共通テーマ（ポータルと統一） ===== */
+    body{line-height:1.75;letter-spacing:.02em;line-break:strict}
+    h1{line-height:1.4}
+    .subtitle{line-height:1.7}
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    select, textarea{min-height:48px}
+    .btn-calc,.btn-action,.btn-download{min-height:52px}
+    .site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:6px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+    .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
+      display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+    .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 22px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
+    #stickyBar.hidden { display: none; }
+    #stickyCanvas { width: auto; height: auto; max-width: 100%; max-height: 260px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
+    .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+      text-align:center;font-size:.8rem;line-height:1.9}
+    .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+    .site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+  </style>
+  <style id="next-tools-style">
+    .next-tools{margin-top:26px;border:1.5px solid #e0e7ff;border-radius:16px;padding:14px;background:#fff}
+    .next-tools .nt-title{font-weight:800;font-size:.9rem;color:#4338ca;margin-bottom:6px}
+    .next-tools a{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:12px;text-decoration:none;color:inherit}
+    .next-tools a:active{background:#eef2ff}
+    .next-tools .nt-icon{font-size:1.3rem;flex-shrink:0}
+    .next-tools .nt-name{font-weight:700;font-size:.92rem;line-height:1.5}
+    .next-tools .nt-desc{display:block;font-size:.78rem;color:#64748b;line-height:1.5}
+    .next-tools .nt-arrow{margin-left:auto;color:#94a3b8;font-size:1.2rem;flex-shrink:0}
+  </style>
+  <style>
+    .num-input{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:1.05rem;background:#fff;color:var(--text)}
+    .result-box{margin-top:14px;background:var(--primary-light);border-radius:12px;padding:16px;text-align:center}
+    .result-big{font-size:1.7rem;font-weight:800;color:var(--primary-dark);line-height:1.4}
+    .result-sub{font-size:.85rem;color:var(--text-muted);margin-top:4px;line-height:1.7}
+    textarea.ta{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:.95rem;line-height:1.7;background:#fff;color:var(--text);font-family:inherit}
+    .fld{margin-bottom:14px}
+    .fld label{display:block;font-size:.82rem;font-weight:700;margin-bottom:5px}
+    .copy-btn{min-height:40px;padding:6px 14px;border:1.5px solid var(--border);border-radius:999px;background:#fff;font-size:.78rem;font-weight:700;color:var(--primary);cursor:pointer}
+    .code-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:#fff}
+    .code-row .k{font-size:.75rem;font-weight:800;color:var(--text-muted);width:38px;flex-shrink:0}
+    .code-row .v{flex:1;font-family:ui-monospace,Menlo,monospace;font-size:.95rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .big-btn{flex:1;min-height:56px;border:none;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary-dark))}
+    .sub-btn{flex:1;min-height:56px;border:1.5px solid var(--border);border-radius:14px;font-size:.95rem;font-weight:800;cursor:pointer;background:#fff;color:var(--text)}
+    .btn-flex{display:flex;gap:8px;margin-top:12px}
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ テキスト・便利機能の一覧</a></nav>
+    <header>
+      <h1>カラーコード変換</h1>
+      <p class="subtitle">HEX・RGB・HSLを、相互に変換できます。</p>
+    </header>
+
+    <div class="card">
+      <div id="swatch" style="height:110px;border-radius:12px;border:1px solid var(--border);background:#4f46e5;margin-bottom:14px"></div>
+      <div class="fld">
+        <label for="colorPicker">色を選ぶ</label>
+        <input type="color" id="colorPicker" value="#4f46e5" style="width:100%;height:52px;border:1.5px solid var(--border);border-radius:12px;background:#fff;padding:4px">
+      </div>
+      <div class="fld" style="margin-bottom:0">
+        <label for="hexInput">HEXコードを入力</label>
+        <input type="text" class="num-input" id="hexInput" value="#4f46e5" style="font-family:ui-monospace,Menlo,monospace" spellcheck="false">
+      </div>
+      <div style="margin-top:14px">
+        <div class="code-row"><span class="k">HEX</span><span class="v" id="outHex">-</span><button type="button" class="copy-btn" data-copy="outHex">コピー</button></div>
+        <div class="code-row"><span class="k">RGB</span><span class="v" id="outRgb">-</span><button type="button" class="copy-btn" data-copy="outRgb">コピー</button></div>
+        <div class="code-row"><span class="k">HSL</span><span class="v" id="outHsl">-</span><button type="button" class="copy-btn" data-copy="outHsl">コピー</button></div>
+      </div>
+      <p class="out-info" id="copyMsg"></p>
+    </div>
+
+    <div class="next-tools">
+      <div class="nt-title">つぎのツール</div>
+      <a href="../全角半角・大文字小文字変換ツール/"><span class="nt-icon">🔤</span><span><span class="nt-name">全角半角・大文字小文字変換</span><span class="nt-desc">テキストの表記を変換</span></span><span class="nt-arrow">›</span></a>
+      <a href="../パスワード生成ツール/"><span class="nt-icon">🔑</span><span><span class="nt-name">強力パスワード生成ツール</span><span class="nt-desc">安全なパスワードを作る</span></span><span class="nt-arrow">›</span></a>
+      <a href="../文字数・原稿用紙カウントツール/"><span class="nt-icon">📝</span><span><span class="nt-name">文字数・原稿用紙カウント</span><span class="nt-desc">文字数を数える</span></span><span class="nt-arrow">›</span></a>
+    </div>
+    <footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    function hexToRgb(hex) {
+      var m = hex.replace('#', '');
+      if (/^[0-9a-fA-F]{3}$/.test(m)) m = m.split('').map(function (c) { return c + c; }).join('');
+      if (!/^[0-9a-fA-F]{6}$/.test(m)) return null;
+      return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)];
+    }
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      var max = Math.max(r, g, b), min = Math.min(r, g, b);
+      var h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+      }
+      return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
+    }
+    function render(r, g, b) {
+      var hex = '#' + [r, g, b].map(function (v) { return v.toString(16).padStart(2, '0'); }).join('');
+      $('swatch').style.background = hex;
+      $('outHex').textContent = hex;
+      $('outRgb').textContent = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+      var hsl = rgbToHsl(r, g, b);
+      $('outHsl').textContent = 'hsl(' + hsl[0] + ', ' + hsl[1] + '%, ' + hsl[2] + '%)';
+      if ($('colorPicker').value !== hex) $('colorPicker').value = hex;
+      if (document.activeElement !== $('hexInput')) $('hexInput').value = hex;
+    }
+    $('colorPicker').addEventListener('input', function () {
+      var rgb = hexToRgb($('colorPicker').value);
+      if (rgb) render(rgb[0], rgb[1], rgb[2]);
+    });
+    $('hexInput').addEventListener('input', function () {
+      var rgb = hexToRgb($('hexInput').value.trim());
+      if (rgb) render(rgb[0], rgb[1], rgb[2]);
+    });
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = $(btn.getAttribute('data-copy')).textContent;
+        var done = function () { $('copyMsg').textContent = 'コピーしました: ' + text; };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () { fallback(); });
+        } else fallback();
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+      });
+    });
+    render(79, 70, 229);
+  </script>
+</body>
+</html>

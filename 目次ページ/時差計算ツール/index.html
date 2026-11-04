@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時差計算ツール - 世界の時間を変換</title>
+<meta name="description" content="日本の日時を入れれば、世界の都市の時間がすぐ分かります。海外との連絡や旅行の予定立てに。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+h2{font-size:1rem;margin-bottom:8px}
+label{display:block;font-weight:700;font-size:.9rem;margin:12px 0 6px}
+label:first-child{margin-top:0}
+input[type=datetime-local],select{width:100%;min-height:48px;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:1rem}
+.big{font-size:1.5rem;font-weight:800;color:var(--primary);margin-top:8px}
+.diff{font-size:.9rem;color:var(--text-muted)}
+.city-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-top:1px solid var(--border)}
+.city-row:first-child{border-top:none}
+.city-row .city-name{font-weight:700}
+.city-row .city-time{font-variant-numeric:tabular-nums;text-align:right}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏱️ 時間・日程の一覧</a></nav>
+<header><h1>時差計算ツール</h1><p class="subtitle">日本の日時を、世界の都市の時間に換算します</p></header>
+<div class="card">
+<label for="dt">日本の日時</label>
+<input type="datetime-local" id="dt">
+<label for="city">換算先の都市</label>
+<select id="city"></select>
+<div class="big" id="result"></div>
+<div class="diff" id="diff"></div>
+<p class="hint">サマータイム（夏時間）も、ブラウザのタイムゾーン情報から自動で反映されます。</p>
+</div>
+<div class="card">
+<h2>いま、世界の都市は何時？</h2>
+<div id="nowList"></div>
+</div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var CITIES=[['東京','Asia/Tokyo'],['ソウル','Asia/Seoul'],['北京','Asia/Shanghai'],['バンコク','Asia/Bangkok'],['ロンドン','Europe/London'],['パリ','Europe/Paris'],['ニューヨーク','America/New_York'],['ロサンゼルス','America/Los_Angeles'],['シドニー','Australia/Sydney'],['ホノルル','Pacific/Honolulu']];
+function tzOffsetMs(date,tz){
+  var parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date);
+  var o={};parts.forEach(function(p){o[p.type]=p.value;});
+  var asUTC=Date.UTC(+o.year,+o.month-1,+o.day,+o.hour,+o.minute,+o.second);
+  return asUTC-Math.floor(date.getTime()/1000)*1000;
+}
+function fmtIn(date,tz){
+  return new Intl.DateTimeFormat('ja-JP',{timeZone:tz,year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+}
+function fmtDiff(ms){
+  var h=Math.round(ms/3600000*10)/10;
+  if(h===0)return '時差なし';
+  return (h>0?'+':'')+h+'時間';
+}
+function render(){
+  var v=document.getElementById('dt').value;
+  if(!v)return;
+  var parts=v.split('T');var d=parts[0].split('-');var t=parts[1].split(':');
+  var wall=Date.UTC(+d[0],+d[1]-1,+d[2],+t[0],+t[1]);
+  var instant=new Date(wall-tzOffsetMs(new Date(wall),'Asia/Tokyo'));
+  var tz=document.getElementById('city').value;
+  var name=CITIES.filter(function(c){return c[1]===tz;})[0][0];
+  document.getElementById('result').textContent=name+'： '+fmtIn(instant,tz);
+  var diff=tzOffsetMs(instant,tz)-tzOffsetMs(instant,'Asia/Tokyo');
+  document.getElementById('diff').textContent='日本との時差： '+fmtDiff(diff);
+}
+function renderNow(){
+  var now=new Date();
+  document.getElementById('nowList').innerHTML=CITIES.map(function(c){
+    return '<div class="city-row"><span class="city-name">'+c[0]+'</span><span class="city-time">'+fmtIn(now,c[1])+'</span></div>';
+  }).join('');
+}
+var sel=document.getElementById('city');
+CITIES.forEach(function(c){var o=document.createElement('option');o.value=c[1];o.textContent=c[0];sel.appendChild(o);});
+sel.value='America/New_York';
+function pad(n){return String(n).padStart(2,'0');}
+var now=new Date();
+document.getElementById('dt').value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+document.getElementById('dt').addEventListener('input',render);
+sel.addEventListener('change',render);
+render();renderNow();setInterval(renderNow,30000);
+</script>
+</body>
+</html>

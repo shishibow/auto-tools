@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ひらがな・カタカナ変換ツール - 入力するだけ自動変換</title>
+<meta name="description" content="ひらがなとカタカナを入力するだけで相互変換。コピーボタン付きで、そのまま貼り付けられます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin:14px 0 6px}
+label:first-child{margin-top:0}
+textarea{width:100%;min-height:120px;border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:1rem;line-height:1.75;resize:vertical}
+.dir{display:flex;gap:8px}
+.dir button{flex:1;min-height:48px;border:1.5px solid var(--border);border-radius:10px;background:#f1f5f9;font-weight:700;cursor:pointer}
+.dir button.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary-dark)}
+.out{min-height:120px;border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:1rem;line-height:1.75;background:#f8fafc;white-space:pre-wrap;word-break:break-all}
+.row{display:flex;gap:8px;margin-top:12px}
+.row button{flex:1;min-height:48px;border:none;border-radius:10px;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:#f1f5f9;color:var(--text)}
+.meta{font-size:.82rem;color:var(--text-muted);margin-top:10px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ テキスト・便利機能の一覧</a></nav>
+<header><h1>ひらがな・カタカナ変換</h1><p class="subtitle">入力するだけで、すぐ変換されます</p></header>
+<div class="card">
+<div class="dir">
+<button type="button" id="btnToKata" class="active">ひらがな → カタカナ</button>
+<button type="button" id="btnToHira">カタカナ → ひらがな</button>
+</div>
+<label for="inp">変換したい文字</label>
+<textarea id="inp" placeholder="例：ありがとうございます">ありがとうございます</textarea>
+<label>変換結果</label>
+<div class="out" id="out"></div>
+<div class="row"><button type="button" class="btn-main" id="btnCopy">結果をコピー</button><button type="button" class="btn-sub" id="btnClear">消す</button></div>
+<p class="meta" id="meta"></p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var dir='kata';
+function convert(t){
+  var s='';
+  for(var i=0;i<t.length;i++){
+    var code=t.charCodeAt(i);
+    if(dir==='kata'&&code>=0x3041&&code<=0x3096){s+=String.fromCharCode(code+0x60);}
+    else if(dir==='hira'&&code>=0x30A1&&code<=0x30F6){s+=String.fromCharCode(code-0x60);}
+    else{s+=t[i];}
+  }
+  return s;
+}
+function render(){
+  var t=document.getElementById('inp').value;
+  document.getElementById('out').textContent=convert(t);
+  document.getElementById('meta').textContent='入力 '+t.length+'文字 / 変換後 '+convert(t).length+'文字';
+}
+document.getElementById('inp').addEventListener('input',render);
+document.getElementById('btnToKata').addEventListener('click',function(){dir='kata';this.classList.add('active');document.getElementById('btnToHira').classList.remove('active');render();});
+document.getElementById('btnToHira').addEventListener('click',function(){dir='hira';this.classList.add('active');document.getElementById('btnToKata').classList.remove('active');render();});
+document.getElementById('btnClear').addEventListener('click',function(){document.getElementById('inp').value='';render();});
+document.getElementById('btnCopy').addEventListener('click',function(){
+  var txt=document.getElementById('out').textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert('コピーしました');});}
+  else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('コピーしました');}
+});
+render();
+</script>
+</body>
+</html>

@@ -65,6 +65,34 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像圧縮ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像の角丸ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像モザイクツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像フィルター変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像結合ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/QRコード作成ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/画像PDF変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://shishibow.github.io/auto-tools/目次ページ/動画軽量化・画質fps低下ツール/</loc>
     <priority>0.8</priority>
   </url>
@@ -186,6 +214,54 @@
   </url>
   <url>
     <loc>https://shishibow.github.io/auto-tools/目次ページ/乱数・くじ引き生成ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/積立貯金シミュレーター/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/ストップウォッチ/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/靴サイズ変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/ペット年齢換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/カラーコード変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/重複行削除ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/音声読み上げツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/温度変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/時差計算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/ひらがな・カタカナ変換ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/データ量単位換算ツール/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shishibow.github.io/auto-tools/目次ページ/メトロノームツール/</loc>
     <priority>0.8</priority>
   </url>
 </urlset>

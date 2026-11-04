@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QRコード作成ツール</title>
+  <meta name="description" content="URLやテキストからQRコードを作成してPNGで保存。最大213バイトまで対応。">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --primary-dark: #4338ca;
+      --accent: #16a34a;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f6f7fb;
+      --card-bg: #ffffff;
+      --border: #e6e8f0;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 12px 0 4px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+
+    .upload-area:hover, .upload-area.dragover { background: var(--primary-light); }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 6px; }
+    .upload-text { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .upload-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    input[type="file"] { display: none; }
+
+    .steps {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 4px;
+    }
+
+    .step.on {
+      color: var(--primary);
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .source-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      text-align: center;
+      max-height: 480px;
+      line-height: 0;
+    }
+
+    #viewCanvas {
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 100%;
+      height: auto;
+      cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+
+    label.section-lbl {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 14px 0 6px;
+    }
+
+    label.section-lbl:first-of-type { margin-top: 4px; }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .chip {
+      flex: 1;
+      min-width: 72px;
+      min-height: 52px;
+      padding: 8px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .chip:active { transform: scale(0.97); }
+
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .opt-btn {
+      flex: 1;
+      min-width: 100px;
+      min-height: 52px;
+      padding: 8px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .opt-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .opt-btn:active { transform: scale(0.97); }
+
+    .slider-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+
+    .slider-box label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .slider-box .sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-head label { margin-bottom: 0; }
+
+    .reset-btn {
+      min-height: 36px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .reset-btn:active { transform: scale(0.95); }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      min-height: 36px;
+    }
+
+    .preview-section { text-align: center; margin-top: 16px; }
+
+    .checkerboard {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      max-width: 100%;
+      padding: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    #resultCanvas {
+      max-width: 100%;
+      max-height: 260px;
+      display: block;
+    }
+
+    .out-info {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #15803d);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-download:active { transform: scale(0.98); }
+    .btn-download:disabled { opacity: 0.45; cursor: default; }
+
+    .hidden { display: none !important; }
+  </style>
+
+  <style id="portal-theme">
+    /* ===== 共通テーマ（ポータルと統一） ===== */
+    body{line-height:1.75;letter-spacing:.02em;line-break:strict}
+    h1{line-height:1.4}
+    .subtitle{line-height:1.7}
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    select, textarea{min-height:48px}
+    .btn-calc,.btn-action,.btn-download{min-height:52px}
+    .site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:6px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+    .site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary);
+      display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+    .site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+    #stickyBar { position: fixed; left: 0; right: 0; top: 0; z-index: 9999; display: flex; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 22px 6px; background: rgba(255,255,255,0.97); border-bottom: 1px solid #e0e7ff; box-shadow: 0 4px 16px rgba(30,27,75,0.12); cursor: pointer; }
+    #stickyBar.hidden { display: none; }
+    #stickyCanvas { width: auto; height: auto; max-width: 100%; max-height: 260px; border-radius: 8px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 0 0 / 12px 12px; }
+    .site-foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);
+      text-align:center;font-size:.8rem;line-height:1.9}
+    .site-foot a{color:var(--primary);font-weight:800;text-decoration:none}
+    .site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+  </style>
+  <style id="next-tools-style">
+    .next-tools{margin-top:26px;border:1.5px solid #e0e7ff;border-radius:16px;padding:14px;background:#fff}
+    .next-tools .nt-title{font-weight:800;font-size:.9rem;color:#4338ca;margin-bottom:6px}
+    .next-tools a{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:12px;text-decoration:none;color:inherit}
+    .next-tools a:active{background:#eef2ff}
+    .next-tools .nt-icon{font-size:1.3rem;flex-shrink:0}
+    .next-tools .nt-name{font-weight:700;font-size:.92rem;line-height:1.5}
+    .next-tools .nt-desc{display:block;font-size:.78rem;color:#64748b;line-height:1.5}
+    .next-tools .nt-arrow{margin-left:auto;color:#94a3b8;font-size:1.2rem;flex-shrink:0}
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav class="site-nav"><a class="sn-home" href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
+    <header>
+      <h1>QRコード作成</h1>
+      <p class="subtitle">URLやテキストから、QRコードを作れます。</p>
+    </header>
+
+    <div class="card">
+      <div class="steps">
+        <div class="step on" id="step1">1. テキストを入力</div>
+        <div class="step" id="step2">2. サイズを選ぶ</div>
+        <div class="step" id="step3">3. 保存する</div>
+      </div>
+      <label class="section-lbl" for="qrText" style="margin-top:0">QRコードにするテキスト・URL</label>
+      <textarea id="qrText" rows="3" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:1rem;line-height:1.6" placeholder="https://example.com/ など"></textarea>
+      <p class="out-info" id="qrInfo">0 バイト</p>
+
+      <label class="section-lbl">画像サイズ</label>
+      <div class="chip-row" id="sizeChips">
+        <button type="button" class="chip" data-size="256">256px</button>
+        <button type="button" class="chip active" data-size="512">512px</button>
+        <button type="button" class="chip" data-size="1024">1024px</button>
+      </div>
+
+      <div class="preview-section">
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;display:inline-block;padding:8px">
+          <canvas id="qrCanvas" width="232" height="232" style="max-width:232px;width:100%;height:auto"></canvas>
+        </div>
+        <p class="out-info" id="qrMsg"></p>
+        <button type="button" class="btn-download" id="btnQrDownload" disabled>PNGで保存する</button>
+      </div>
+    </div>
+
+    <div class="next-tools">
+      <div class="nt-title">つぎのツール</div>
+      <a href="../画像PDF変換ツール/"><span class="nt-icon">📄</span><span><span class="nt-name">画像PDF変換</span><span class="nt-desc">画像をPDFにまとめる</span></span><span class="nt-arrow">›</span></a>
+      <a href="../画像圧縮ツール/"><span class="nt-icon">🗜️</span><span><span class="nt-name">画像圧縮</span><span class="nt-desc">容量を小さくする</span></span><span class="nt-arrow">›</span></a>
+      <a href="../かんたん画像トリミング/"><span class="nt-icon">✨</span><span><span class="nt-name">かんたん画像トリミング</span><span class="nt-desc">画像を切り抜く</span></span><span class="nt-arrow">›</span></a>
+    </div>
+    <footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+  </div>
+
+  <!-- 忍者AdMax広告コード -->
+  <!-- admax -->
+  <script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+  <!-- admax -->
+
+  <script>
+'use strict';
+// QR encoder: byte mode, EC level M, versions 1-10. No dependencies.
+const QRM = (() => {
+  // [version]: { data: total data codewords, ec: EC codewords per block, groups: [[blocks, dataPerBlock]...], align: [centers], rem: remainder bits }
+  const TABLE = {
+    1: { data: 16, ec: 10, groups: [[1, 16]], align: [], rem: 0 },
+    2: { data: 28, ec: 16, groups: [[1, 28]], align: [6, 18], rem: 7 },
+    3: { data: 44, ec: 26, groups: [[1, 44]], align: [6, 22], rem: 7 },
+    4: { data: 64, ec: 18, groups: [[2, 32]], align: [6, 26], rem: 7 },
+    5: { data: 86, ec: 24, groups: [[2, 43]], align: [6, 30], rem: 7 },
+    6: { data: 108, ec: 16, groups: [[4, 27]], align: [6, 34], rem: 7 },
+    7: { data: 124, ec: 18, groups: [[4, 31]], align: [6, 22, 38], rem: 0 },
+    8: { data: 154, ec: 22, groups: [[2, 38], [2, 39]], align: [6, 24, 42], rem: 0 },
+    9: { data: 182, ec: 22, groups: [[3, 36], [2, 37]], align: [6, 26, 46], rem: 0 },
+    10: { data: 216, ec: 26, groups: [[4, 43], [1, 44]], align: [6, 28, 50], rem: 0 },
+  };
+
+  // GF(256), primitive 0x11d
+  const EXP = new Array(512), LOG = new Array(256);
+  (() => {
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x; LOG[x] = i;
+      x <<= 1;
+      if (x & 0x100) x ^= 0x11d;
+    }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+  const gmul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]];
+
+  function rsGenerator(deg) {
+    // g(x) = prod_{i=0}^{deg-1} (x + alpha^i); coefficients highest degree first
+    let poly = [1];
+    for (let i = 0; i < deg; i++) {
+      const c = EXP[i];
+      const next = new Array(poly.length + 1).fill(0);
+      for (let j = 0; j < poly.length; j++) {
+        next[j] ^= poly[j];
+        next[j + 1] ^= gmul(poly[j], c);
+      }
+      poly = next;
+    }
+    return poly;
+  }
+  function rsRemainder(data, gen) {
+    const res = new Array(gen.length - 1).fill(0);
+    for (const b of data) {
+      const factor = b ^ res.shift();
+      res.push(0);
+      for (let i = 0; i < res.length; i++) res[i] ^= gmul(gen[i + 1], factor);
+    }
+    return res;
+  }
+
+  function encodeData(bytes, version) {
+    const t = TABLE[version];
+    const capBits = t.data * 8;
+    const bits = [];
+    const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+    push(0b0100, 4);
+    push(bytes.length, version <= 9 ? 8 : 16);
+    for (const b of bytes) push(b, 8);
+    if (bits.length > capBits) return null;
+    const term = Math.min(4, capBits - bits.length);
+    for (let i = 0; i < term; i++) bits.push(0);
+    while (bits.length % 8 !== 0) bits.push(0);
+    const dataBytes = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      let v = 0;
+      for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j];
+      dataBytes.push(v);
+    }
+    for (let pad = 0xEC; dataBytes.length < t.data; pad = (pad === 0xEC ? 0x11 : 0xEC)) dataBytes.push(pad);
+    // blocks + EC
+    const gen = rsGenerator(t.ec);
+    const blocks = [];
+    let off = 0;
+    for (const [count, per] of t.groups) {
+      for (let k = 0; k < count; k++) {
+        const block = dataBytes.slice(off, off + per);
+        off += per;
+        blocks.push({ data: block, ec: rsRemainder(block, gen) });
+      }
+    }
+    const out = [];
+    const maxPer = Math.max(...blocks.map(b => b.data.length));
+    for (let i = 0; i < maxPer; i++) for (const b of blocks) if (i < b.data.length) out.push(b.data[i]);
+    for (let i = 0; i < t.ec; i++) for (const b of blocks) out.push(b.ec[i]);
+    const outBits = [];
+    for (const b of out) push2(outBits, b, 8);
+    for (let i = 0; i < t.rem; i++) outBits.push(0);
+    return outBits;
+    function push2(arr, val, len) { for (let i = len - 1; i >= 0; i--) arr.push((val >>> i) & 1); }
+  }
+
+  function buildMatrix(version, dataBits, mask) {
+    const size = version * 4 + 17;
+    const m = Array.from({ length: size }, () => new Array(size).fill(false));
+    const fn = Array.from({ length: size }, () => new Array(size).fill(false));
+    const setF = (x, y, v) => { if (0 <= x && x < size && 0 <= y && y < size) { m[y][x] = v; fn[y][x] = true; } };
+
+    // timing
+    for (let i = 0; i < size; i++) {
+      setF(i, 6, i % 2 === 0);
+      setF(6, i, i % 2 === 0);
+    }
+    // finders
+    const finder = (cx, cy) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const d = Math.max(Math.abs(dx), Math.abs(dy));
+        setF(cx + dx, cy + dy, d !== 2 && d !== 4);
+      }
+    };
+    finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+    // alignment
+    const centers = TABLE[version].align;
+    for (const cy of centers) for (const cx of centers) {
+      const nearFinder = (cx <= 8 && cy <= 8) || (cx >= size - 9 && cy <= 8) || (cx <= 8 && cy >= size - 9);
+      if (nearFinder) continue;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const d = Math.max(Math.abs(dx), Math.abs(dy));
+        setF(cx + dx, cy + dy, d !== 1);
+      }
+    }
+    // reserve format areas + dark module
+    for (let i = 0; i < 9; i++) { if (i !== 6) { setF(8, i, true); setF(i, 8, true); } }
+    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, true);
+    for (let i = 0; i < 7; i++) setF(8, size - 1 - i, true);
+    setF(8, size - 8, true); // dark module position (value set in format step)
+    // version info areas
+    if (version >= 7) {
+      for (let i = 0; i < 18; i++) {
+        setF(size - 11 + (i % 3), Math.floor(i / 3), true);
+        setF(Math.floor(i / 3), size - 11 + (i % 3), true);
+      }
+    }
+    // data placement
+    let bitIdx = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++) {
+        for (let j = 0; j < 2; j++) {
+          const x = right - j;
+          const upward = ((right + 1) & 2) === 0;
+          const y = upward ? size - 1 - vert : vert;
+          if (!fn[y][x]) {
+            let v = bitIdx < dataBits.length ? dataBits[bitIdx] === 1 : false;
+            bitIdx++;
+            // mask
+            if (mask === 0 && (x + y) % 2 === 0) v = !v;
+            if (mask === 1 && y % 2 === 0) v = !v;
+            if (mask === 2 && x % 3 === 0) v = !v;
+            if (mask === 3 && (x + y) % 3 === 0) v = !v;
+            if (mask === 4 && (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0) v = !v;
+            if (mask === 5) { const p = (x * y) % 2 + (x * y) % 3; if (p === 0) v = !v; }
+            if (mask === 6) { const p = ((x * y) % 2 + (x * y) % 3) % 2; if (p === 0) v = !v; }
+            if (mask === 7) { const p = ((x + y) % 2 + (x * y) % 3) % 2; if (p === 0) v = !v; }
+            m[y][x] = v;
+          }
+        }
+      }
+    }
+    // format bits (level M = formatBits 0)
+    let data = (0 << 10) | mask;
+    let rem = data;
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    const fmt = ((data << 10) | rem) ^ 0x5412;
+    const getBit = (val, i) => ((val >>> i) & 1) !== 0;
+    for (let i = 0; i <= 5; i++) setF(8, i, getBit(fmt, i));
+    setF(8, 7, getBit(fmt, 6));
+    setF(8, 8, getBit(fmt, 7));
+    setF(7, 8, getBit(fmt, 8));
+    for (let i = 9; i < 15; i++) setF(14 - i, 8, getBit(fmt, i));
+    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, getBit(fmt, i));
+    for (let i = 8; i < 15; i++) setF(8, size - 15 + i, getBit(fmt, i));
+    setF(8, size - 8, true);
+    // version info
+    if (version >= 7) {
+      let vrem = version;
+      for (let i = 0; i < 12; i++) vrem = (vrem << 1) ^ ((vrem >>> 11) * 0x1F25);
+      const vbits = (version << 12) | vrem;
+      for (let i = 0; i < 18; i++) {
+        const b = getBit(vbits, i);
+        m[Math.floor(i / 3)][size - 11 + (i % 3)] = b;
+        m[size - 11 + (i % 3)][Math.floor(i / 3)] = b;
+      }
+    }
+    return m;
+  }
+
+  function penalty(m) {
+    const size = m.length;
+    let score = 0;
+    const runPenalty = (line) => {
+      let s = 0, runColor = line[0], runLen = 1;
+      for (let i = 1; i < line.length; i++) {
+        if (line[i] === runColor) { runLen++; }
+        else { if (runLen >= 5) s += 3 + (runLen - 5); runColor = line[i]; runLen = 1; }
+      }
+      if (runLen >= 5) s += 3 + (runLen - 5);
+      return s;
+    };
+    for (let y = 0; y < size; y++) score += runPenalty(m[y]);
+    for (let x = 0; x < size; x++) score += runPenalty(m.map(r => r[x]));
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) {
+      if (m[y][x] === m[y][x + 1] && m[y][x] === m[y + 1][x] && m[y][x] === m[y + 1][x + 1]) score += 3;
+    }
+    const pat1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0], pat2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1];
+    const checkPat = (line) => {
+      let s = 0;
+      for (let i = 0; i + 11 <= line.length; i++) {
+        const w = line.slice(i, i + 11);
+        if (w.every((v, j) => v === (pat1[j] === 1)) || w.every((v, j) => v === (pat2[j] === 1))) s += 40;
+      }
+      return s;
+    };
+    for (let y = 0; y < size; y++) score += checkPat(m[y]);
+    for (let x = 0; x < size; x++) score += checkPat(m.map(r => r[x]));
+    let dark = 0;
+    for (const row of m) for (const v of row) if (v) dark++;
+    const total = size * size;
+    const percent = dark * 100 / total;
+    const lower = Math.floor(percent / 5) * 5, upper = Math.ceil(percent / 5) * 5;
+    score += Math.min(Math.abs(lower - 50) / 5, Math.abs(upper - 50) / 5) * 10;
+    return score;
+  }
+
+  function encode(text, forced = {}) {
+    const bytes = Array.from(new TextEncoder().encode(text));
+    let version = forced.version || 0;
+    if (!version) {
+      for (let v = 1; v <= 10; v++) {
+        const needBits = 4 + (v <= 9 ? 8 : 16) + bytes.length * 8;
+        if (needBits <= TABLE[v].data * 8) { version = v; break; }
+      }
+      if (!version) return null;
+    }
+    const dataBits = encodeData(bytes, version);
+    if (!dataBits) return null;
+    if (forced.mask !== undefined && forced.mask !== null) {
+      const m = buildMatrix(version, dataBits, forced.mask);
+      return { version, mask: forced.mask, size: version * 4 + 17, matrix: m };
+    }
+    let best = null;
+    for (let mask = 0; mask < 8; mask++) {
+      const m = buildMatrix(version, dataBits, mask);
+      const p = penalty(m);
+      if (!best || p < best.penalty) best = { mask, matrix: m, penalty: p };
+    }
+    return { version, mask: best.mask, size: version * 4 + 17, matrix: best.matrix };
+  }
+
+  return { encode };
+})();
+
+
+    var $ = function (id) { return document.getElementById(id); };
+    var qrSize = 512;
+    var qrUrl = null;
+
+    $('sizeChips').addEventListener('click', function (e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      Array.prototype.forEach.call($('sizeChips').children, function (c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      qrSize = parseInt(btn.getAttribute('data-size'), 10);
+      $('step1').classList.remove('on');
+      $('step2').classList.add('on');
+      updateQr();
+    });
+
+    var qrTimer = null;
+    $('qrText').addEventListener('input', function () {
+      clearTimeout(qrTimer);
+      qrTimer = setTimeout(updateQr, 200);
+    });
+
+    function updateQr() {
+      var text = $('qrText').value;
+      var canvas = $('qrCanvas');
+      var ctx = canvas.getContext('2d');
+      var byteLen = new TextEncoder().encode(text).length;
+      $('qrInfo').textContent = byteLen + ' バイト（最大 213 バイト）';
+      if (!text) {
+        canvas.width = 232; canvas.height = 232;
+        ctx.fillStyle = '#f1f5f9'; ctx.fillRect(0, 0, 232, 232);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('テキストを入力してください', 116, 120);
+        $('qrMsg').textContent = '';
+        $('btnQrDownload').disabled = true;
+        return;
+      }
+      var r = QRM.encode(text);
+      if (!r) {
+        $('qrMsg').textContent = '文字数が多すぎます。短くしてください（日本語は約70文字まで）。';
+        $('btnQrDownload').disabled = true;
+        return;
+      }
+      $('qrMsg').textContent = '';
+      var quiet = 4;
+      var total = r.size + quiet * 2;
+      var cell = Math.floor(qrSize / total);
+      var px = cell * total;
+      canvas.width = px;
+      canvas.height = px;
+      canvas.style.maxWidth = '232px';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, px, px);
+      ctx.fillStyle = '#000000';
+      for (var y = 0; y < r.size; y++) {
+        for (var x = 0; x < r.size; x++) {
+          if (r.matrix[y][x]) ctx.fillRect((x + quiet) * cell, (y + quiet) * cell, cell, cell);
+        }
+      }
+      $('btnQrDownload').disabled = false;
+      if (qrUrl) URL.revokeObjectURL(qrUrl);
+      qrUrl = null;
+      canvas.toBlob(function (blob) {
+        if (blob) qrUrl = URL.createObjectURL(blob);
+      }, 'image/png');
+    }
+
+    $('btnQrDownload').addEventListener('click', function () {
+      var save = function () {
+        if (!qrUrl) return;
+        $('step2').classList.remove('on');
+        $('step3').classList.add('on');
+        var now = new Date();
+        var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+        var a = document.createElement('a');
+        a.href = qrUrl;
+        a.download = 'qrcode_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) +
+          '-' + pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds()) + '.png';
+        a.click();
+      };
+      if (qrUrl) { save(); return; }
+      $('qrCanvas').toBlob(function (blob) {
+        if (blob) { qrUrl = URL.createObjectURL(blob); save(); }
+      }, 'image/png');
+    });
+
+    updateQr();
+  </script>
+</body>
+</html>
