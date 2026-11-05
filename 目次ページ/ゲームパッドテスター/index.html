@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゲームパッドテスター - コントローラーのボタン・スティック動作確認</title>
+<meta name="description" content="ゲームパッド（コントローラー）のボタンやスティックの反応をブラウザ上で確認できるテスターです。LT/RTの入力値表示、スティックの数値表示、振動テストに対応しています。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+#status{padding:10px 12px;border-radius:10px;background:var(--primary-light);font-weight:700;font-size:.92rem}
+#status.on{background:#dcfce7}
+#name{font-size:.82rem;color:var(--text-muted);margin-top:8px;word-break:break-all;min-height:1.2em}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}
+.btn{padding:10px 6px;border:1.5px solid var(--border);border-radius:10px;text-align:center;background:#f8fafc}
+.btn b{font-size:.95rem}
+.btn small{display:block;color:var(--text-muted);font-size:.72rem}
+.btn.pressed{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.pressed small{color:#e0e7ff}
+.bar{height:6px;background:#e2e8f0;border-radius:3px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);width:0%}
+.btn.pressed .bar{background:rgba(255,255,255,.3)}
+.btn.pressed .bar i{background:#fff}
+.sticks{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0}
+.pad{width:140px;height:140px;border:1.5px solid var(--border);border-radius:50%;position:relative;background:#f8fafc}
+.dot{width:18px;height:18px;border-radius:50%;background:var(--primary);position:absolute;left:61px;top:61px}
+.sticks p{font-size:.82rem;color:var(--text-muted);text-align:center;margin-top:6px}
+#vibe{min-height:48px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:.95rem;cursor:pointer;color:var(--text)}
+#vibe:active{transform:scale(.97)}
+#vibeMsg{font-size:.82rem;color:var(--text-muted);margin-left:8px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ テキスト・便利機能の一覧</a></nav>
+<header><h1>🎮 ゲームパッドテスター</h1><p class="subtitle">コントローラーをつないでボタンを押すと、反応がその場で確認できます</p></header>
+<div class="card">
+<div id="status">未接続 — コントローラーが見つかりません</div>
+<p id="name"></p>
+<div class="grid" id="buttons"></div>
+<div class="sticks">
+  <div><div class="pad"><div class="dot" id="dot0"></div></div><p>左スティック <span id="ax0"></span></p></div>
+  <div><div class="pad"><div class="dot" id="dot1"></div></div><p>右スティック <span id="ax1"></span></p></div>
+</div>
+<p><button id="vibe" type="button">振動テスト</button><small id="vibeMsg"></small></p>
+<p class="hint">対応：PCの Chrome / Edge 推奨。コントローラーを接続して、どれかボタンを押すと認識されます。標準マッピングのボタン名で表示します。機種によってボタン配置は異なる場合があります。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+const NAMES=["A","B","X","Y","LB","RB","LT","RT","Back","Start","L3","R3","↑","↓","←","→","Home"];
+const btnBox=document.getElementById("buttons");
+const statusEl=document.getElementById("status");
+const nameEl=document.getElementById("name");
+for(let i=0;i<17;i++){
+  const d=document.createElement("div");
+  d.className="btn"; d.id="b"+i;
+  d.innerHTML="<b>"+NAMES[i]+"</b><div class='bar'><i></i></div><small>0.00</small>";
+  btnBox.appendChild(d);
+}
+function pad(){ const ps=navigator.getGamepads?navigator.getGamepads():[]; return ps?ps[0]:null; }
+function loop(){
+  const gp=pad();
+  if(gp){
+    statusEl.textContent="接続中"; statusEl.className="on"; nameEl.textContent=gp.id;
+    gp.buttons.forEach((b,i)=>{
+      if(i>=17) return;
+      const el=document.getElementById("b"+i);
+      el.classList.toggle("pressed", b.pressed);
+      el.querySelector("i").style.width=Math.round(b.value*100)+"%";
+      el.querySelector("small").textContent=b.value.toFixed(2);
+    });
+    const ax=gp.axes||[];
+    const place=(dot,x,y)=>{ dot.style.left=(61+x*55)+"px"; dot.style.top=(61+y*55)+"px"; };
+    if(ax.length>=2){ place(document.getElementById("dot0"),ax[0],ax[1]); document.getElementById("ax0").textContent=ax[0].toFixed(2)+", "+ax[1].toFixed(2); }
+    if(ax.length>=4){ place(document.getElementById("dot1"),ax[2],ax[3]); document.getElementById("ax1").textContent=ax[2].toFixed(2)+", "+ax[3].toFixed(2); }
+  } else {
+    statusEl.textContent="未接続 — コントローラーが見つかりません"; statusEl.className="";
+    nameEl.textContent="";
+  }
+  requestAnimationFrame(loop);
+}
+window.addEventListener("gamepadconnected",()=>{});
+window.addEventListener("gamepaddisconnected",()=>{});
+document.getElementById("vibe").addEventListener("click",async()=>{
+  const gp=pad(); const msg=document.getElementById("vibeMsg");
+  if(!gp){ msg.textContent="コントローラーが接続されていません"; return; }
+  const act=gp.vibrationActuator;
+  if(!act||!act.playEffect){ msg.textContent="このコントローラーは振動に対応していません"; return; }
+  try{ await act.playEffect({duration:300,strongMagnitude:0.7,weakMagnitude:0.7}); msg.textContent="振動しました"; }
+  catch(e){ msg.textContent="振動できませんでした"; }
+});
+loop();
+</script>
+</body>
+</html>
