@@ -1460,8 +1460,21 @@
             var p1 = queue[q++], i1 = p1 * 4, dep = depthArr[p1];
             if (d[i1 + 3] > 0) {
               var t = spillAt(i1) / spillB;
-              if (t >= 0.55 && (keyMode !== 'color' || dep <= 2)) d[i1 + 3] = 0;
-              else if (t > 0.02) unblend(i1, t);
+              if (t >= 0.55 && (keyMode !== 'color' || dep <= 2)) {
+                // 背景色モードの縁では、被覆率がまだ残るピクセルを殺すとαに崖ができ、
+                // ゲーム表示で1本の線になる。t<0.85は殺さず実アルファで残す
+                if (keyMode === 'color' && dep <= 2 && t < 0.85) {
+                  unblend(i1, t);
+                  d[i1 + 3] = Math.round(d[i1 + 3] * (1 - t));
+                } else d[i1 + 3] = 0;
+              }
+              else if (t > 0.02) {
+                unblend(i1, t);
+                // 混ざり割合tは「前景の被覆率=1-t」とみなせる。縁のピクセルに実アルファを
+                // 持たせると、ゲーム側のバイリニア補間で透明部分の黒(RGB=0)が混ざって
+                // 暗い線になるのを防げる（アンブレンドだけでは輪郭が二値のまま）
+                if (dep <= 3) d[i1 + 3] = Math.round(d[i1 + 3] * (1 - t));
+              }
               else if (keyMode === 'color' && dep <= 2 && isBgData(d, i1, bgRGB, extSq)) d[i1 + 3] = 0;
             }
             if (dep >= 6) continue;
@@ -1473,6 +1486,29 @@
               var in2 = pn * 4;
               if (d[in2 + 3] === 0) { seed(pn, dep + 1); continue; }
               if (spillAt(in2) / spillB > 0.02) seed(pn, dep + 1);
+            }
+          }
+          // 打ち抜かれた輪郭の復元: フラッドフィルで二値に消されたAAピクセルは、被覆率が
+          // 残っていてもα=0になっていて輪郭に崖ができる。主体に隣接し、混ざり割合から
+          // 被覆率が読み取れるものは実アルファで復元する（最大2層まで）
+          if (keyMode === 'color') {
+            for (var rPass = 0; rPass < 2; rPass++) {
+              var rList = [];
+              for (var rp = 0; rp < w * h; rp++) {
+                var ri = rp * 4;
+                if (d[ri + 3] !== 0) continue;
+                var rx = rp % w, ry = (rp / w) | 0;
+                var adjA = (rx > 0 && d[ri - 1] > 0) || (rx < w - 1 && d[ri + 7] > 0) ||
+                           (ry > 0 && d[ri - w * 4 + 3] > 0) || (ry < h - 1 && d[ri + w * 4 + 3] > 0);
+                if (!adjA) continue;
+                var rt = spillAt(ri) / spillB;
+                if (rt >= 0.30 && rt < 0.85) rList.push(ri, rt);
+              }
+              if (!rList.length) break;
+              for (var rk = 0; rk < rList.length; rk += 2) {
+                unblend(rList[rk], rList[rk + 1]);
+                d[rList[rk] + 3] = Math.round(255 * (1 - rList[rk + 1]));
+              }
             }
           }
           // 半透過ピクセル（優勢モードの境界）は場所によらず色かぶりを取る
