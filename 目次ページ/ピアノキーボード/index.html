@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ピアノキーボード - スマホで弾けるミニピアノ</title>
+<meta name="description" content="スマホの画面をタップするだけのミニピアノ。音色とオクターブを変えて、好きなメロディーを弾けます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.val{font-size:.85rem;color:var(--text-muted);text-align:right}
+.piano{position:relative;height:220px;touch-action:none;user-select:none}
+.white-row{display:flex;height:100%}
+.wkey{flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:0 0 10px 10px;position:relative;cursor:pointer;min-height:48px}
+.wkey.active{background:#c7d2fe}
+.wkey .lbl{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-weight:800;font-size:.85rem;color:var(--text-muted)}
+.bkey{position:absolute;top:0;width:11%;height:58%;background:#1e293b;border-radius:0 0 8px 8px;z-index:2;cursor:pointer}
+.bkey.active{background:#4f46e5}
+.bkey .lbl{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-weight:800;font-size:.75rem;color:#cbd5e1}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{flex:1;min-width:64px;min-height:48px;border:2px solid var(--border);border-radius:12px;background:#fff;font-weight:800;font-size:.95rem;cursor:pointer;color:var(--text)}
+.seg button.selected{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.song-chips{display:flex;gap:8px;flex-wrap:wrap}
+.song-chips button{flex:1;min-width:100px;min-height:48px;border:2px solid var(--border);border-radius:12px;background:#fff;font-weight:800;font-size:.9rem;cursor:pointer;color:var(--text)}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🏠 暮らしの一覧</a></nav>
+<header><h1>ピアノキーボード</h1><p class="subtitle">画面をタップして弾けるミニピアノ。音色と高さを変えられます</p></header>
+<div class="card">
+<div class="piano" id="piano">
+<div class="white-row" id="whiteRow"></div>
+</div>
+</div>
+<div class="card">
+<label>音色</label>
+<div class="seg" id="toneSeg">
+<button class="selected" data-tone="triangle">ピアノ風</button>
+<button data-tone="sine">やわらか</button>
+<button data-tone="square">オルガン風</button>
+<button data-tone="sawtooth">シンセ風</button>
+</div>
+<label>オクターブ <span class="val" id="octVal">真ん中のド（C4）から</span></label>
+<div class="seg">
+<button id="octDown">◀ 低く</button>
+<button id="octUp">高く ▶</button>
+</div>
+<label for="volRange">音量 <span class="val" id="volVal">70%</span></label>
+<input type="range" id="volRange" min="10" max="100" value="70">
+</div>
+<div class="card">
+<label>おためしメロディー</label>
+<div class="song-chips">
+<button data-song="kirakira">きらきら星</button>
+<button data-song="kaeru">かえるの合唱</button>
+<button data-song="doe">ドレミの歌</button>
+</div>
+<div class="btn-row"><button class="btn-sub" id="stopBtn">■ 停止</button></div>
+<p class="hint">鍵盤をタップすると音が出ます。白鍵はドレミファソラシ、黒鍵は半音です。音はこのページの中だけで鳴り、録音されません。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 暮らしのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var WHITE=['C','D','E','F','G','A','B'];
+var WHITE_JP={C:'ド',D:'レ',E:'ミ',F:'ファ',G:'ソ',A:'ラ',B:'シ'};
+var BLACK_AFTER={C:'C#',D:'D#',F:'F#',G:'G#',A:'A#'};
+var BLACK_JP={'C#':'ド#','D#':'レ#','F#':'ファ#','G#':'ソ#','A#':'ラ#'};
+var SEMI={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+var actx=null,tone='triangle',octave=4,volume=0.7,playing={},songTimer=null;
+var piano=document.getElementById('piano'),whiteRow=document.getElementById('whiteRow');
+function getCtx(){if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
+function freqOf(note,oct){
+  var midi=12*(oct+1)+SEMI[note];
+  return 440*Math.pow(2,(midi-69)/12);
+}
+function buildKeys(){
+  whiteRow.innerHTML='';
+  var blacks=piano.querySelectorAll('.bkey');
+  blacks.forEach(function(b){b.remove();});
+  WHITE.forEach(function(n,i){
+    var k=document.createElement('div');k.className='wkey';k.dataset.note=n;
+    k.innerHTML='<span class="lbl">'+WHITE_JP[n]+'</span>';
+    whiteRow.appendChild(k);
+    if(BLACK_AFTER[n]){
+      var b=document.createElement('div');b.className='bkey';b.dataset.note=BLACK_AFTER[n];
+      b.style.left=((i+1)*100/7-5.5)+'%';
+      b.innerHTML='<span class="lbl">'+BLACK_JP[BLACK_AFTER[n]]+'</span>';
+      piano.appendChild(b);
+    }
+  });
+}
+function noteOn(note,el){
+  var ctx=getCtx(),f=freqOf(note,octave);
+  noteOff(note);
+  var o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=tone;o.frequency.value=f;
+  g.gain.setValueAtTime(0,ctx.currentTime);
+  g.gain.linearRampToValueAtTime(volume,ctx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+1.2);
+  o.connect(g);g.connect(ctx.destination);o.start();
+  o.stop(ctx.currentTime+1.3);
+  playing[note]={osc:o,el:el};
+  if(el)el.classList.add('active');
+  setTimeout(function(){if(el)el.classList.remove('active');},350);
+}
+function noteOff(note){if(playing[note]){try{playing[note].osc.stop();}catch(e){}delete playing[note];}}
+buildKeys();
+piano.addEventListener('pointerdown',function(e){
+  var k=e.target.closest('.wkey,.bkey');if(!k)return;
+  e.preventDefault();noteOn(k.dataset.note,k);
+});
+document.getElementById('toneSeg').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#toneSeg button').forEach(function(x){x.classList.remove('selected');});
+  b.classList.add('selected');tone=b.dataset.tone;
+});
+var octVal=document.getElementById('octVal');
+function showOct(){octVal.textContent=octave===4?'真ん中のド（C4）から':(octave<4?'低め（C'+octave+'）から':'高め（C'+octave+'）から');}
+document.getElementById('octDown').addEventListener('click',function(){octave=Math.max(2,octave-1);showOct();});
+document.getElementById('octUp').addEventListener('click',function(){octave=Math.min(6,octave+1);showOct();});
+var volRange=document.getElementById('volRange');
+volRange.addEventListener('input',function(){volume=+volRange.value/100;document.getElementById('volVal').textContent=volRange.value+'%';});
+var SONGS={
+  kirakira:[['C',1],['C',1],['G',1],['G',1],['A',1],['A',1],['G',2],['F',1],['F',1],['E',1],['E',1],['D',1],['D',1],['C',2]],
+  kaeru:[['C',1],['D',1],['E',1],['F',1],['E',1],['D',1],['C',2],['E',1],['F',1],['G',1],['A',1],['G',1],['F',1],['E',2]],
+  doe:[['C',1],['D',1],['E',1],['C',1],['E',1],['C',1],['E',2],['D',1],['E',1],['F',1],['F',1],['E',1],['D',1],['F',2]]
+};
+function playSong(name){
+  stopSong();
+  var notes=SONGS[name],i=0,beat=420;
+  function step(){
+    if(i>=notes.length){songTimer=null;return;}
+    var n=notes[i];
+    var el=piano.querySelector('[data-note="'+n[0]+'"]');
+    noteOn(n[0],el);i++;
+    songTimer=setTimeout(step,beat*n[1]);
+  }
+  step();
+}
+function stopSong(){if(songTimer){clearTimeout(songTimer);songTimer=null;}}
+document.querySelector('.song-chips').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;playSong(b.dataset.song);
+});
+document.getElementById('stopBtn').addEventListener('click',stopSong);
+</script>
+</body>
+</html>

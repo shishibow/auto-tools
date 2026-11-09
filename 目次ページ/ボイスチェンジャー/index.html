@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ボイスチェンジャー - 声を変えて遊べる録音ツール</title>
+<meta name="description" content="マイクで録音した声を、高い声・低い声・ロボット・こだまに変えて再生。WAVで保存もできます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+.rec-btn{width:100%;min-height:64px;border:none;border-radius:50px;font-size:1.15rem;font-weight:800;cursor:pointer;background:#ef4444;color:#fff}
+.rec-btn.recording{background:#991b1b;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.status{text-align:center;font-weight:800;font-size:1rem;color:var(--primary);margin-top:10px;min-height:1.6em}
+.voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.voice-btn{min-height:56px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:1rem;font-weight:800;cursor:pointer;color:var(--text)}
+.voice-btn.selected{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.val{font-size:.85rem;color:var(--text-muted);text-align:right}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🖼️ 画像・動画の一覧</a></nav>
+<header><h1>ボイスチェンジャー</h1><p class="subtitle">録音した声を変えて遊べます。高い声・低い声・ロボット・こだま</p></header>
+<div class="card">
+<button class="rec-btn" id="recBtn">🎙️ 録音する（最大10秒）</button>
+<div class="status" id="status">まだ録音していません</div>
+</div>
+<div class="card">
+<label>声の変化</label>
+<div class="voice-grid" id="voiceGrid">
+<button class="voice-btn selected" data-voice="normal">そのまま</button>
+<button class="voice-btn" data-voice="high">高い声</button>
+<button class="voice-btn" data-voice="low">低い声</button>
+<button class="voice-btn" data-voice="robot">ロボット</button>
+<button class="voice-btn" data-voice="echo">こだま</button>
+<button class="voice-btn" data-voice="chipmunk">早口チップ</button>
+</div>
+<label for="mixRange">変化の強さ <span class="val" id="mixVal">ふつう</span></label>
+<input type="range" id="mixRange" min="0" max="2" value="1" step="1">
+<div class="btn-row">
+<button class="btn-main" id="playBtn" disabled>▶ 再生する</button>
+<button class="btn-sub" id="dlBtn" disabled>⬇ WAVで保存</button>
+</div>
+<p class="hint">録音はこのページの中だけで処理され、どこにも送信されません。マイクの使用許可が必要です。</p>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var recBtn=document.getElementById('recBtn'),statusEl=document.getElementById('status'),
+playBtn=document.getElementById('playBtn'),dlBtn=document.getElementById('dlBtn'),
+mixRange=document.getElementById('mixRange'),mixVal=document.getElementById('mixVal');
+var mediaRec=null,chunks=[],audioBuf=null,recording=false,voice='normal',mix=1,actx=null;
+var MIX_LABEL=['弱め','ふつう','強め'];
+mixRange.addEventListener('input',function(){mix=+mixRange.value;mixVal.textContent=MIX_LABEL[mix];});
+document.getElementById('voiceGrid').addEventListener('click',function(e){
+  var b=e.target.closest('.voice-btn');if(!b)return;
+  document.querySelectorAll('.voice-btn').forEach(function(x){x.classList.remove('selected');});
+  b.classList.add('selected');voice=b.dataset.voice;
+});
+function getCtx(){if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();return actx;}
+recBtn.addEventListener('click',function(){
+  if(recording){stopRec();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    statusEl.textContent='このブラウザではマイク録音が使えません';return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    chunks=[];mediaRec=new MediaRecorder(stream);recording=true;
+    recBtn.textContent='■ 停止する';recBtn.classList.add('recording');
+    statusEl.textContent='録音中… 話してください';
+    mediaRec.ondataavailable=function(e){if(e.data.size)chunks.push(e.data);};
+    mediaRec.onstop=function(){
+      stream.getTracks().forEach(function(t){t.stop();});
+      var blob=new Blob(chunks,{type:mediaRec.mimeType||'audio/webm'});
+      blob.arrayBuffer().then(function(ab){
+        getCtx().decodeAudioData(ab).then(function(buf){
+          audioBuf=buf;playBtn.disabled=false;dlBtn.disabled=false;
+          statusEl.textContent='録音できました（'+buf.duration.toFixed(1)+'秒）。声を選んで再生してください';
+        }).catch(function(){statusEl.textContent='音声の読み込みに失敗しました';});
+      });
+    };
+    mediaRec.start();
+    setTimeout(function(){if(recording)stopRec();},10000);
+  }).catch(function(){statusEl.textContent='マイクの許可が必要です';});
+});
+function stopRec(){if(mediaRec&&recording){mediaRec.stop();}recording=false;recBtn.textContent='🎙️ 録音する（最大10秒）';recBtn.classList.remove('recording');}
+function rateFor(v,m){
+  if(v==='high')return m===0?1.25:m===1?1.5:1.8;
+  if(v==='low')return m===0?0.85:m===1?0.7:0.55;
+  if(v==='chipmunk')return m===0?1.4:m===1?1.8:2.2;
+  return 1;
+}
+function renderBuf(){
+  var ctx=getCtx(),rate=rateFor(voice,mix);
+  var len=Math.ceil(audioBuf.length/rate)+ctx.sampleRate;
+  var off=new OfflineAudioContext(1,len,ctx.sampleRate);
+  var src=off.createBufferSource();src.buffer=audioBuf;src.playbackRate.value=rate;
+  var out=off.createGain();out.gain.value=1;src.connect(out);
+  if(voice==='robot'){
+    var sh=off.createWaveShaper(),curve=new Float32Array(256);
+    for(var i=0;i<256;i++){var x=i/128-1;curve[i]=x>0?1:-1;}
+    sh.curve=curve;src.disconnect();src.connect(sh);sh.connect(out);
+  }
+  if(voice==='echo'){
+    var d=off.createDelay(1),fb=off.createGain(),wet=off.createGain();
+    d.delayTime.value=0.22;fb.gain.value=mix===0?0.25:mix===1?0.4:0.55;wet.gain.value=0.5;
+    src.disconnect();src.connect(out);src.connect(d);d.connect(fb);fb.connect(d);d.connect(wet);wet.connect(out);
+  }
+  out.connect(off.destination);src.start(0);
+  return off.startRendering();
+}
+playBtn.addEventListener('click',function(){
+  if(!audioBuf)return;statusEl.textContent='再生中…';
+  renderBuf().then(function(buf){
+    var ctx=getCtx(),s=ctx.createBufferSource();s.buffer=buf;s.connect(ctx.destination);s.start(0);
+    s.onended=function(){statusEl.textContent='再生が終わりました';};
+  });
+});
+dlBtn.addEventListener('click',function(){
+  if(!audioBuf)return;statusEl.textContent='WAVを作成中…';
+  renderBuf().then(function(buf){
+    var wav=encodeWav(buf),blob=new Blob([wav],{type:'audio/wav'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='voice-'+voice+'.wav';a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+    statusEl.textContent='WAVを保存しました';
+  });
+});
+function encodeWav(buf){
+  var ch=buf.getChannelData(0),n=ch.length,bytes=44+n*2,ab=new ArrayBuffer(bytes),v=new DataView(ab);
+  function ws(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));}
+  ws(0,'RIFF');v.setUint32(4,bytes-8,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,buf.sampleRate,true);v.setUint32(28,buf.sampleRate*2,true);
+  v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,n*2,true);
+  for(var i=0;i<n;i++){var s=Math.max(-1,Math.min(1,ch[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
+  return ab;
+}
+</script>
+</body>
+</html>

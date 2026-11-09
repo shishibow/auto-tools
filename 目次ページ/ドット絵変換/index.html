@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ドット絵変換 - 画像をドット絵風に変換して保存</title>
+<meta name="description" content="写真やイラストをドット絵風に変換。ドットの大きさと色数をスライダーで調整してPNGで保存できます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.val{font-size:.85rem;color:var(--text-muted);text-align:right}
+.drop{border:2px dashed var(--border);border-radius:12px;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;padding:16px;color:var(--text-muted);font-weight:700}
+.drop input{display:none}
+canvas{max-width:100%;border-radius:12px;display:block;margin:0 auto;image-rendering:pixelated}
+.compare{display:flex;gap:10px;margin-top:12px}
+.compare figure{flex:1;margin:0;text-align:center}
+.compare figcaption{font-size:.8rem;color:var(--text-muted);font-weight:700;margin-top:4px}
+.compare img{max-width:100%;border-radius:10px;display:block}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🖼️ 画像・動画の一覧</a></nav>
+<header><h1>ドット絵変換</h1><p class="subtitle">写真やイラストをドット絵風に変換してPNGで保存</p></header>
+<div class="card">
+<label class="drop" id="drop">📷 画像を選ぶ（タップ）
+<span style="font-size:.8rem;font-weight:400">JPG・PNG・WebPに対応。画像はこのページの中だけで処理されます</span>
+<input type="file" id="fileInput" accept="image/*"></label>
+<div class="compare" id="compare" style="display:none">
+<figure><img id="origImg" alt="元の画像"><figcaption>元画像</figcaption></figure>
+<figure><canvas id="outCanvas"></canvas><figcaption>ドット絵</figcaption></figure>
+</div>
+</div>
+<div class="card">
+<label for="dotRange">ドットの大きさ <span class="val" id="dotVal">8px</span></label>
+<input type="range" id="dotRange" min="2" max="24" step="1" value="8">
+<label for="colorRange">色の数 <span class="val" id="colorVal">16色</span></label>
+<input type="range" id="colorRange" min="2" max="64" step="1" value="16">
+<label for="scaleRange">出力サイズ <span class="val" id="scaleVal">等倍</span></label>
+<input type="range" id="scaleRange" min="1" max="4" step="1" value="1">
+<div class="btn-row">
+<button class="btn-main" id="dlBtn" disabled>⬇ PNGで保存</button>
+<button class="btn-sub" id="sampleBtn">サンプル画像で試す</button>
+</div>
+<p class="hint" id="infoText">画像を選ぶと、ここにドット絵のプレビューが出ます。</p>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var fileInput=document.getElementById('fileInput'),drop=document.getElementById('drop'),
+origImg=document.getElementById('origImg'),outCanvas=document.getElementById('outCanvas'),
+dlBtn=document.getElementById('dlBtn'),infoText=document.getElementById('infoText'),
+compare=document.getElementById('compare');
+var dotRange=document.getElementById('dotRange'),colorRange=document.getElementById('colorRange'),
+scaleRange=document.getElementById('scaleRange');
+var srcImg=null,dotSize=8,colorCount=16,scale=1;
+function fmtScale(s){return s===1?'等倍':s+'倍';}
+function updateLabels(){
+  document.getElementById('dotVal').textContent=dotSize+'px';
+  document.getElementById('colorVal').textContent=colorCount+'色';
+  document.getElementById('scaleVal').textContent=fmtScale(scale);
+}
+dotRange.addEventListener('input',function(){dotSize=+dotRange.value;updateLabels();render();});
+colorRange.addEventListener('input',function(){colorCount=+colorRange.value;updateLabels();render();});
+scaleRange.addEventListener('input',function(){scale=+scaleRange.value;updateLabels();render();});
+drop.addEventListener('click',function(){fileInput.click();});
+drop.addEventListener('dragover',function(e){e.preventDefault();});
+drop.addEventListener('drop',function(e){e.preventDefault();if(e.dataTransfer.files.length)loadFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',function(){if(fileInput.files.length)loadFile(fileInput.files[0]);});
+function loadFile(file){
+  if(!file.type||file.type.indexOf('image/')!==0){infoText.textContent='画像ファイルを選んでください';return;}
+  var url=URL.createObjectURL(file);
+  var img=new Image();
+  img.onload=function(){srcImg=img;origImg.src=url;compare.style.display='flex';dlBtn.disabled=false;render();URL.revokeObjectURL(url);};
+  img.onerror=function(){infoText.textContent='画像を読み込めませんでした';};
+  img.src=url;
+}
+function quantize(v,levels){
+  var step=255/(levels-1);
+  return Math.round(Math.round(v/step)*step);
+}
+function render(){
+  if(!srcImg)return;
+  var maxW=480;
+  var w=srcImg.naturalWidth,h=srcImg.naturalHeight;
+  if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+  var cols=Math.max(1,Math.round(w/dotSize)),rows=Math.max(1,Math.round(h/dotSize));
+  var small=document.createElement('canvas');small.width=cols;small.height=rows;
+  var sctx=small.getContext('2d');
+  sctx.drawImage(srcImg,0,0,cols,rows);
+  var imgData=sctx.getImageData(0,0,cols,rows),d=imgData.data;
+  var levels=Math.max(2,Math.round(Math.cbrt(colorCount)));
+  for(var i=0;i<d.length;i+=4){
+    d[i]=quantize(d[i],levels);
+    d[i+1]=quantize(d[i+1],levels);
+    d[i+2]=quantize(d[i+2],levels);
+  }
+  sctx.putImageData(imgData,0,0);
+  outCanvas.width=cols*scale;outCanvas.height=rows*scale;
+  var octx=outCanvas.getContext('2d');
+  octx.imageSmoothingEnabled=false;
+  octx.drawImage(small,0,0,outCanvas.width,outCanvas.height);
+  infoText.textContent='ドット絵：'+cols+'×'+rows+'ドット（'+colorCount+'色に近似）・出力 '+outCanvas.width+'×'+outCanvas.height+'px';
+}
+dlBtn.addEventListener('click',function(){
+  if(!srcImg)return;
+  outCanvas.toBlob(function(blob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='dot-art.png';a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+  },'image/png');
+});
+document.getElementById('sampleBtn').addEventListener('click',function(){
+  var c=document.createElement('canvas');c.width=320;c.height=200;
+  var x=c.getContext('2d');
+  var g=x.createLinearGradient(0,0,320,200);g.addColorStop(0,'#38bdf8');g.addColorStop(1,'#f472b6');
+  x.fillStyle=g;x.fillRect(0,0,320,200);
+  x.fillStyle='#fde68a';x.beginPath();x.arc(70,60,34,0,Math.PI*2);x.fill();
+  x.fillStyle='#16a34a';x.fillRect(0,150,320,50);
+  x.fillStyle='#92400e';x.fillRect(220,90,18,60);
+  x.fillStyle='#22c55e';x.beginPath();x.arc(229,80,42,0,Math.PI*2);x.fill();
+  x.fillStyle='#fff';x.font='bold 28px sans-serif';x.fillText('DOT ART',60,120);
+  var img=new Image();
+  img.onload=function(){srcImg=img;origImg.src=c.toDataURL();compare.style.display='flex';dlBtn.disabled=false;render();};
+  img.src=c.toDataURL();
+});
+updateLabels();
+</script>
+</body>
+</html>

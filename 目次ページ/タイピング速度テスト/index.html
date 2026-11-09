@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイピング速度テスト - 1分で測る入力スピード</title>
+<meta name="description" content="表示される文章を打つだけ。1分あたりの文字数と正確さを測ります。ローマ字入力・かな入力どちらでも使えます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.val{font-size:.85rem;color:var(--text-muted);text-align:right}
+.time-big{font-size:2.6rem;font-weight:800;text-align:center;color:var(--primary);font-variant-numeric:tabular-nums;line-height:1.2}
+.progress{height:10px;background:#eef2ff;border-radius:99px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;background:var(--primary);width:100%}
+.sentence{font-size:1.15rem;line-height:2;background:#f8fafc;border-radius:12px;padding:14px;min-height:120px}
+.sentence .done{color:var(--primary);font-weight:700}
+.sentence .current{background:#fde68a;border-radius:4px}
+.sentence .todo{color:var(--text-muted)}
+.type-input{width:100%;min-height:56px;border:2px solid var(--primary);border-radius:12px;padding:10px 14px;font-size:1.15rem;margin-top:12px}
+.type-input:disabled{opacity:.5}
+.stats{display:flex;gap:10px;text-align:center}
+.stat{flex:1;background:var(--primary-light);border-radius:12px;padding:10px 4px}
+.stat .n{font-size:1.4rem;font-weight:800;color:var(--primary-dark);font-variant-numeric:tabular-nums}
+.stat .t{font-size:.75rem;color:var(--text-muted);font-weight:700}
+.result{text-align:center}
+.result .big{font-size:2.4rem;font-weight:800;color:var(--primary);line-height:1.2}
+.result .rank{font-size:1.05rem;font-weight:800;margin-top:4px}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🧰 便利ツールの一覧</a></nav>
+<header><h1>タイピング速度テスト</h1><p class="subtitle">文章を打つだけ。1分あたりの文字数と正確さを測ります</p></header>
+<div class="card">
+<label for="timeRange">制限時間 <span class="val" id="timeVal">60秒</span></label>
+<input type="range" id="timeRange" min="30" max="120" step="30" value="60">
+<div class="time-big" id="timeLeft">60</div>
+<div class="progress"><div id="bar"></div></div>
+</div>
+<div class="card">
+<div class="sentence" id="sentence">スタートボタンを押すと文章が出ます。表示される文字をそのまま打ってください。</div>
+<input class="type-input" id="typeInput" type="text" placeholder="ここに入力…" disabled autocomplete="off" autocapitalize="off" spellcheck="false">
+<div class="btn-row">
+<button class="btn-main" id="startBtn">スタート</button>
+<button class="btn-sub" id="resetBtn">リセット</button>
+</div>
+</div>
+<div class="card">
+<div class="stats">
+<div class="stat"><div class="n" id="statChars">0</div><div class="t">打った文字</div></div>
+<div class="stat"><div class="n" id="statAcc">100%</div><div class="t">正確さ</div></div>
+<div class="stat"><div class="n" id="statCpm">0</div><div class="t">文字/分</div></div>
+</div>
+</div>
+<div class="card result" id="resultCard" style="display:none">
+<div style="font-weight:800;color:var(--text-muted);font-size:.9rem">タイピング速度</div>
+<div class="big" id="resultCpm">0 文字/分</div>
+<div class="rank" id="rankText"></div>
+<p class="hint" id="resultDetail"></p>
+</div>
+<div class="card"><p class="hint">日本語の文章をそのまま打ってください。変換は不要で、ひらがなのまま入力してOKです。間違えた文字はそのまま進めますが、正確さに反映されます。</p></div>
+<footer class="site-foot"><a href="../utility.html">← 便利ツールのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var SENTENCES=[
+'今日は天気がよくて、散歩に出かけた。公園の桜が満開で、多くの人が写真を撮っていた。',
+'朝ごはんはパンと卵とサラダにした。コーヒーを飲みながら、今日の予定を確認した。',
+'電車が少し遅れたので、駅のホームで本を読んだ。読みかけの小説が面白くて、降りる駅を逃しそうになった。',
+'新しいパソコンを買ったので、設定をしている。思ったより時間がかかって、夜になってしまった。',
+'週末は友達と映画を見に行く予定だ。何を見るかまだ決めていないので、今日中に決めたい。',
+'庭の花に水をやると、蝶が飛んできた。春が近づいているのを感じる。',
+'昨日の夜は星がきれいだった。ベランダから見上げると、天の川がうっすら見えた。',
+'引っ越しの荷造りを始めた。使っていないものがたくさん出てきて、びっくりした。',
+'図書館で借りた本を読み終えた。続きが気になるので、明日また借りに行くつもりだ。',
+'今日の夕ごはんはカレーにした。玉ねぎを炒める香りが、家中に広がった。'
+];
+var timeRange=document.getElementById('timeRange'),timeVal=document.getElementById('timeVal'),
+timeLeft=document.getElementById('timeLeft'),bar=document.getElementById('bar'),
+sentenceEl=document.getElementById('sentence'),input=document.getElementById('typeInput'),
+startBtn=document.getElementById('startBtn'),resultCard=document.getElementById('resultCard');
+var limit=60,remain=60,timer=null,started=false,target='',pos=0,typed=0,correct=0,startTime=0;
+timeRange.addEventListener('input',function(){
+  limit=+timeRange.value;timeVal.textContent=limit+'秒';
+  if(!started){remain=limit;timeLeft.textContent=limit;bar.style.width='100%';}
+});
+function pickSentence(){
+  var s=SENTENCES[Math.floor(Math.random()*SENTENCES.length)];
+  target=s;pos=0;renderSentence();
+}
+function renderSentence(){
+  var html='';
+  for(var i=0;i<target.length;i++){
+    var cls=i<pos?'done':(i===pos?'current':'todo');
+    html+='<span class="'+cls+'">'+escapeHtml(target[i])+'</span>';
+  }
+  sentenceEl.innerHTML=html;
+}
+function escapeHtml(c){return c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function updateStats(){
+  document.getElementById('statChars').textContent=typed;
+  document.getElementById('statAcc').textContent=(typed?Math.round(correct/typed*100):100)+'%';
+  var mins=(Date.now()-startTime)/60000;
+  document.getElementById('statCpm').textContent=mins>0?Math.round(correct/mins):0;
+}
+function endTest(){
+  clearInterval(timer);started=false;input.disabled=true;
+  var mins=limit/60,cpm=Math.round(correct/mins),acc=typed?Math.round(correct/typed*100):100;
+  document.getElementById('resultCpm').textContent=cpm+' 文字/分';
+  document.getElementById('rankText').textContent=rankFor(cpm);
+  document.getElementById('resultDetail').textContent='打った文字 '+typed+'文字 ・ 正しい文字 '+correct+'文字 ・ 正確さ '+acc+'%';
+  resultCard.style.display='block';
+  startBtn.textContent='もう一度';
+}
+function rankFor(cpm){
+  if(cpm>=300)return '速い！ タイピング上級者です';
+  if(cpm>=200)return '速めです。平均を上回っています';
+  if(cpm>=120)return 'ふつうの速さです';
+  return 'ゆっくり確実に。慣れると速くなります';
+}
+startBtn.addEventListener('click',function(){
+  clearInterval(timer);
+  typed=0;correct=0;remain=limit;input.value='';input.disabled=false;
+  resultCard.style.display='none';pickSentence();
+  timeLeft.textContent=remain;bar.style.width='100%';
+  started=true;startTime=Date.now();input.focus();
+  startBtn.textContent='測定中…';
+  timer=setInterval(function(){
+    remain--;timeLeft.textContent=Math.max(remain,0);
+    bar.style.width=Math.max(remain,0)/limit*100+'%';
+    if(remain<=0)endTest();
+  },1000);
+});
+document.getElementById('resetBtn').addEventListener('click',function(){
+  clearInterval(timer);started=false;input.value='';input.disabled=true;
+  typed=0;correct=0;remain=limit;timeLeft.textContent=limit;bar.style.width='100%';
+  sentenceEl.textContent='スタートボタンを押すと文章が出ます。表示される文字をそのまま打ってください。';
+  document.getElementById('statChars').textContent='0';
+  document.getElementById('statAcc').textContent='100%';
+  document.getElementById('statCpm').textContent='0';
+  resultCard.style.display='none';startBtn.textContent='スタート';
+});
+input.addEventListener('input',function(){
+  if(!started)return;
+  var v=input.value;
+  if(!v.length)return;
+  var ch=v[v.length-1];
+  typed++;
+  if(pos<target.length&&ch===target[pos])correct++;
+  pos++;
+  if(pos>=target.length){pickSentence();input.value='';return;}
+  input.value='';
+  renderSentence();updateStats();
+});
+</script>
+</body>
+</html>

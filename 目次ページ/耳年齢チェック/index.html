@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>耳年齢チェック - 聞こえる音の高さで耳年齢をチェック</title>
+<meta name="description" content="高い音がどこまで聞こえるかをチェックして、耳年齢の目安を出します。イヤホン・ヘッドホンでの使用がおすすめです。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.val{font-size:.85rem;color:var(--text-muted);text-align:right}
+.freq-big{font-size:2.6rem;font-weight:800;text-align:center;color:var(--primary);font-variant-numeric:tabular-nums;line-height:1.2}
+.freq-sub{text-align:center;color:var(--text-muted);font-size:.9rem}
+.progress{height:10px;background:#eef2ff;border-radius:99px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;background:var(--primary);width:0%}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.btn-yes{background:#16a34a;color:#fff}
+.btn-no{background:#ef4444;color:#fff}
+.result{text-align:center}
+.result .big{font-size:2.4rem;font-weight:800;color:var(--primary);line-height:1.2}
+.result .rank{font-size:1.05rem;font-weight:800;margin-top:4px}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🏠 暮らしの一覧</a></nav>
+<header><h1>耳年齢チェック</h1><p class="subtitle">高い音がどこまで聞こえるかで、耳年齢の目安をチェック</p></header>
+<div class="card">
+<label for="volRange">音量 <span class="val" id="volVal">50%</span></label>
+<input type="range" id="volRange" min="10" max="100" value="50">
+<p class="hint">イヤホン・ヘッドホンで、静かな場所での使用がおすすめです。音量は小さめから始めて、聞こえにくいときだけ少し上げてください。</p>
+</div>
+<div class="card">
+<div class="freq-big" id="freqBig">— Hz</div>
+<div class="freq-sub" id="freqSub">スタートを押すと音が鳴ります</div>
+<div class="progress"><div id="bar"></div></div>
+<div class="btn-row">
+<button class="btn-main" id="startBtn">スタート</button>
+</div>
+<div class="btn-row" id="answerRow" style="display:none">
+<button class="btn-yes" id="yesBtn">聞こえた</button>
+<button class="btn-no" id="noBtn">聞こえない</button>
+</div>
+</div>
+<div class="card result" id="resultCard" style="display:none">
+<div style="font-weight:800;color:var(--text-muted);font-size:.9rem">耳年齢の目安</div>
+<div class="big" id="resultAge">—</div>
+<div class="rank" id="rankText"></div>
+<p class="hint" id="resultDetail"></p>
+<div class="btn-row"><button class="btn-sub" id="retryBtn">もう一度チェック</button></div>
+</div>
+<div class="card"><p class="hint">これは目安のチェックで、医療的な検査ではありません。聞こえに不安がある場合は耳鼻科にご相談ください。音はこのページの中だけで鳴ります。</p></div>
+<footer class="site-foot"><a href="../lifestyle.html">← 暮らしのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var FREQS=[
+  {f:8000,age:'60代'},
+  {f:10000,age:'50代'},
+  {f:12000,age:'40代'},
+  {f:14000,age:'30代'},
+  {f:16000,age:'20代'},
+  {f:18000,age:'10代'}
+];
+var actx=null,osc=null,gain=null,idx=0,heardMax=0,volume=0.5,playing=false;
+var freqBig=document.getElementById('freqBig'),freqSub=document.getElementById('freqSub'),
+bar=document.getElementById('bar'),startBtn=document.getElementById('startBtn'),
+answerRow=document.getElementById('answerRow'),resultCard=document.getElementById('resultCard');
+function getCtx(){if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
+var volRange=document.getElementById('volRange');
+volRange.addEventListener('input',function(){volume=+volRange.value/100;document.getElementById('volVal').textContent=volRange.value+'%';});
+function playTone(freq){
+  stopTone();
+  var ctx=getCtx();
+  osc=ctx.createOscillator();gain=ctx.createGain();
+  osc.type='sine';osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0,ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(volume*0.4,ctx.currentTime+0.1);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start();
+  playing=true;
+}
+function stopTone(){if(osc){try{osc.stop();}catch(e){}osc=null;}playing=false;}
+function showStep(){
+  var item=FREQS[idx];
+  freqBig.textContent=item.f.toLocaleString()+' Hz';
+  freqSub.textContent=(idx+1)+' / '+FREQS.length+' 回目：この音が聞こえたら「聞こえた」を押してください';
+  bar.style.width=(idx/FREQS.length*100)+'%';
+  answerRow.style.display='flex';
+  startBtn.textContent='音をもう一度鳴らす';
+  playTone(item.f);
+}
+function finish(){
+  stopTone();
+  bar.style.width='100%';
+  answerRow.style.display='none';
+  startBtn.textContent='スタート';
+  freqBig.textContent='結果';
+  freqSub.textContent='聞こえた一番高い音：'+(heardMax?heardMax.toLocaleString()+' Hz':'—');
+  resultCard.style.display='block';
+  var age=ageFor(heardMax);
+  document.getElementById('resultAge').textContent=age;
+  document.getElementById('rankText').textContent=rankFor(heardMax);
+  document.getElementById('resultDetail').textContent='聞こえた一番高い音は '+(heardMax?heardMax.toLocaleString()+' Hz':'8,000Hz未満')+' でした。音量やイヤホン、周りの騒音でも結果は変わるので、あくまで目安としてお楽しみください。';
+}
+function ageFor(max){
+  if(max>=18000)return '10代';
+  if(max>=16000)return '20代';
+  if(max>=14000)return '30代';
+  if(max>=12000)return '40代';
+  if(max>=10000)return '50代';
+  if(max>=8000)return '60代';
+  return '測定できませんでした';
+}
+function rankFor(max){
+  if(max>=18000)return 'とても高い音まで聞こえています！';
+  if(max>=16000)return '高い音までよく聞こえています';
+  if(max>=12000)return '一般的な聞こえ方です';
+  if(max>=8000)return '高い音は少し聞き取りにくくなっています';
+  return '8,000Hzの音が聞こえませんでした。音量を上げて試すか、静かな場所でお試しください';
+}
+startBtn.addEventListener('click',function(){
+  if(resultCard.style.display!=='none'){
+    idx=0;heardMax=0;resultCard.style.display='none';showStep();return;
+  }
+  if(idx===0&&!playing&&answerRow.style.display==='none'){showStep();return;}
+  if(playing){playTone(FREQS[idx].f);return;}
+  showStep();
+});
+document.getElementById('yesBtn').addEventListener('click',function(){
+  heardMax=FREQS[idx].f;stopTone();idx++;
+  if(idx>=FREQS.length){finish();return;}
+  showStep();
+});
+document.getElementById('noBtn').addEventListener('click',function(){
+  stopTone();finish();
+});
+document.getElementById('retryBtn').addEventListener('click',function(){
+  idx=0;heardMax=0;resultCard.style.display='none';showStep();
+});
+</script>
+</body>
+</html>

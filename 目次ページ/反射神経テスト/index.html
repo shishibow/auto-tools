@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反射神経テスト - 反応速度をミリ秒で測定</title>
+<meta name="description" content="画面が緑に変わった瞬間にタップ！ 反応速度をミリ秒単位で測って5回の平均を出します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.tap-area{min-height:260px;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--primary);color:#fff;text-align:center;padding:24px;user-select:none}
+.tap-area.waiting{background:#dc2626}
+.tap-area.ready{background:#16a34a}
+.tap-area .big{font-size:1.5rem;font-weight:800;line-height:1.4}
+.tap-area .small{font-size:.9rem;opacity:.9}
+.result{text-align:center}
+.result .avg{font-size:2.6rem;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;line-height:1.2}
+.result .rank{font-size:1.05rem;font-weight:800;margin-top:4px}
+.rounds{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.round{min-width:52px;min-height:48px;border-radius:10px;background:var(--primary-light);color:var(--primary-dark);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-variant-numeric:tabular-nums}
+.round.empty{background:#f1f5f9;color:var(--text-muted)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏰ 時間・日程の一覧</a></nav>
+<header><h1>反射神経テスト</h1><p class="subtitle">緑に変わった瞬間にタップ！ 5回の平均で反応速度を測ります</p></header>
+<div class="card">
+<div class="tap-area" id="tapArea">
+<div class="big" id="tapMain">タップしてスタート</div>
+<div class="small" id="tapSub">緑になったらすぐタップしてください</div>
+</div>
+</div>
+<div class="card result" id="resultCard" style="display:none">
+<div style="font-weight:800;color:var(--text-muted);font-size:.9rem">平均反応速度</div>
+<div class="avg" id="avgMs">— ms</div>
+<div class="rank" id="rankText"></div>
+<div class="rounds" id="rounds"></div>
+<div class="btn-row">
+<button class="btn-main" id="retryBtn">もう一度測る</button>
+<button class="btn-sub" id="shareBtn">結果をコピー</button>
+</div>
+</div>
+<div class="card"><p class="hint">赤いうちにタップするとフライングになり、その回はやり直しです。集中して待つのがコツです。1回目の緑は1.5〜4秒後のランダムなタイミングで出ます。</p></div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var tapArea=document.getElementById('tapArea'),tapMain=document.getElementById('tapMain'),
+tapSub=document.getElementById('tapSub'),resultCard=document.getElementById('resultCard'),
+avgEl=document.getElementById('avgMs'),rankEl=document.getElementById('rankText'),
+roundsEl=document.getElementById('rounds');
+var state='idle',timer=null,greenAt=0,round=0,results=[],TOTAL=5;
+function setArea(cls,main,sub){tapArea.className='tap-area '+cls;tapMain.textContent=main;tapSub.textContent=sub;}
+function startRound(){
+  round++;setArea('waiting','赤いうちは待って…','緑になったらタップ！');
+  state='waiting';
+  var delay=1500+Math.random()*2500;
+  timer=setTimeout(function(){
+    setArea('ready','タップ！','');state='ready';greenAt=performance.now();
+  },delay);
+}
+function finish(){
+  state='done';resultCard.style.display='block';
+  var avg=Math.round(results.reduce(function(a,b){return a+b;},0)/results.length);
+  avgEl.textContent=avg+' ms';
+  rankEl.textContent=rankFor(avg);
+  roundsEl.innerHTML='';
+  results.forEach(function(r){
+    var d=document.createElement('div');d.className='round';d.textContent=r+'ms';roundsEl.appendChild(d);
+  });
+  for(var i=results.length;i<TOTAL;i++){
+    var e=document.createElement('div');e.className='round empty';e.textContent='—';roundsEl.appendChild(e);
+  }
+  setArea('','テスト完了！','下の結果をご覧ください');
+}
+function rankFor(avg){
+  if(avg<200)return 'すごい！ プロゲーマー級の速さです';
+  if(avg<250)return '速い！ 平均よりかなり上です';
+  if(avg<300)return 'ふつうより速めです';
+  if(avg<400)return '平均くらいです';
+  return 'のんびり型。集中すると速くなります';
+}
+tapArea.addEventListener('click',function(){
+  if(state==='idle'||state==='done'){
+    results=[];round=0;resultCard.style.display='none';startRound();return;
+  }
+  if(state==='waiting'){
+    clearTimeout(timer);
+    setArea('waiting','フライング！','赤いうちにタップしました。もう一度タップしてやり直し');
+    state='foul';return;
+  }
+  if(state==='foul'){startRound();return;}
+  if(state==='ready'){
+    var ms=Math.round(performance.now()-greenAt);
+    results.push(ms);
+    if(results.length>=TOTAL){finish();return;}
+    setArea('',''+ms+' ms！','次は '+ (results.length+1) +' / '+TOTAL+' 回目。タップして続ける');
+    state='between';return;
+  }
+  if(state==='between'){startRound();return;}
+});
+document.getElementById('retryBtn').addEventListener('click',function(){
+  results=[];round=0;resultCard.style.display='none';startRound();
+});
+document.getElementById('shareBtn').addEventListener('click',function(){
+  if(!results.length)return;
+  var avg=Math.round(results.reduce(function(a,b){return a+b;},0)/results.length);
+  var text='反射神経テスト：平均 '+avg+'ms（'+results.join('・')+'ms）';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      document.getElementById('shareBtn').textContent='コピーしました';
+    });
+  }
+});
+</script>
+</body>
+</html>
