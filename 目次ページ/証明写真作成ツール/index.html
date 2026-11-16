@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証明写真作成ツール - 履歴書・パスポート用の写真を切り抜き</title>
+<meta name="description" content="手持ちの写真から履歴書・パスポート・運転免許用の証明写真サイズに切り抜き。L判プリント用シートも作れます。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.size-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.size-btn{min-height:52px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:.95rem;font-weight:800;color:var(--text);cursor:pointer;font-family:inherit}
+.size-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.size-btn small{display:block;font-size:.72rem;font-weight:600;opacity:.8}
+.file-label{display:block;text-align:center;min-height:56px;line-height:56px;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;font-size:1.05rem;cursor:pointer}
+.file-label input{display:none}
+.preview-wrap{position:relative;overflow:hidden;border-radius:12px;background:#e2e8f0;touch-action:none;user-select:none}
+.preview-wrap canvas{display:block;width:100%;height:auto}
+.guide{position:absolute;inset:0;pointer-events:none}
+.guide::before{content:"";position:absolute;left:50%;top:50%;width:56%;height:78%;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.85);border-radius:50%;box-shadow:0 0 0 9999px rgba(15,23,42,.25)}
+.slider-row{margin-top:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.85rem;font-weight:800}
+.slider-row label span{color:var(--primary)}
+input[type=range]{width:100%;height:48px;accent-color:var(--primary)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.hint b{color:var(--text)}
+.out-size{text-align:center;font-size:.85rem;font-weight:800;color:var(--primary-dark);margin-top:10px}
+.sample-link{display:block;text-align:center;margin-top:10px;font-size:.82rem;color:var(--primary);font-weight:700;cursor:pointer;text-decoration:underline}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
+<header><h1>証明写真作成ツール</h1><p class="subtitle">写真を選んで、ドラッグで位置合わせ。サイズ通りに切り抜いて保存できます</p></header>
+<div class="card">
+  <div class="size-row" id="sizeRow">
+    <button type="button" class="size-btn active" data-w="30" data-h="40">履歴書<small>30 × 40 mm</small></button>
+    <button type="button" class="size-btn" data-w="35" data-h="45">パスポート<small>35 × 45 mm</small></button>
+    <button type="button" class="size-btn" data-w="30" data-h="24">運転免許<small>30 × 24 mm</small></button>
+    <button type="button" class="size-btn" data-w="40" data-h="30">資格・横型<small>40 × 30 mm</small></button>
+  </div>
+  <div style="height:14px"></div>
+  <label class="file-label">写真を選ぶ<input type="file" id="fileInput" accept="image/*"></label>
+  <div style="height:14px"></div>
+  <div class="preview-wrap" id="previewWrap" style="display:none">
+    <canvas id="previewCanvas"></canvas>
+    <div class="guide"></div>
+  </div>
+  <div class="slider-row" id="zoomRow" style="display:none">
+    <label>拡大 <span id="zoomVal">100%</span></label>
+    <input type="range" id="zoomRange" min="100" max="300" value="100" step="1">
+  </div>
+  <div class="out-size" id="outSize" style="display:none"></div>
+  <div class="btn-row">
+    <button class="btn-main" id="saveBtn" disabled>写真を保存（PNG）</button>
+    <button class="btn-sub" id="sheetBtn" disabled>L判シート保存</button>
+  </div>
+  <p class="hint">顔が点線の楕円に収まるようにドラッグで調整してください。背景は白で塗りつぶされません（元の写真のまま切り抜きます）。<b>写真は端末の外に出ません。</b></p>
+  <a class="sample-link" id="sampleLink">サンプル写真で試す</a>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var DPI=300,MM2PX=DPI/25.4;
+var sizeBtns=document.querySelectorAll('.size-btn');
+var fileInput=document.getElementById('fileInput');
+var wrap=document.getElementById('previewWrap'),canvas=document.getElementById('previewCanvas'),ctx=canvas.getContext('2d');
+var zoomRange=document.getElementById('zoomRange'),zoomVal=document.getElementById('zoomVal'),zoomRow=document.getElementById('zoomRow');
+var saveBtn=document.getElementById('saveBtn'),sheetBtn=document.getElementById('sheetBtn'),outSize=document.getElementById('outSize');
+var curW=30,curH=40,img=null,zoom=1,offX=0,offY=0,dragging=false,lastX=0,lastY=0;
+function mm2px(mm){return Math.round(mm*MM2PX);}
+function computeCrop(imgW,imgH,ratioW,ratioH,zoomF,ox,oy){
+  var baseW,baseH;
+  if(imgW/imgH>ratioW/ratioH){baseH=imgH;baseW=imgH*ratioW/ratioH;}
+  else{baseW=imgW;baseH=imgW*ratioH/ratioW;}
+  var sw=baseW/zoomF,sh=baseH/zoomF;
+  var maxX=(imgW-sw)/2,maxY=(imgH-sh)/2;
+  var cx=Math.max(-maxX,Math.min(maxX,ox)),cy=Math.max(-maxY,Math.min(maxY,oy));
+  return {sx:(imgW-sw)/2+cx,sy:(imgH-sh)/2+cy,sw:sw,sh:sh};
+}
+function drawPreview(){
+  if(!img)return;
+  var ratio=curW/curH;
+  var cw=canvas.clientWidth||wrap.clientWidth||400;
+  var ch=cw/ratio;
+  canvas.width=Math.round(cw*2);canvas.height=Math.round(ch*2);
+  canvas.style.height=ch+'px';
+  var c=computeCrop(img.width,img.height,ratio,zoom,offX,offY);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img,c.sx,c.sy,c.sw,c.sh,0,0,canvas.width,canvas.height);
+  outSize.textContent='出力サイズ：'+mm2px(curW)+' × '+mm2px(curH)+' px（'+curW+' × '+curH+' mm・300dpi）';
+}
+function loadImage(src){
+  var im=new Image();
+  im.onload=function(){img=im;zoom=1;offX=0;offY=0;zoomRange.value=100;zoomVal.textContent='100%';
+    wrap.style.display='block';zoomRow.style.display='block';outSize.style.display='block';
+    saveBtn.disabled=false;sheetBtn.disabled=false;drawPreview();};
+  im.src=src;
+}
+sizeBtns.forEach(function(b){b.addEventListener('click',function(){
+  sizeBtns.forEach(function(x){x.classList.remove('active');});
+  b.classList.add('active');curW=+b.dataset.w;curH=+b.dataset.h;drawPreview();});});
+fileInput.addEventListener('change',function(){
+  var f=fileInput.files[0];if(!f)return;
+  var r=new FileReader();r.onload=function(e){loadImage(e.target.result);};r.readAsDataURL(f);});
+zoomRange.addEventListener('input',function(){zoom=+zoomRange.value/100;zoomVal.textContent=zoomRange.value+'%';drawPreview();});
+function pos(e){var r=canvas.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return {x:t.clientX-r.left,y:t.clientY-r.top};}
+canvas.addEventListener('pointerdown',function(e){if(!img)return;dragging=true;var p=pos(e);lastX=p.x;lastY=p.y;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',function(e){
+  if(!dragging||!img)return;var p=pos(e);
+  var scale=img.width/(canvas.width/2);
+  offX-=(p.x-lastX)*scale/2;offY-=(p.y-lastY)*scale/2;
+  lastX=p.x;lastY=p.y;drawPreview();});
+canvas.addEventListener('pointerup',function(){dragging=false;});
+canvas.addEventListener('pointercancel',function(){dragging=false;});
+function renderPhoto(){
+  var out=document.createElement('canvas');
+  out.width=mm2px(curW);out.height=mm2px(curH);
+  var octx=out.getContext('2d');octx.fillStyle='#fff';octx.fillRect(0,0,out.width,out.height);
+  var c=computeCrop(img.width,img.height,curW/curH,zoom,offX,offY);
+  octx.drawImage(img,c.sx,c.sy,c.sw,c.sh,0,0,out.width,out.height);
+  return out;
+}
+function download(canvasEl,name){var a=document.createElement('a');a.href=canvasEl.toDataURL('image/png');a.download=name;a.click();}
+saveBtn.addEventListener('click',function(){if(!img)return;download(renderPhoto(),'id-photo-'+curW+'x'+curH+'mm.png');});
+sheetBtn.addEventListener('click',function(){
+  if(!img)return;
+  var photo=renderPhoto();
+  var sheet=document.createElement('canvas');
+  sheet.width=Math.round(89*MM2PX);sheet.height=Math.round(127*MM2PX);
+  var sctx=sheet.getContext('2d');sctx.fillStyle='#fff';sctx.fillRect(0,0,sheet.width,sheet.height);
+  var gap=Math.round(3*MM2PX),mx=Math.round(8*MM2PX),my=Math.round(8*MM2PX);
+  var positions=[[mx,my],[mx+photo.width+gap,my],[mx,my+photo.height+gap],[mx+photo.width+gap,my+photo.height+gap]];
+  sctx.strokeStyle='#cbd5e1';sctx.lineWidth=2;
+  positions.forEach(function(p){sctx.drawImage(photo,p[0],p[1]);sctx.strokeRect(p[0],p[1],photo.width,photo.height);});
+  download(sheet,'id-photo-sheet-L.png');});
+document.getElementById('sampleLink').addEventListener('click',function(){
+  var s=document.createElement('canvas');s.width=900;s.height=1200;
+  var c=s.getContext('2d');
+  var g=c.createLinearGradient(0,0,0,1200);g.addColorStop(0,'#dbeafe');g.addColorStop(1,'#fef3c7');
+  c.fillStyle=g;c.fillRect(0,0,900,1200);
+  c.fillStyle='#f59e0b';c.beginPath();c.arc(450,520,190,0,Math.PI*2);c.fill();
+  c.fillStyle='#334155';c.beginPath();c.arc(450,500,170,0,Math.PI*2);c.fill();
+  c.fillStyle='#fcd9b8';c.beginPath();c.arc(450,520,150,0,Math.PI*2);c.fill();
+  c.fillStyle='#334155';c.beginPath();c.arc(400,510,16,0,Math.PI*2);c.arc(500,510,16,0,Math.PI*2);c.fill();
+  c.strokeStyle='#334155';c.lineWidth=8;c.beginPath();c.arc(450,580,60,0.15*Math.PI,0.85*Math.PI);c.stroke();
+  c.fillStyle='#4f46e5';c.fillRect(230,760,440,440);
+  loadImage(s.toDataURL('image/png'));});
+window.addEventListener('resize',drawPreview);
+</script>
+</body>
+</html>

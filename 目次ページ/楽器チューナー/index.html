@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楽器チューナー - マイクで音程をチェック</title>
+<meta name="description" content="スマホのマイクで音を拾い、今の音程が何の音か、どれだけズレているかを表示します。ギター・管楽器・声の音程チェックに。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.note-big{text-align:center;font-size:4rem;font-weight:900;line-height:1.1;color:var(--primary);font-variant-numeric:tabular-nums}
+.note-big small{font-size:1.6rem;color:var(--text-muted)}
+.freq{text-align:center;font-size:1.1rem;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.cents-wrap{position:relative;height:18px;background:var(--primary-light);border-radius:999px;margin:22px 4px 6px;overflow:hidden}
+.cents-center{position:absolute;left:50%;top:0;bottom:0;width:3px;background:var(--primary-dark);transform:translateX(-50%)}
+.cents-needle{position:absolute;top:0;bottom:0;width:5px;background:#dc2626;border-radius:3px;transform:translateX(-50%);transition:left .08s linear}
+.cents-labels{display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);font-weight:700;padding:0 4px}
+.cents-text{text-align:center;font-size:1.05rem;font-weight:800;margin-top:10px}
+.cents-text.in-tune{color:#16a34a}
+.cents-text.flat{color:#0284c7}
+.cents-text.sharp{color:#dc2626}
+.status{text-align:center;font-size:.85rem;color:var(--text-muted);margin-top:6px}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.ref-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.ref-btn{min-width:52px;min-height:48px;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:.9rem;font-weight:800;color:var(--text);cursor:pointer;font-family:inherit}
+.ref-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.ref-label{text-align:center;font-size:.8rem;color:var(--text-muted);font-weight:700;margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🍳 生活・健康の一覧</a></nav>
+<header><h1>楽器チューナー</h1><p class="subtitle">マイクに向かって音を出すだけ。何の音か、どれだけズレているかを表示します</p></header>
+<div class="card">
+  <div class="note-big" id="noteBig">—</div>
+  <div class="freq" id="freqText">マイクを開始してください</div>
+  <div class="cents-wrap"><div class="cents-center"></div><div class="cents-needle" id="needle" style="left:50%"></div></div>
+  <div class="cents-labels"><span>−50 低い</span><span>ちょうど</span><span>＋50 高い</span></div>
+  <div class="cents-text" id="centsText">—</div>
+  <p class="status" id="statusText">音が検出されていません</p>
+  <div class="btn-row">
+    <button class="btn-main" id="startBtn">マイクを開始</button>
+    <button class="btn-sub" id="stopBtn" disabled>停止</button>
+  </div>
+  <p class="ref-label">基準音を鳴らして確認（A4 = 440Hz）</p>
+  <div class="ref-row" id="refRow">
+    <button type="button" class="ref-btn" data-freq="261.63">C4</button>
+    <button type="button" class="ref-btn" data-freq="329.63">E4</button>
+    <button type="button" class="ref-btn" data-freq="392.00">G4</button>
+    <button type="button" class="ref-btn active" data-freq="440.00">A4</button>
+    <button type="button" class="ref-btn" data-freq="523.25">C5</button>
+  </div>
+  <p class="hint">静かな場所で、楽器や声をマイクに近づけて鳴らしてください。針が中央で緑の「合っています」になればチューニング完了です。音は端末の外に出ません。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 生活・健康のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function autocorrelate(buf,sampleRate){
+  var SIZE=buf.length,rms=0;
+  for(var i=0;i<SIZE;i++)rms+=buf[i]*buf[i];
+  rms=Math.sqrt(rms/SIZE);
+  if(rms<0.01)return -1;
+  var r1=0,r2=SIZE-1,thres=0.2;
+  for(var i=0;i<SIZE/2;i++)if(Math.abs(buf[i])<thres){r1=i;break;}
+  for(var i2=1;i2<SIZE/2;i2++)if(Math.abs(buf[SIZE-i2])<thres){r2=SIZE-i2;break;}
+  var buf2=buf.slice(r1,r2),c=new Array(buf2.length).fill(0);
+  for(var j=0;j<buf2.length;j++)for(var k=0;k<buf2.length-j;k++)c[j]+=buf2[k]*buf2[k+j];
+  var d=0;while(d<buf2.length-1&&c[d]>c[d+1])d++;
+  var maxval=-1,maxpos=-1;
+  for(var m=d;m<buf2.length;m++){if(c[m]>maxval){maxval=c[m];maxpos=m;}}
+  var T0=maxpos;
+  if(T0>0&&T0<buf2.length-1){
+    var x1=c[T0-1],x2=c[T0],x3=c[T0+1];
+    var a=(x1+x3-2*x2)/2,b=(x3-x1)/2;
+    if(a!==0)T0=T0-b/(2*a);
+  }
+  return sampleRate/T0;
+}
+function freqToNote(freq){
+  var n=12*(Math.log(freq/440)/Math.log(2))+69;
+  var rounded=Math.round(n);
+  var cents=Math.round((n-rounded)*100);
+  var name=NOTE_NAMES[((rounded%12)+12)%12];
+  var octave=Math.floor(rounded/12)-1;
+  return {name:name,octave:octave,note:name+octave,cents:cents,midi:rounded};
+}
+var noteBig=document.getElementById('noteBig'),freqText=document.getElementById('freqText'),
+needle=document.getElementById('needle'),centsText=document.getElementById('centsText'),
+statusText=document.getElementById('statusText'),
+startBtn=document.getElementById('startBtn'),stopBtn=document.getElementById('stopBtn');
+var audioCtx=null,analyser=null,stream=null,rafId=null,refOsc=null,refGain=null,refFreq=440;
+function tick(){
+  var buf=new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  var freq=autocorrelate(buf,audioCtx.sampleRate);
+  if(freq>0&&freq>=55&&freq<=1200){
+    var nt=freqToNote(freq);
+    noteBig.innerHTML=nt.name+'<small>'+nt.octave+'</small>';
+    freqText.textContent=freq.toFixed(2)+' Hz（目標 '+nt.note+'）';
+    var c=Math.max(-50,Math.min(50,nt.cents));
+    needle.style.left=(50+c)+'%';
+    centsText.className='cents-text '+(Math.abs(nt.cents)<=5?'in-tune':(nt.cents<0?'flat':'sharp'));
+    centsText.textContent=Math.abs(nt.cents)<=5?'合っています！':(nt.cents<0?Math.abs(nt.cents)+' セント低い':'＋'+nt.cents+' セント高い');
+    statusText.textContent='音を検出中';
+  }else{
+    statusText.textContent='音が検出されていません（もう少し大きな音で）';
+  }
+  rafId=requestAnimationFrame(tick);
+}
+startBtn.addEventListener('click',function(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    statusText.textContent='このブラウザーはマイクに対応していません';return;}
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false}}).then(function(s){
+    stream=s;
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    var src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();analyser.fftSize=2048;
+    src.connect(analyser);
+    startBtn.disabled=true;stopBtn.disabled=false;
+    statusText.textContent='マイク待機中…音を出してください';
+    tick();
+  }).catch(function(){
+    statusText.textContent='マイクの使用が許可されませんでした。ブラウザーの設定を確認してください';
+  });
+});
+stopBtn.addEventListener('click',function(){
+  if(rafId)cancelAnimationFrame(rafId);rafId=null;
+  if(stream)stream.getTracks().forEach(function(t){t.stop();});
+  stream=null;startBtn.disabled=false;stopBtn.disabled=true;
+  noteBig.textContent='—';freqText.textContent='マイクを開始してください';
+  centsText.textContent='—';centsText.className='cents-text';needle.style.left='50%';
+  statusText.textContent='停止しました';
+});
+document.querySelectorAll('.ref-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.ref-btn').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active');
+    refFreq=+b.dataset.freq;
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    if(refOsc){try{refOsc.stop();}catch(e){}}
+    refOsc=audioCtx.createOscillator();refGain=audioCtx.createGain();
+    refOsc.type='sine';refOsc.frequency.value=refFreq;refGain.gain.value=0.15;
+    refOsc.connect(refGain);refGain.connect(audioCtx.destination);refOsc.start();
+    setTimeout(function(){try{refOsc.stop();}catch(e){}},1500);
+  });
+});
+</script>
+</body>
+</html>

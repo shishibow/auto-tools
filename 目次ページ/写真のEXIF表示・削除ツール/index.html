@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>写真のEXIF表示・削除ツール - 撮影情報の確認と除去</title>
+<meta name="description" content="写真に残っている撮影日時・カメラ・位置情報を表示し、EXIFを削除して保存できます。SNS投稿前の確認に。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.file-label{display:block;text-align:center;min-height:56px;line-height:56px;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;font-size:1.05rem;cursor:pointer}
+.file-label input{display:none}
+.thumb{display:block;max-width:100%;max-height:240px;margin:14px auto 0;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:6px}
+th,td{padding:9px 4px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;line-height:1.6}
+th{width:38%;color:var(--text-muted);font-weight:700;white-space:nowrap}
+td{font-weight:600;overflow-wrap:anywhere}
+.warn{background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:12px 14px;font-size:.85rem;line-height:1.7;margin-top:12px}
+.warn b{color:#92400e}
+.ok{background:#dcfce7;border:1px solid #86efac;border-radius:12px;padding:12px 14px;font-size:.85rem;line-height:1.7;margin-top:12px}
+.ok b{color:#166534}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.filemeta{font-size:.8rem;color:var(--text-muted);margin-top:8px;text-align:center}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🎨 画像・動画の一覧</a></nav>
+<header><h1>写真のEXIF表示・削除</h1><p class="subtitle">写真に残る撮影日時・カメラ・位置情報を確認して、除去して保存できます</p></header>
+<div class="card">
+  <label class="file-label">写真（JPEG）を選ぶ<input type="file" id="fileInput" accept="image/jpeg,.jpg,.jpeg"></label>
+  <img class="thumb" id="thumb" style="display:none" alt="選択した写真">
+  <p class="filemeta" id="fileMeta"></p>
+  <div id="resultArea" style="display:none">
+    <table id="infoTable"></table>
+    <div id="gpsWarn"></div>
+    <div class="btn-row">
+      <button class="btn-main" id="stripBtn">EXIFを削除して保存</button>
+    </div>
+    <p class="hint">削除すると撮影日時・カメラ情報・位置情報がすべて消え、画質は変わりません。元のファイルは変更されません。</p>
+  </div>
+  <p class="hint">JPEGファイルに記録されたEXIF情報を読み取ります。PNGやスクリーンショットにはEXIFがない場合があります。<b>写真は端末の外に出ません。</b></p>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・動画のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var fileInput=document.getElementById('fileInput'),thumb=document.getElementById('thumb'),
+fileMeta=document.getElementById('fileMeta'),resultArea=document.getElementById('resultArea'),
+infoTable=document.getElementById('infoTable'),gpsWarn=document.getElementById('gpsWarn'),
+stripBtn=document.getElementById('stripBtn');
+var currentBuf=null,currentName='photo.jpg';
+function readAscii(view,off,len){var s='';for(var i=0;i<len;i++){var c=view.getUint8(off+i);if(c===0)break;s+=String.fromCharCode(c);}return s;}
+function readRational(view,off,le){var n=view.getUint32(off,le),d=view.getUint32(off+4,le);return d===0?0:n/d;}
+function parseIFD(view,ifdOff,tiffBase,le){
+  var count=view.getUint16(ifdOff,le),out={};
+  for(var i=0;i<count;i++){
+    var e=ifdOff+2+i*12,tag=view.getUint16(e,le),type=view.getUint16(e+2,le),num=view.getUint32(e+4,le);
+    var valOff=e+8;
+    var size={1:1,2:1,3:2,4:4,5:8,7:1,9:4,10:8}[type]||1;
+    if(size*num>4)valOff=tiffBase+view.getUint32(e+8,le);
+    var v=null;
+    if(type===2)v=readAscii(view,valOff,num);
+    else if(type===3)v=num===1?view.getUint16(valOff,le):Array.from({length:num},function(_,k){return view.getUint16(valOff+k*2,le);});
+    else if(type===4)v=num===1?view.getUint32(valOff,le):Array.from({length:num},function(_,k){return view.getUint32(valOff+k*4,le);});
+    else if(type===5)v=num===1?readRational(view,valOff,le):Array.from({length:num},function(_,k){return readRational(view,valOff+k*8,le);});
+    else if(type===1||type===7)v=num===1?view.getUint8(valOff):null;
+    out[tag]=v;
+  }
+  return out;
+}
+function dmsToDeg(dms,ref){
+  if(!dms||dms.length<3)return null;
+  var deg=dms[0]+dms[1]/60+dms[2]/3600;
+  if(ref==='S'||ref==='W')deg=-deg;
+  return deg;
+}
+function parseExif(buf){
+  var view=new DataView(buf);
+  if(view.getUint16(0)!==0xFFD8)return {error:'JPEGファイルではありません'};
+  var off=2,exif=null;
+  while(off+4<buf.byteLength){
+    if(view.getUint8(off)!==0xFF)break;
+    var marker=view.getUint8(off+1),len=view.getUint16(off+2);
+    if(marker===0xE1){
+      var head=readAscii(view,off+4,6);
+      if(head.indexOf('Exif')===0){exif={start:off+10,len:len-8};break;}
+    }
+    if(marker===0xDA||marker===0xD9)break;
+    off+=2+len;
+  }
+  if(!exif)return {error:'EXIF情報が見つかりませんでした'};
+  var t=view,base=exif.start;
+  var le=t.getUint16(base)===0x4949;
+  if(t.getUint16(base+2,le)!==42)return {error:'EXIFの形式が読み取れませんでした'};
+  var ifd0Off=base+t.getUint32(base+4,le);
+  var ifd0=parseIFD(t,ifd0Off,base,le);
+  var out={};
+  if(ifd0[0x010F])out.make=ifd0[0x010F];
+  if(ifd0[0x0110])out.model=ifd0[0x0110];
+  if(ifd0[0x0132])out.datetime=ifd0[0x0132];
+  if(ifd0[0x013B])out.artist=ifd0[0x013B];
+  if(ifd0[0x011A]&&ifd0[0x011B])out.resolution=ifd0[0x011A]+' × '+ifd0[0x011B];
+  if(ifd0[0x8769]){
+    var ex=parseIFD(t,base+ifd0[0x8769],base,le);
+    if(ex[0x9003])out.datetimeOriginal=ex[0x9003];
+    if(ex[0xA434])out.lens=ex[0xA434];
+    if(ex[0x829A])out.exposure=ex[0x829A]+' 秒';
+    if(ex[0x829D])out.fnumber='F'+ex[0x829D];
+    if(ex[0x8822])out.exposureProgram=ex[0x8822];
+    if(ex[0x8827])out.iso='ISO '+ex[0x8827];
+    if(ex[0x920A])out.focal=ex[0x920A]+' mm';
+    if(ex[0xA405])out.focal35=ex[0xA405]+' mm（35mm換算）';
+  }
+  if(ifd0[0x8825]){
+    var gps=parseIFD(t,base+ifd0[0x8825],base,le);
+    var lat=dmsToDeg(gps[2],gps[1]),lon=dmsToDeg(gps[4],gps[3]);
+    if(lat!==null&&lon!==null){out.gpsLat=lat;out.gpsLon=lon;}
+    if(gps[6]!==undefined)out.altitude=gps[6]+' m';
+  }
+  if(ifd0[0x0100]&&ifd0[0x0101])out.pixelSize=ifd0[0x0100]+' × '+ifd0[0x0101]+' px';
+  out.hasExif=true;
+  return out;
+}
+function stripExif(buf){
+  var view=new DataView(buf);
+  var chunks=[[0,2]],off=2;
+  while(off+1<buf.byteLength){
+    if(view.getUint8(off)!==0xFF)break;
+    var marker=view.getUint8(off+1);
+    if(marker===0xDA||marker===0xD9){chunks.push([off,buf.byteLength-off]);break;}
+    var len=view.getUint16(off+2);
+    if(marker!==0xE1){chunks.push([off,2+len]);}
+    off+=2+len;
+  }
+  var total=chunks.reduce(function(a,c){return a+c[1];},0);
+  var out=new Uint8Array(total),p=0;
+  chunks.forEach(function(c){out.set(new Uint8Array(buf.slice(c[0],c[0]+c[1])),p);p+=c[1];});
+  return out.buffer;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+fileInput.addEventListener('change',function(){
+  var f=fileInput.files[0];if(!f)return;
+  currentName=f.name.replace(/\.[^.]+$/,'')+'-noexif.jpg';
+  var r=new FileReader();
+  r.onload=function(e){
+    currentBuf=e.target.result;
+    thumb.src=URL.createObjectURL(f);thumb.style.display='block';
+    fileMeta.textContent=f.name+'（'+(f.size/1024).toFixed(0)+' KB）';
+    var info=parseExif(currentBuf);
+    resultArea.style.display='block';
+    if(info.error){
+      infoTable.innerHTML='<tr><th>結果</th><td>'+esc(info.error)+'</td></tr>';
+      gpsWarn.innerHTML='<div class="ok"><b>この写真にEXIFはありません。</b>位置情報などの心配なく共有できます。</div>';
+      stripBtn.disabled=true;return;
+    }
+    stripBtn.disabled=false;
+    var rows=[];
+    if(info.datetimeOriginal)rows.push(['撮影日時',info.datetimeOriginal]);
+    else if(info.datetime)rows.push(['撮影日時',info.datetime]);
+    if(info.make)rows.push(['メーカー',info.make]);
+    if(info.model)rows.push(['機種',info.model]);
+    if(info.lens)rows.push(['レンズ',info.lens]);
+    if(info.focal)rows.push(['焦点距離',info.focal]);
+    if(info.focal35)rows.push(['焦点距離',info.focal35]);
+    if(info.exposure)rows.push(['シャッター速度',info.exposure]);
+    if(info.fnumber)rows.push(['絞り',info.fnumber]);
+    if(info.iso)rows.push(['感度',info.iso]);
+    if(info.pixelSize)rows.push(['画像サイズ',info.pixelSize]);
+    if(info.artist)rows.push(['作者',info.artist]);
+    if(info.gpsLat!==undefined)rows.push(['位置情報','緯度 '+info.gpsLat.toFixed(6)+' / 経度 '+info.gpsLon.toFixed(6)]);
+    if(info.altitude)rows.push(['高度',info.altitude]);
+    if(!rows.length)rows.push(['結果','EXIFはありますが、表示できる項目がありませんでした']);
+    infoTable.innerHTML=rows.map(function(r){return '<tr><th>'+esc(r[0])+'</th><td>'+esc(r[1])+'</td></tr>';}).join('');
+    if(info.gpsLat!==undefined){
+      gpsWarn.innerHTML='<div class="warn"><b>位置情報が入っています。</b>このままSNSに投稿すると撮影場所が分かる場合があります。<a href="https://www.google.com/maps?q='+info.gpsLat.toFixed(6)+','+info.gpsLon.toFixed(6)+'" target="_blank" rel="noopener">地図で確認</a> ／ 下のボタンで削除できます。</div>';
+    }else{
+      gpsWarn.innerHTML='<div class="ok"><b>位置情報は入っていません。</b>撮影場所の心配はありません。</div>';
+    }
+  };
+  r.readAsArrayBuffer(f);
+});
+stripBtn.addEventListener('click',function(){
+  if(!currentBuf)return;
+  var out=stripExif(currentBuf);
+  var blob=new Blob([out],{type:'image/jpeg'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=currentName;a.click();
+});
+</script>
+</body>
+</html>

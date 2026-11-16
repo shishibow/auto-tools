@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月齢・今夜の月チェック - 月の満ち欠けと月齢</title>
+<meta name="description" content="今日の月齢と月の満ち欠け、月明かりの明るさをひと目で確認。次の満月・新月の日付も分かります。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.moon-wrap{display:flex;gap:16px;align-items:center}
+.moon-wrap canvas{flex-shrink:0;border-radius:50%;background:#0f172a}
+.moon-info{flex:1;min-width:0}
+.phase-name{font-size:1.35rem;font-weight:900;color:var(--primary)}
+.age-big{font-size:1.05rem;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.illum{font-size:.9rem;color:var(--text-muted);font-weight:700}
+.date-row{display:flex;gap:8px;margin-top:14px}
+.date-row input{flex:1;min-height:52px;border:1.5px solid var(--border);border-radius:12px;padding:0 12px;font-size:1rem;font-family:inherit}
+.date-row button{min-width:96px;min-height:52px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:10px}
+th,td{padding:8px 2px;border-bottom:1px solid var(--border);text-align:left}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+th{color:var(--text-muted);font-weight:700}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏰ 時間・日程の一覧</a></nav>
+<header><h1>月齢・今夜の月チェック</h1><p class="subtitle">今夜の月はどんな形？ 月齢と明るさ、次の満月・新月を確認できます</p></header>
+<div class="card">
+  <div class="moon-wrap">
+    <canvas id="moonCanvas" width="180" height="180"></canvas>
+    <div class="moon-info">
+      <div class="phase-name" id="phaseName">—</div>
+      <div class="age-big" id="ageText">—</div>
+      <div class="illum" id="illumText">—</div>
+    </div>
+  </div>
+  <div class="date-row">
+    <input type="date" id="dateInput">
+    <button type="button" id="todayBtn">今日に戻る</button>
+  </div>
+  <table id="nextTable"></table>
+  <p class="hint">月齢は朔（新月）からの経過日数です。月齢 0 が新月、約 7.4 が上弦、約 14.8 が満月、約 22.1 が下弦です。計算は平均朔望月 29.530588853 日にもとづく概算で、実際の月齢と ±1 日程度のズレが出る場合があります。</p>
+</div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var SYNODIC=29.530588853,EPOCH_JD=2451550.26; // 2000-01-06 18:14 UTC = 新月
+function toJD(date){
+  return date.getTime()/86400000+2440587.5;
+}
+function moonAge(date){
+  var age=(toJD(date)-EPOCH_JD)%SYNODIC;
+  if(age<0)age+=SYNODIC;
+  if(age>SYNODIC-0.01)age=0; // 新月の瞬間の誤差で 29.53 に折り返すのを防ぐ
+  return age;
+}
+function illumination(age){
+  return (1-Math.cos(2*Math.PI*age/SYNODIC))/2;
+}
+function phaseName(age){
+  if(age<1.0)return '新月';
+  if(age<6.4)return '三日月〜上弦前';
+  if(age<8.4)return '上弦の月';
+  if(age<13.8)return '十三夜〜満月前';
+  if(age<15.8)return '満月';
+  if(age<21.1)return '寝待月〜更けゆく月';
+  if(age<23.1)return '下弦の月';
+  if(age<28.5)return '有明月〜細くなる月';
+  return '新月前';
+}
+function nextEvent(fromDate,phase){
+  var d=new Date(fromDate.getTime());
+  for(var i=0;i<40;i++){
+    d=new Date(d.getTime()+86400000);
+    var a=moonAge(d);
+    if(phase==='full'&&a>=14.7&&a<15.7)return d;
+    if(phase==='new'&&(a<0.9||a>28.6))return d;
+  }
+  return null;
+}
+function fmtDate(d){
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+var moonCanvas=document.getElementById('moonCanvas'),mctx=moonCanvas.getContext('2d'),
+dateInput=document.getElementById('dateInput'),todayBtn=document.getElementById('todayBtn'),
+phaseNameEl=document.getElementById('phaseName'),ageText=document.getElementById('ageText'),
+illumText=document.getElementById('illumText'),nextTable=document.getElementById('nextTable');
+function drawMoon(age){
+  var R=88,cx=90,cy=90,ill=illumination(age);
+  mctx.clearRect(0,0,180,180);
+  mctx.fillStyle='#1e293b';mctx.beginPath();mctx.arc(cx,cy,R,0,Math.PI*2);mctx.fill();
+  var frac=age/SYNODIC;
+  var lit=ill;
+  mctx.fillStyle='#f8fafc';
+  mctx.beginPath();
+  if(frac<0.5){
+    mctx.arc(cx,cy,R,-Math.PI/2,Math.PI/2,false);
+    mctx.ellipse(cx,cy,R*(1-2*lit),R,0,Math.PI/2,-Math.PI/2,frac<0.25);
+  }else{
+    mctx.arc(cx,cy,R,Math.PI/2,Math.PI*1.5,false);
+    mctx.ellipse(cx,cy,R*(1-2*(1-lit)),R,0,-Math.PI/2,Math.PI/2,frac<0.75);
+  }
+  mctx.fill();
+  mctx.strokeStyle='rgba(255,255,255,.25)';mctx.lineWidth=2;
+  mctx.beginPath();mctx.arc(cx,cy,R,0,Math.PI*2);mctx.stroke();
+}
+function render(){
+  var v=dateInput.value;
+  var d=v?new Date(v+'T12:00:00'):new Date();
+  if(isNaN(d.getTime()))d=new Date();
+  var age=moonAge(d),ill=illumination(age);
+  phaseNameEl.textContent=phaseName(age);
+  ageText.textContent='月齢 '+age.toFixed(1);
+  illumText.textContent='月明かり '+(ill*100).toFixed(0)+'%';
+  drawMoon(age);
+  var nf=nextEvent(d,'full'),nn=nextEvent(d,'new');
+  nextTable.innerHTML=
+    '<tr><th>次の満月</th><td>'+(nf?fmtDate(nf):'—')+'</td></tr>'+
+    '<tr><th>次の新月</th><td>'+(nn?fmtDate(nn):'—')+'</td></tr>'+
+    '<tr><th>調べた日付</th><td>'+fmtDate(d)+'</td></tr>';
+}
+function setToday(){
+  var t=new Date();
+  var s=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  dateInput.value=s;render();
+}
+dateInput.addEventListener('change',render);
+todayBtn.addEventListener('click',setToday);
+setToday();
+</script>
+</body>
+</html>

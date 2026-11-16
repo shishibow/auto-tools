@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バーコード作成ツール - CODE39・JANコードを画像で保存</title>
+<meta name="description" content="文字や数字からバーコード（CODE39・JAN-13）を作ってPNG画像で保存。整理ラベルや在庫管理に。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-btn{min-height:52px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:.95rem;font-weight:800;color:var(--text);cursor:pointer;font-family:inherit}
+.type-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.type-btn small{display:block;font-size:.72rem;font-weight:600;opacity:.8}
+label.f-label{display:block;font-size:.85rem;font-weight:800;margin:14px 0 6px}
+input[type=text]{width:100%;min-height:52px;border:1.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:1.05rem;font-family:inherit;letter-spacing:.05em}
+input[type=text]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(79,70,229,.15)}
+.barcode-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 10px 10px;margin-top:14px;text-align:center;overflow-x:auto}
+.barcode-box canvas{max-width:100%;height:auto;image-rendering:pixelated}
+.barcode-text{font-size:1rem;font-weight:700;letter-spacing:.35em;margin-top:6px;font-variant-numeric:tabular-nums}
+.check-line{font-size:.85rem;font-weight:800;color:var(--primary-dark);margin-top:6px}
+.err{color:#dc2626;font-size:.85rem;font-weight:700;margin-top:8px;min-height:1.4em}
+.slider-row{margin-top:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.85rem;font-weight:800}
+.slider-row label span{color:var(--primary)}
+input[type=range]{width:100%;height:48px;accent-color:var(--primary)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🛠️ 便利機能の一覧</a></nav>
+<header><h1>バーコード作成ツール</h1><p class="subtitle">文字や数字をバーコードにして、PNG画像で保存できます</p></header>
+<div class="card">
+  <div class="type-row" id="typeRow">
+    <button type="button" class="type-btn active" data-type="code39">CODE39<small>英数字・記号用</small></button>
+    <button type="button" class="type-btn" data-type="ean13">JAN-13<small>商品コード・13桁</small></button>
+  </div>
+  <label class="f-label" for="codeInput" id="inputLabel">バーコードにする文字（半角英数字・記号）</label>
+  <input type="text" id="codeInput" value="ABC-123" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  <p class="err" id="errText"></p>
+  <div class="barcode-box">
+    <canvas id="barcodeCanvas" width="600" height="180"></canvas>
+    <div class="barcode-text" id="barcodeText"></div>
+    <div class="check-line" id="checkLine"></div>
+  </div>
+  <div class="slider-row">
+    <label>バーの高さ <span id="heightVal">120 px</span></label>
+    <input type="range" id="heightRange" min="60" max="200" value="120" step="10">
+  </div>
+  <div class="btn-row">
+    <button class="btn-main" id="saveBtn">バーコードを保存（PNG）</button>
+  </div>
+  <p class="hint" id="typeHint">CODE39は大文字・数字と - . スペース $ / + % が使えます。JAN-13は12桁の数字を入れるとチェックデジット（13桁目）を自動で付けます。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← テキスト・便利機能のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var CODE39={
+'0':'101001101101','1':'110100101011','2':'101100101011','3':'110110010101',
+'4':'101001101011','5':'110100110101','6':'101100110101','7':'101001011011',
+'8':'110100101101','9':'101100101101','A':'110101001011','B':'101101001011',
+'C':'110110100101','D':'101011001011','E':'110101100101','F':'101101100101',
+'G':'101010011011','H':'110101001101','I':'101101001101','J':'101010110101',
+'K':'110101010011','L':'101101010011','M':'110110101001','N':'101011010011',
+'O':'110101101001','P':'101101101001','Q':'101010101011','R':'110101010101',
+'S':'101101010101','T':'101011010101','U':'110010101011','V':'100110101011',
+'W':'110011010101','X':'100101101011','Y':'110010110101','Z':'100110110101',
+'-':'100101011011','.':'110010101101',' ':'100110101101','*':'100101101101',
+'$':'100100100101','/':'100100101001','+':'100101001001','%':'101001001001'};
+var EAN_L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+var EAN_G=['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+var EAN_R=['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+var EAN_PARITY=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LLGLGL'];
+function eanCheckDigit(d12){
+  var sum=0;
+  for(var i=0;i<12;i++){var d=+d12[i];sum+= (i%2===0)?d:d*3;}
+  return (10-(sum%10))%10;
+}
+function encodeCode39(text){
+  var seq='*'+text+'*',bits='';
+  for(var i=0;i<seq.length;i++){
+    if(i>0)bits+='0';
+    bits+=CODE39[seq[i]];
+  }
+  return bits;
+}
+function encodeEan13(d13){
+  var first=+d13[0],parity=EAN_PARITY[first],bits='101';
+  for(var i=1;i<=6;i++){
+    var d=+d13[i];
+    bits+=(parity[i-1]==='L'?EAN_L[d]:EAN_G[d]);
+  }
+  bits+='01010';
+  for(var j=7;j<=12;j++)bits+=EAN_R[+d13[j]];
+  bits+='101';
+  return bits;
+}
+var typeBtns=document.querySelectorAll('.type-btn'),
+codeInput=document.getElementById('codeInput'),
+errText=document.getElementById('errText'),
+canvas=document.getElementById('barcodeCanvas'),ctx=canvas.getContext('2d'),
+barcodeText=document.getElementById('barcodeText'),checkLine=document.getElementById('checkLine'),
+heightRange=document.getElementById('heightRange'),heightVal=document.getElementById('heightVal'),
+inputLabel=document.getElementById('inputLabel'),typeHint=document.getElementById('typeHint');
+var curType='code39',barHeight=120;
+function drawBits(bits){
+  var quiet=10,unit=Math.max(1,Math.floor((canvas.width-quiet*2)/bits.length));
+  var w=quiet*2+unit*bits.length;
+  canvas.width=w;canvas.height=barHeight+60;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#000';
+  for(var i=0;i<bits.length;i++)if(bits[i]==='1')ctx.fillRect(quiet+i*unit,10,unit,barHeight);
+}
+function render(){
+  var v=codeInput.value,err='';
+  if(curType==='code39'){
+    v=v.toUpperCase();
+    if(!v)err='文字を入力してください';
+    else{for(var i=0;i<v.length;i++){if(!CODE39[v[i]]){err='使えない文字があります：'+v[i];break;}}}
+    if(!err){
+      drawBits(encodeCode39(v));
+      barcodeText.textContent=v;
+      checkLine.textContent='CODE39（* は開始・終了記号です）';
+    }
+  }else{
+    var digits=v.replace(/\D/g,'');
+    if(digits.length!==12&&digits.length!==13)err='数字を12桁または13桁で入力してください';
+    else{
+      var d13=digits;
+      if(digits.length===12){d13=digits+eanCheckDigit(digits);checkLine.textContent='チェックデジット：'+eanCheckDigit(digits)+'（自動で付与）';}
+      else{
+        var ok=eanCheckDigit(digits.slice(0,12))===+digits[12];
+        checkLine.textContent=ok?'チェックデジット：正しい13桁です':'チェックデジットが合いません（正しくは '+eanCheckDigit(digits.slice(0,12))+'）';
+      }
+      drawBits(encodeEan13(d13));
+      barcodeText.textContent=d13.split('').join(' ');
+    }
+  }
+  errText.textContent=err;
+  if(err){ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);barcodeText.textContent='';checkLine.textContent='';}
+}
+typeBtns.forEach(function(b){b.addEventListener('click',function(){
+  typeBtns.forEach(function(x){x.classList.remove('active');});
+  b.classList.add('active');curType=b.dataset.type;
+  if(curType==='code39'){codeInput.value='ABC-123';inputLabel.textContent='バーコードにする文字（半角英数字・記号）';
+    typeHint.textContent='CODE39は大文字・数字と - . スペース $ / + % が使えます。JAN-13は12桁の数字を入れるとチェックデジット（13桁目）を自動で付けます。';}
+  else{codeInput.value='490123456789';inputLabel.textContent='数字12桁（チェックデジットは自動）または13桁';
+    typeHint.textContent='JAN-13は商品バーコードの形式です。12桁だけ入れると13桁目（チェックデジット）を自動で計算して付けます。';}
+  render();});});
+codeInput.addEventListener('input',render);
+heightRange.addEventListener('input',function(){barHeight=+heightRange.value;heightVal.textContent=barHeight+' px';render();});
+document.getElementById('saveBtn').addEventListener('click',function(){
+  if(errText.textContent)return;
+  var a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+  a.download='barcode-'+codeInput.value.replace(/[^A-Za-z0-9]+/g,'-')+'.png';a.click();});
+render();
+</script>
+</body>
+</html>
