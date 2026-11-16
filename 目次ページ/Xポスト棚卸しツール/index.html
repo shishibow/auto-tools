@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xポスト棚卸しツール - アーカイブから削除候補リストを作る</title>
+<meta name="description" content="Xからダウンロードしたデータアーカイブ（tweets.js）をブラウザ内で読み込み、期間・キーワード・返信のみなどで絞り込んで削除候補リスト（CSV・ID一覧）を書き出します。アップロードなし・API不要。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.35rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px;margin-top:12px}
+label:first-child{margin-top:0}
+input[type=text],input[type=date]{width:100%;min-height:48px;border:2px solid var(--border);border-radius:12px;padding:10px 14px;font-size:1rem}
+input[type=file]{width:100%;font-size:.9rem}
+.checks{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px}
+.checks label{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.9rem;margin:0;min-height:44px}
+.checks input{width:20px;height:20px;accent-color:var(--primary)}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+.btn-row button:disabled{opacity:.45;cursor:default}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.stats{display:flex;gap:10px;text-align:center}
+.stat{flex:1;background:var(--primary-light);border-radius:12px;padding:10px 4px}
+.stat .n{font-size:1.3rem;font-weight:800;color:var(--primary-dark);font-variant-numeric:tabular-nums}
+.stat .t{font-size:.72rem;color:var(--text-muted);font-weight:700}
+.item{border-top:1px solid var(--border);padding:12px 0}
+.item:first-child{border-top:none}
+.item .meta{font-size:.78rem;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;font-size:.72rem;font-weight:800;border-radius:99px;padding:1px 8px;background:var(--primary-light);color:var(--primary-dark)}
+.badge.reply{background:#fef3c7;color:#92400e}
+.badge.repost{background:#e0e7ff;color:#3730a3}
+.item .txt{font-size:.92rem;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.item a{font-size:.78rem;color:var(--primary);font-weight:700;text-decoration:none}
+.empty{color:var(--text-muted);font-size:.9rem;text-align:center;padding:18px 0}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🧰 便利ツールの一覧</a></nav>
+<header><h1>Xポスト棚卸しツール</h1><p class="subtitle">アーカイブから削除候補リストを作る。削除そのものはしません</p></header>
+
+<div class="card">
+<label for="fileInput">1. アーカイブの tweets.js を選ぶ</label>
+<input type="file" id="fileInput" accept=".js" multiple>
+<p class="hint">Xの「設定 → アカウント → データのアーカイブをダウンロード」で届くZIPを解凍し、中の <b>data/tweets.js</b> を選びます。分割されている場合は <b>tweets-part1.js</b> なども一緒に選べます（account.js を一緒に入れると投稿URLにユーザー名が入ります）。ファイルはブラウザ内でのみ処理し、どこにもアップロードしません。</p>
+<div class="btn-row">
+<button class="btn-main" id="loadBtn">読み込む</button>
+<button class="btn-sub" id="sampleBtn">サンプルで試す</button>
+</div>
+<p class="hint" id="loadStatus">まだ読み込んでいません。削除はこのツールでは行いません。書き出したリストを見ながら手動で消すか、API経由の既存サービスに渡すための一覧です。</p>
+</div>
+
+<div class="card" id="statsCard" style="display:none">
+<div class="stats">
+<div class="stat"><div class="n" id="stTotal">0</div><div class="t">読み込み件数</div></div>
+<div class="stat"><div class="n" id="stReply">0</div><div class="t">返信</div></div>
+<div class="stat"><div class="n" id="stRepost">0</div><div class="t">リポスト</div></div>
+<div class="stat"><div class="n" id="stMedia">0</div><div class="t">メディア付き</div></div>
+</div>
+<p class="hint" id="stRange"></p>
+</div>
+
+<div class="card">
+<label>2. 絞り込む</label>
+<label for="kwInput" style="font-weight:700;font-size:.85rem">キーワード（本文に含む）</label>
+<input type="text" id="kwInput" placeholder="例： ゲーム開発">
+<div style="display:flex;gap:10px">
+<div style="flex:1"><label for="fromInput" style="font-weight:700;font-size:.85rem">いつから</label><input type="date" id="fromInput"></div>
+<div style="flex:1"><label for="toInput" style="font-weight:700;font-size:.85rem">いつまで</label><input type="date" id="toInput"></div>
+</div>
+<div class="checks">
+<label><input type="checkbox" id="fOriginal" checked> 通常の投稿</label>
+<label><input type="checkbox" id="fReply" checked> 返信</label>
+<label><input type="checkbox" id="fRepost" checked> リポスト</label>
+<label><input type="checkbox" id="fMedia"> メディア付きのみ</label>
+</div>
+<div class="btn-row"><button class="btn-main" id="filterBtn">絞り込みを表示</button></div>
+<p class="hint" id="filterStatus"></p>
+</div>
+
+<div class="card">
+<label>3. 書き出す</label>
+<div class="btn-row">
+<button class="btn-main" id="csvBtn" disabled>CSVで保存</button>
+<button class="btn-sub" id="idsBtn" disabled>ID一覧で保存</button>
+</div>
+<p class="hint">CSVは「ID・日時・種別・本文・URL」。ID一覧は1行に1つの投稿IDで、削除サービスへの入力用です。どちらも絞り込み結果が対象です。</p>
+</div>
+
+<div class="card">
+<label>絞り込み結果 <span id="resultCount" style="color:var(--text-muted);font-weight:700"></span></label>
+<div id="resultList"><p class="empty">まだ表示するものがありません</p></div>
+</div>
+
+<div class="site-foot"><a href="../">← 実用Webツール集にもどる</a><span class="sf-note">ファイルは端末内で処理されます。XのAPI・ログインは使いません。</span></div>
+</div>
+
+<script>
+"use strict";
+let allTweets = [];
+let filtered = [];
+let screenName = "";
+
+/* アーカイブ1ファイル分のテキストをパースする。window.YTD.tweets.part0 = [...] の
+   先頭の代入部分を取り除き、残りをJSONとして読む。evalは使わない。 */
+function parseArchiveText(text) {
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start < 0 || end <= start) return [];
+  let arr;
+  try { arr = JSON.parse(text.slice(start, end + 1)); }
+  catch (e) { return []; }
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const item of arr) {
+    const t = item && item.tweet ? item.tweet : item;
+    if (!t || !t.id_str) continue;
+    out.push(normalizeTweet(t));
+  }
+  return out;
+}
+
+function normalizeTweet(t) {
+  const text = t.full_text || t.text || "";
+  const isReply = !!t.in_reply_to_status_id_str;
+  const isRepost = !!t.retweeted_status || /^RT @/.test(text);
+  const hasMedia = !!(t.extended_entities && t.extended_entities.media && t.extended_entities.media.length)
+    || !!(t.entities && t.entities.media && t.entities.media.length);
+  return {
+    id: String(t.id_str),
+    date: t.created_at ? new Date(t.created_at) : null,
+    text: text,
+    type: isReply ? "reply" : (isRepost ? "repost" : "original"),
+    hasMedia: hasMedia,
+    likes: parseInt(t.favorite_count || "0", 10) || 0
+  };
+}
+
+function parseAccountText(text) {
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start < 0 || end <= start) return "";
+  try {
+    const arr = JSON.parse(text.slice(start, end + 1));
+    const a = arr && arr[0] && arr[0].account ? arr[0].account : null;
+    return a && a.username ? a.username : "";
+  } catch (e) { return ""; }
+}
+
+function fmtDate(d) {
+  if (!d || isNaN(d.getTime())) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function typeLabel(type) {
+  return type === "reply" ? "返信" : type === "repost" ? "リポスト" : "通常";
+}
+function typeClass(type) {
+  return type === "reply" ? "badge reply" : type === "repost" ? "badge repost" : "badge";
+}
+function postUrl(t) {
+  return screenName
+    ? "https://x.com/" + screenName + "/status/" + t.id
+    : "https://x.com/i/status/" + t.id;
+}
+
+function applyFilters() {
+  const kw = document.getElementById("kwInput").value.trim().toLowerCase();
+  const from = document.getElementById("fromInput").value;
+  const to = document.getElementById("toInput").value;
+  const wantOriginal = document.getElementById("fOriginal").checked;
+  const wantReply = document.getElementById("fReply").checked;
+  const wantRepost = document.getElementById("fRepost").checked;
+  const mediaOnly = document.getElementById("fMedia").checked;
+  const fromDate = from ? new Date(from + "T00:00:00") : null;
+  const toDate = to ? new Date(to + "T23:59:59") : null;
+  filtered = allTweets.filter((t) => {
+    if (t.type === "original" && !wantOriginal) return false;
+    if (t.type === "reply" && !wantReply) return false;
+    if (t.type === "repost" && !wantRepost) return false;
+    if (mediaOnly && !t.hasMedia) return false;
+    if (kw && t.text.toLowerCase().indexOf(kw) < 0) return false;
+    if (fromDate && t.date && t.date < fromDate) return false;
+    if (toDate && t.date && t.date > toDate) return false;
+    return true;
+  });
+  filtered.sort((a, b) => (b.date || 0) - (a.date || 0));
+  renderList();
+  document.getElementById("csvBtn").disabled = filtered.length === 0;
+  document.getElementById("idsBtn").disabled = filtered.length === 0;
+  document.getElementById("filterStatus").textContent =
+    allTweets.length ? ("全" + allTweets.length + "件中 " + filtered.length + "件が条件に合いました。") : "";
+}
+
+function renderList() {
+  const list = document.getElementById("resultList");
+  document.getElementById("resultCount").textContent = filtered.length ? ("（" + filtered.length + "件）") : "";
+  if (!filtered.length) {
+    list.innerHTML = '<p class="empty">条件に合う投稿がありません</p>';
+    return;
+  }
+  const shown = filtered.slice(0, 200);
+  let html = "";
+  for (const t of shown) {
+    html += '<div class="item"><div class="meta"><span>' + escapeHtml(fmtDate(t.date)) + '</span>'
+      + '<span class="' + typeClass(t.type) + '">' + typeLabel(t.type) + '</span>'
+      + (t.hasMedia ? '<span>📷 メディア</span>' : '')
+      + '<span>♥ ' + t.likes + '</span></div>'
+      + '<div class="txt">' + escapeHtml(t.text) + '</div>'
+      + '<a href="' + postUrl(t) + '" target="_blank" rel="noopener">投稿を開く ↗</a></div>';
+  }
+  if (filtered.length > 200) {
+    html += '<p class="hint">最初の200件だけ表示しています。書き出しには全' + filtered.length + '件が入ります。</p>';
+  }
+  list.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function csvCell(s) {
+  return '"' + String(s).replace(/"/g, '""') + '"';
+}
+function download(filename, text, mime) {
+  const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+function updateStats(fileCount) {
+  const card = document.getElementById("statsCard");
+  card.style.display = "block";
+  const replies = allTweets.filter((t) => t.type === "reply").length;
+  const reposts = allTweets.filter((t) => t.type === "repost").length;
+  const media = allTweets.filter((t) => t.hasMedia).length;
+  document.getElementById("stTotal").textContent = allTweets.length;
+  document.getElementById("stReply").textContent = replies;
+  document.getElementById("stRepost").textContent = reposts;
+  document.getElementById("stMedia").textContent = media;
+  const dates = allTweets.map((t) => t.date).filter((d) => d && !isNaN(d.getTime())).sort((a, b) => a - b);
+  document.getElementById("stRange").textContent = fileCount + "ファイル読込"
+    + (dates.length ? (" ／ 期間：" + fmtDate(dates[0]).slice(0, 10) + " 〜 " + fmtDate(dates[dates.length - 1]).slice(0, 10)) : "");
+}
+
+async function loadFiles(files) {
+  const seen = new Set();
+  let loaded = 0;
+  for (const file of files) {
+    const text = await file.text();
+    if (/account\.js$/i.test(file.name)) {
+      const name = parseAccountText(text);
+      if (name) screenName = name;
+      continue;
+    }
+    const parsed = parseArchiveText(text);
+    for (const t of parsed) {
+      if (seen.has(t.id)) continue;
+      seen.add(t.id);
+      allTweets.push(t);
+    }
+    loaded++;
+  }
+  allTweets.sort((a, b) => (b.date || 0) - (a.date || 0));
+  updateStats(loaded);
+  document.getElementById("loadStatus").textContent =
+    loaded + "ファイルから " + allTweets.length + "件の投稿を読み込みました。絞り込み条件を決めて「絞り込みを表示」を押してください。";
+  applyFilters();
+}
+
+document.getElementById("loadBtn").addEventListener("click", () => {
+  const files = document.getElementById("fileInput").files;
+  if (!files || !files.length) {
+    document.getElementById("loadStatus").textContent = "まず tweets.js を選んでください。";
+    return;
+  }
+  allTweets = [];
+  loadFiles(Array.from(files));
+});
+
+document.getElementById("sampleBtn").addEventListener("click", () => {
+  const sample = 'window.YTD.tweets.part0 = ['
+    + '{"tweet":{"id_str":"111","created_at":"Mon Nov 03 10:00:00 +0000 2025","full_text":"ゲーム開発の進捗メモ。今日はボス戦の調整をした。","favorite_count":"12"}}'
+    + ',{"tweet":{"id_str":"112","created_at":"Tue Nov 04 21:30:00 +0000 2025","full_text":"@someone ありがとうございます！参考にします。","in_reply_to_status_id_str":"999","favorite_count":"3"}}'
+    + ',{"tweet":{"id_str":"113","created_at":"Wed Nov 05 08:15:00 +0000 2025","full_text":"RT @someone 面白い記事だったので共有します","favorite_count":"0","entities":{"media":[{}]}}}'
+    + ']';
+  allTweets = parseArchiveText(sample);
+  screenName = "sample_user";
+  updateStats(1);
+  document.getElementById("loadStatus").textContent = "サンプル3件を読み込みました（通常1件・返信1件・リポスト1件）。「返信」のチェックだけ外すなどして絞り込みを試せます。";
+  applyFilters();
+});
+
+document.getElementById("filterBtn").addEventListener("click", applyFilters);
+
+document.getElementById("csvBtn").addEventListener("click", () => {
+  let csv = "﻿ID,日時,種別,本文,URL\n";
+  for (const t of filtered) {
+    csv += [csvCell(t.id), csvCell(fmtDate(t.date)), csvCell(typeLabel(t.type)), csvCell(t.text), csvCell(postUrl(t))].join(",") + "\n";
+  }
+  download("x-delete-candidates.csv", csv, "text/csv;charset=utf-8");
+});
+
+document.getElementById("idsBtn").addEventListener("click", () => {
+  download("x-delete-candidate-ids.txt", filtered.map((t) => t.id).join("\n") + "\n");
+});
+</script>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+</body>
+</html>
