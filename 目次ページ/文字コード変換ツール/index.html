@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文字コード変換ツール - Shift_JISなどをUTF-8に変換</title>
+<meta name="description" content="Shift_JIS・EUC-JP・ISO-2022-JPのテキストファイルをUTF-8に変換して保存。文字化けした古いテキストファイルの修復に。ファイルは端末内で処理します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.drop{border:2px dashed #c7d2fe;border-radius:12px;padding:22px 12px;text-align:center;color:var(--text-muted);font-weight:700;font-size:.9rem;cursor:pointer}
+.drop.over{border-color:var(--primary);background:var(--primary-light)}
+.drop input{display:none}
+.field-row{display:flex;gap:10px;margin-top:14px;align-items:center}
+.field-row label{font-size:.9rem;font-weight:700;white-space:nowrap}
+.field-row select{flex:1;min-height:52px;border:1.5px solid var(--border);border-radius:12px;padding:0 12px;font-size:1rem;font-family:inherit;background:#fff}
+textarea{width:100%;min-height:180px;border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:.9rem;font-family:inherit;line-height:1.7;margin-top:14px;resize:vertical}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:10px}
+th,td{padding:8px 2px;border-bottom:1px solid var(--border);text-align:left}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+th{color:var(--text-muted);font-weight:700}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🔧 便利ツールの一覧</a></nav>
+<header><h1>文字コード変換ツール</h1><p class="subtitle">古いテキストファイルをUTF-8に変換して保存します</p></header>
+<div class="card">
+  <label class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".txt,.csv,.srt,.log,.md,text/plain">
+    <span id="dropText">タップしてファイルを選ぶ（またはここにドロップ）</span>
+  </label>
+  <div class="field-row"><label>元の文字コード</label>
+    <select id="encSelect">
+      <option value="shift-jis">Shift_JIS（Windowsのメモ帳など）</option>
+      <option value="euc-jp">EUC-JP</option>
+      <option value="iso-2022-jp">ISO-2022-JP（JIS）</option>
+    </select>
+  </div>
+  <textarea id="preview" readonly placeholder="変換結果のプレビューがここに表示されます"></textarea>
+  <table id="detailTable"></table>
+  <div class="btn-row">
+    <button type="button" class="btn-sub" id="sampleBtn">サンプルで試す</button>
+    <button type="button" class="btn-main" id="dlBtn">UTF-8で保存する</button>
+  </div>
+  <p class="hint">ファイルは端末内で処理され、サーバーには送られません。変換できなかった文字は「�」で表示され、件数を数えます。元の文字コードが分からない場合は Shift_JIS からお試しください。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← 便利ツールの一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var fileInput=document.getElementById('fileInput'),dropZone=document.getElementById('dropZone'),
+dropText=document.getElementById('dropText'),encSelect=document.getElementById('encSelect'),
+preview=document.getElementById('preview'),detailTable=document.getElementById('detailTable'),
+sampleBtn=document.getElementById('sampleBtn'),dlBtn=document.getElementById('dlBtn');
+var decodedText='',fileName='converted.txt',fileBytes=0;
+function decodeBytes(bytes,enc){
+  var dec=new TextDecoder(enc,{fatal:false});
+  return dec.decode(bytes);
+}
+function showResult(text,bytes){
+  decodedText=text;fileBytes=bytes;
+  preview.value=text.slice(0,5000);
+  var replaced=(text.match(/\uFFFD/g)||[]).length;
+  var lines=text.split(/\r\n|\r|\n/).length;
+  detailTable.innerHTML=
+    '<tr><th>元のサイズ</th><td>'+bytes+' バイト</td></tr>'+
+    '<tr><th>文字数</th><td>'+text.length+' 文字</td></tr>'+
+    '<tr><th>行数</th><td>'+lines+' 行</td></tr>'+
+    '<tr><th>変換できなかった文字</th><td>'+replaced+' 個</td></tr>';
+}
+function convertBuffer(buf,name){
+  var bytes=new Uint8Array(buf);
+  var text=decodeBytes(bytes,encSelect.value);
+  fileName=name.replace(/\.[^.]*$/,'')+'_utf8.txt';
+  showResult(text,bytes.length);
+}
+function loadFile(file){
+  if(!file)return;
+  dropText.textContent=file.name+' を読み込み中…';
+  var reader=new FileReader();
+  reader.onload=function(){
+    convertBuffer(reader.result,file.name);
+    dropText.textContent=file.name;
+  };
+  reader.onerror=function(){dropText.textContent='読み込めませんでした。別のファイルをお試しください。';};
+  reader.readAsArrayBuffer(file);
+}
+fileInput.addEventListener('change',function(){loadFile(fileInput.files[0]);});
+dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
+dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');loadFile(e.dataTransfer.files[0]);});
+encSelect.addEventListener('change',function(){
+  if(fileInput.files[0])loadFile(fileInput.files[0]);
+});
+sampleBtn.addEventListener('click',function(){
+  // 「こんにちは、文字コード変換のテストです。」の Shift_JIS バイト列
+  var sample=new Uint8Array([0x82,0xB1,0x82,0xF1,0x82,0xC9,0x82,0xBF,0x82,0xCD,0x81,0x41,0x95,0xB6,0x8E,0x9A,0x83,0x52,0x81,0x5B,0x83,0x68,0x95,0xCF,0x8A,0xB7,0x82,0xCC,0x83,0x65,0x83,0x58,0x83,0x67,0x82,0xC5,0x82,0xB7,0x81,0x42]);
+  encSelect.value='shift-jis';
+  convertBuffer(sample.buffer,'sample.txt');
+  dropText.textContent='サンプル（Shift_JIS）を変換しました';
+});
+dlBtn.addEventListener('click',function(){
+  if(!decodedText)return;
+  var blob=new Blob([decodedText],{type:'text/plain;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fileName;
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+});
+</script>
+</body>
+</html>

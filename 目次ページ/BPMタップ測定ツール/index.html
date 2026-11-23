@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BPMタップ測定ツール - 曲のテンポをタップで測る</title>
+<meta name="description" content="曲に合わせて画面をタップするだけでBPM（テンポ）を測定。タップの間隔から1分あたりの拍数を計算します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.result-big{text-align:center;padding:6px 0 2px}
+.result-big .rb-label{font-size:.85rem;color:var(--text-muted);font-weight:700}
+.result-big .rb-val{font-size:3rem;font-weight:900;color:var(--primary);line-height:1.2;font-variant-numeric:tabular-nums}
+.result-big .rb-val small{font-size:1.2rem}
+.result-sub{text-align:center;font-weight:700;font-size:.95rem;margin-top:2px}
+.tap-btn{width:100%;min-height:180px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:1.4rem;font-weight:900;cursor:pointer;font-family:inherit;margin-top:16px;box-shadow:0 6px 18px rgba(79,70,229,.35)}
+.tap-btn:active{background:var(--primary-dark);transform:scale(.98)}
+.tap-btn .tap-sub{display:block;font-size:.85rem;font-weight:700;opacity:.85;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:14px}
+th,td{padding:8px 2px;border-bottom:1px solid var(--border);text-align:left}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+th{color:var(--text-muted);font-weight:700}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../time.html">⏰ 時間・日程の一覧</a></nav>
+<header><h1>BPMタップ測定</h1><p class="subtitle">曲のビートに合わせてタップするだけ。テンポを測ります</p></header>
+<div class="card">
+  <div class="result-big">
+    <div class="rb-label">測定中のテンポ</div>
+    <div class="rb-val"><span id="bpmVal">—</span><small> BPM</small></div>
+    <div class="result-sub" id="tempoWord">タップして測定を開始</div>
+  </div>
+  <button type="button" class="tap-btn" id="tapBtn">タップ<span class="tap-sub">曲のビートに合わせて押してください</span></button>
+  <table id="detailTable"></table>
+  <div class="btn-row">
+    <button type="button" class="btn-sub" id="resetBtn">リセット</button>
+  </div>
+  <p class="hint">直近8回までのタップ間隔の平均からBPMを計算します。3秒以上間隔が空くと自動でリセットされます。タップ回数が多いほど安定します。</p>
+</div>
+<footer class="site-foot"><a href="../time.html">← 時間・日程のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var tapBtn=document.getElementById('tapBtn'),bpmVal=document.getElementById('bpmVal'),
+tempoWord=document.getElementById('tempoWord'),detailTable=document.getElementById('detailTable'),
+resetBtn=document.getElementById('resetBtn');
+var taps=[],lastTap=0;
+function tempoLabel(bpm){
+  if(bpm<60)return 'とてもゆっくり（Largo寄り）';
+  if(bpm<76)return 'ゆっくり（Adagio寄り）';
+  if(bpm<108)return 'ほどよい速さ（Andante寄り）';
+  if(bpm<120)return 'やや速い（Moderato寄り）';
+  if(bpm<168)return '速い（Allegro寄り）';
+  return 'とても速い（Presto寄り）';
+}
+function render(){
+  if(taps.length<2){
+    bpmVal.textContent='—';
+    tempoWord.textContent=taps.length===0?'タップして測定を開始':'あと1回タップすると表示されます';
+    detailTable.innerHTML='<tr><th>タップ回数</th><td>'+taps.length+' 回</td></tr>';
+    return;
+  }
+  var intervals=taps.slice(1).map(function(t,i){return t-taps[i];});
+  var recent=intervals.slice(-8);
+  var avg=recent.reduce(function(a,b){return a+b;},0)/recent.length;
+  var bpm=60000/avg;
+  var min=Math.min.apply(null,recent),max=Math.max.apply(null,recent);
+  bpmVal.textContent=bpm.toFixed(1);
+  tempoWord.textContent=tempoLabel(bpm);
+  detailTable.innerHTML=
+    '<tr><th>タップ回数</th><td>'+taps.length+' 回</td></tr>'+
+    '<tr><th>1拍の間隔</th><td>'+Math.round(avg)+' ms</td></tr>'+
+    '<tr><th>間隔のばらつき</th><td>±'+Math.round((max-min)/2)+' ms</td></tr>';
+}
+function reset(){
+  taps=[];lastTap=0;render();
+}
+tapBtn.addEventListener('click',function(){
+  var now=performance.now();
+  if(lastTap&&now-lastTap>3000){taps=[];}
+  taps.push(now);lastTap=now;
+  if(taps.length>20)taps=taps.slice(-20);
+  render();
+});
+resetBtn.addEventListener('click',reset);
+render();
+</script>
+</body>
+</html>

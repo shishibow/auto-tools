@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>色覚シミュレーションツール - 色弱の見え方をチェック</title>
+<meta name="description" content="写真やイラストをアップロードして、色覚特性（1型・2型・3型2色覚、1色覚）の見え方をシミュレーション。資料やデザインの配色チェックに。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.drop{border:2px dashed #c7d2fe;border-radius:12px;padding:22px 12px;text-align:center;color:var(--text-muted);font-weight:700;font-size:.9rem;cursor:pointer}
+.drop.over{border-color:var(--primary);background:var(--primary-light)}
+.drop input{display:none}
+canvas{width:100%;display:block;border-radius:12px;background:#f1f5f9}
+.img-label{font-size:.82rem;font-weight:700;color:var(--text-muted);margin:14px 0 6px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip-row button{flex:1 1 45%;min-height:52px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit;color:var(--text)}
+.chip-row button.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../media.html">🖼️ 画像・メディアの一覧</a></nav>
+<header><h1>色覚シミュレーション</h1><p class="subtitle">色の見え方が違う人にはどう見える？ 配色チェックに</p></header>
+<div class="card">
+  <label class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <span id="dropText">タップして画像を選ぶ（またはここにドロップ）</span>
+  </label>
+  <div class="img-label">シミュレーション結果</div>
+  <canvas id="outCanvas" width="480" height="300"></canvas>
+  <div class="img-label">元の画像</div>
+  <canvas id="srcCanvas" width="480" height="300"></canvas>
+  <div class="chip-row" id="modeRow">
+    <button type="button" data-mode="normal" class="active">通常の見え方</button>
+    <button type="button" data-mode="protanopia">1型2色覚（P型）</button>
+    <button type="button" data-mode="deuteranopia">2型2色覚（D型）</button>
+    <button type="button" data-mode="tritanopia">3型2色覚（T型）</button>
+    <button type="button" data-mode="achromatopsia">1色覚（モノクロ）</button>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn-sub" id="sampleBtn">サンプル画像で試す</button>
+    <button type="button" class="btn-main" id="dlBtn">結果をPNGで保存</button>
+  </div>
+  <p class="hint">Machadoら（2009）の変換行列で色を変換しています。個人差があるため、あくまで目安です。画像は端末内で処理され、サーバーには送られません。大きい画像は1200pxに縮小して処理します。</p>
+</div>
+<footer class="site-foot"><a href="../media.html">← 画像・メディアのツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var fileInput=document.getElementById('fileInput'),dropZone=document.getElementById('dropZone'),
+dropText=document.getElementById('dropText'),srcCanvas=document.getElementById('srcCanvas'),
+outCanvas=document.getElementById('outCanvas'),modeRow=document.getElementById('modeRow'),
+sampleBtn=document.getElementById('sampleBtn'),dlBtn=document.getElementById('dlBtn');
+var sctx=srcCanvas.getContext('2d'),octx=outCanvas.getContext('2d');
+var currentMode='normal',hasImage=false;
+var MATRICES={
+  protanopia:[[0.567,0.433,0],[0.558,0.442,0],[0,0.242,0.758]],
+  deuteranopia:[[0.625,0.375,0],[0.7,0.3,0],[0,0.3,0.7]],
+  tritanopia:[[0.95,0.05,0],[0,0.433,0.567],[0,0.475,0.525]],
+  achromatopsia:[[0.299,0.587,0.114],[0.299,0.587,0.114],[0.299,0.587,0.114]]
+};
+function clamp255(v){return Math.max(0,Math.min(255,Math.round(v)));}
+function applyMatrix(imgData,matrix){
+  var d=imgData.data;
+  for(var i=0;i<d.length;i+=4){
+    var r=d[i],g=d[i+1],b=d[i+2];
+    d[i]=clamp255(matrix[0][0]*r+matrix[0][1]*g+matrix[0][2]*b);
+    d[i+1]=clamp255(matrix[1][0]*r+matrix[1][1]*g+matrix[1][2]*b);
+    d[i+2]=clamp255(matrix[2][0]*r+matrix[2][1]*g+matrix[2][2]*b);
+  }
+  return imgData;
+}
+function render(){
+  var w=srcCanvas.width,h=srcCanvas.height;
+  octx.clearRect(0,0,w,h);
+  if(!hasImage)return;
+  var img=sctx.getImageData(0,0,w,h);
+  if(currentMode!=='normal'){
+    img=applyMatrix(img,MATRICES[currentMode]);
+  }
+  octx.putImageData(img,0,0);
+}
+function loadImage(img){
+  var scale=Math.min(1,1200/Math.max(img.width,img.height));
+  var w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+  srcCanvas.width=w;srcCanvas.height=h;outCanvas.width=w;outCanvas.height=h;
+  sctx.drawImage(img,0,0,w,h);
+  hasImage=true;render();
+}
+function loadFile(file){
+  if(!file||file.type.indexOf('image/')!==0)return;
+  dropText.textContent='読み込み中…';
+  var reader=new FileReader();
+  reader.onload=function(){
+    var img=new Image();
+    img.onload=function(){dropText.textContent=file.name;loadImage(img);};
+    img.onerror=function(){dropText.textContent='読み込めませんでした。別の画像をお試しください。';};
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function drawSample(){
+  var w=480,h=300;
+  srcCanvas.width=w;srcCanvas.height=h;outCanvas.width=w;outCanvas.height=h;
+  var colors=['#e11d48','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ec4899'];
+  for(var i=0;i<6;i++){
+    sctx.fillStyle=colors[i];
+    sctx.fillRect(i*80,0,80,150);
+    sctx.beginPath();sctx.arc(40+i*80,225,34,0,Math.PI*2);sctx.fill();
+  }
+  sctx.fillStyle='#0f172a';sctx.font='bold 20px sans-serif';sctx.textAlign='center';
+  sctx.fillText('赤・黄・緑・青・紫・ピンク',240,285);
+  hasImage=true;dropText.textContent='サンプル画像を表示中';render();
+}
+fileInput.addEventListener('change',function(){loadFile(fileInput.files[0]);});
+dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
+dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');loadFile(e.dataTransfer.files[0]);});
+modeRow.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  Array.prototype.forEach.call(modeRow.querySelectorAll('button'),function(x){x.classList.remove('active');});
+  b.classList.add('active');
+  currentMode=b.getAttribute('data-mode');render();
+});
+sampleBtn.addEventListener('click',drawSample);
+dlBtn.addEventListener('click',function(){
+  if(!hasImage)return;
+  var a=document.createElement('a');
+  a.href=outCanvas.toDataURL('image/png');
+  a.download='color-vision-'+currentMode+'.png';
+  a.click();
+});
+drawSample();
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スマホ水準器・傾斜計ツール - 傾きを測る</title>
+<meta name="description" content="スマホの傾きセンサーで水平・傾斜を測る水準器。棚の水平出しや写真の傾き確認に。ゼロ点補正とデモ表示付き。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.level-stage{display:flex;justify-content:center;padding:10px 0 4px}
+.level-circle{position:relative;width:260px;height:260px;border-radius:50%;border:2px solid var(--border);background:radial-gradient(circle,#fff 0%,#eef2ff 78%,#e0e7ff 100%)}
+.level-circle .cross-h{position:absolute;left:0;right:0;top:50%;height:1px;background:#c7d2fe}
+.level-circle .cross-v{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#c7d2fe}
+.level-circle .center-mark{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border:2px dashed #a5b4fc;border-radius:50%}
+.bubble{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a5b4fc,#4f46e5 70%);box-shadow:0 2px 8px rgba(79,70,229,.45);transition:transform .08s linear}
+.readout{display:flex;gap:10px;margin-top:14px}
+.readout .ro{flex:1;background:var(--primary-light);border-radius:12px;padding:10px 6px;text-align:center}
+.readout .ro .ro-label{font-size:.78rem;color:var(--text-muted);font-weight:700}
+.readout .ro .ro-val{font-size:1.35rem;font-weight:900;color:var(--primary-dark);font-variant-numeric:tabular-nums}
+.status{text-align:center;font-weight:800;font-size:1.05rem;margin-top:12px;min-height:1.8em}
+.status.ok{color:#15803d}
+.status.tilt{color:#b45309}
+.btn-row{display:flex;gap:10px;margin-top:12px}
+button{flex:1;min-height:52px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-main{background:var(--primary);color:#fff}
+.btn-sub{background:var(--primary-light);color:var(--primary-dark)}
+.slider-row{margin-top:16px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.9rem;font-weight:700}
+.slider-row label output{color:var(--primary-dark);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.hidden{display:none}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../utility.html">🔧 便利ツールの一覧</a></nav>
+<header><h1>スマホ水準器・傾斜計</h1><p class="subtitle">スマホを置くだけで水平を測れます。棚の設置や写真の傾き確認に</p></header>
+<div class="card">
+  <div class="level-stage">
+    <div class="level-circle" id="circle">
+      <div class="cross-h"></div><div class="cross-v"></div><div class="center-mark"></div>
+      <div class="bubble" id="bubble"></div>
+    </div>
+  </div>
+  <div class="readout">
+    <div class="ro"><div class="ro-label">左右の傾き</div><div class="ro-val" id="valX">—°</div></div>
+    <div class="ro"><div class="ro-label">前後の傾き</div><div class="ro-val" id="valY">—°</div></div>
+  </div>
+  <div class="status" id="statusText">傾きセンサーを待っています…</div>
+  <div class="btn-row">
+    <button type="button" class="btn-main" id="permBtn">センサーを有効にする</button>
+    <button type="button" class="btn-sub" id="zeroBtn">今の位置を0°にする</button>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn-sub" id="demoBtn">デモで試す</button>
+  </div>
+  <div id="demoPanel" class="hidden">
+    <div class="slider-row"><label>左右の傾き <output id="demoXOut">0°</output></label>
+      <input type="range" id="demoX" min="-20" max="20" step="0.5" value="0"></div>
+    <div class="slider-row"><label>前後の傾き <output id="demoYOut">0°</output></label>
+      <input type="range" id="demoY" min="-20" max="20" step="0.5" value="0"></div>
+  </div>
+  <p class="hint">iPhone・iPadでは「センサーを有効にする」をタップして許可が必要です。傾きは0.1°単位で表示します。0.5°以内で「水平です」と表示します。机の上など平らな場所に置いて使うと正確です。</p>
+</div>
+<footer class="site-foot"><a href="../utility.html">← 便利ツールの一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var bubble=document.getElementById('bubble'),valX=document.getElementById('valX'),
+valY=document.getElementById('valY'),statusText=document.getElementById('statusText'),
+permBtn=document.getElementById('permBtn'),zeroBtn=document.getElementById('zeroBtn'),
+demoBtn=document.getElementById('demoBtn'),demoPanel=document.getElementById('demoPanel'),
+demoX=document.getElementById('demoX'),demoY=document.getElementById('demoY'),
+demoXOut=document.getElementById('demoXOut'),demoYOut=document.getElementById('demoYOut');
+var offsetX=0,offsetY=0,curX=0,curY=0,sensorOn=false,demoOn=false,MAXTILT=30,RANGE_PX=104;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function render(){
+  var x=clamp(curX,-MAXTILT,MAXTILT),y=clamp(curY,-MAXTILT,MAXTILT);
+  bubble.style.transform='translate('+(x/MAXTILT*RANGE_PX)+'px,'+(y/MAXTILT*RANGE_PX)+'px)';
+  valX.textContent=(curX>=0?'+':'')+curX.toFixed(1)+'°';
+  valY.textContent=(curY>=0?'+':'')+curY.toFixed(1)+'°';
+  if(Math.abs(curX)<0.5&&Math.abs(curY)<0.5){
+    statusText.textContent='水平です';statusText.className='status ok';
+  }else{
+    statusText.textContent='傾いています';statusText.className='status tilt';
+  }
+}
+function onTilt(gamma,beta){
+  curX=gamma-offsetX;curY=beta-offsetY;render();
+}
+function onOrientation(e){
+  if(e.gamma==null||e.beta==null)return;
+  sensorOn=true;demoOn=false;demoPanel.classList.add('hidden');
+  statusText.textContent='センサーで計測中';
+  onTilt(e.gamma,e.beta);
+}
+function enableSensor(){
+  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+    DeviceOrientationEvent.requestPermission().then(function(res){
+      if(res==='granted'){window.addEventListener('deviceorientation',onOrientation);}
+      else{statusText.textContent='センサーの許可が得られませんでした。デモでお試しください。';}
+    }).catch(function(){statusText.textContent='センサーを有効にできませんでした。デモでお試しください。';});
+  }else if('DeviceOrientationEvent' in window){
+    window.addEventListener('deviceorientation',onOrientation);
+    setTimeout(function(){if(!sensorOn){statusText.textContent='この端末では傾きセンサーを使えません。デモでお試しください。';}},1500);
+  }else{
+    statusText.textContent='この端末では傾きセンサーを使えません。デモでお試しください。';
+  }
+}
+permBtn.addEventListener('click',enableSensor);
+zeroBtn.addEventListener('click',function(){
+  if(demoOn){demoX.value=0;demoY.value=0;curX=0;curY=0;render();return;}
+  offsetX+=curX;offsetY+=curY;curX=0;curY=0;render();
+});
+demoBtn.addEventListener('click',function(){
+  demoOn=!demoOn;
+  demoPanel.classList.toggle('hidden',!demoOn);
+  if(demoOn){statusText.textContent='デモ表示中（スライダーで傾きを変えられます）';curX=parseFloat(demoX.value);curY=parseFloat(demoY.value);render();}
+  else if(sensorOn){statusText.textContent='センサーで計測中';}
+});
+demoX.addEventListener('input',function(){demoXOut.textContent=demoX.value+'°';if(demoOn){curX=parseFloat(demoX.value);render();}});
+demoY.addEventListener('input',function(){demoYOut.textContent=demoY.value+'°';if(demoOn){curY=parseFloat(demoY.value);render();}});
+render();
+</script>
+</body>
+</html>

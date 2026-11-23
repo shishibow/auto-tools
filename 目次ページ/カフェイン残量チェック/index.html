@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カフェイン残量チェック - 体内のカフェイン量を計算</title>
+<meta name="description" content="飲んだカフェインが今どれくらい体に残っているか計算。半減期から残量の減り方をグラフで表示し、50mgを下回る時刻も分かります。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.result-big{text-align:center;padding:6px 0 2px}
+.result-big .rb-label{font-size:.85rem;color:var(--text-muted);font-weight:700}
+.result-big .rb-val{font-size:2.6rem;font-weight:900;color:var(--primary);line-height:1.2;font-variant-numeric:tabular-nums}
+.result-big .rb-val small{font-size:1.2rem}
+.result-sub{text-align:center;font-weight:700;font-size:.9rem;color:var(--text-muted)}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.chip-row button{flex:1 1 30%;min-height:48px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:.85rem;font-weight:800;cursor:pointer;font-family:inherit;color:var(--text)}
+.chip-row button.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+.slider-row{margin-top:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.9rem;font-weight:700}
+.slider-row label output{color:var(--primary-dark);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+.time-row{display:flex;gap:10px;margin-top:14px;align-items:center}
+.time-row label{font-size:.9rem;font-weight:700;white-space:nowrap}
+.time-row input{flex:1;min-height:52px;border:1.5px solid var(--border);border-radius:12px;padding:0 12px;font-size:1rem;font-family:inherit}
+canvas{width:100%;height:150px;display:block;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:10px}
+th,td{padding:8px 2px;border-bottom:1px solid var(--border);text-align:left}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+th{color:var(--text-muted);font-weight:700}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🏠 生活の一覧</a></nav>
+<header><h1>カフェイン残量チェック</h1><p class="subtitle">飲んだカフェインは今どれくらい残ってる？ 眠る前の目安に</p></header>
+<div class="card">
+  <div class="result-big">
+    <div class="rb-label">今の推定残量</div>
+    <div class="rb-val"><span id="remainVal">—</span><small> mg</small></div>
+    <div class="result-sub" id="remainSub">—</div>
+  </div>
+  <canvas id="graph" width="480" height="150"></canvas>
+  <div class="chip-row" id="presetRow">
+    <button type="button" data-mg="95" class="active">ドリップコーヒー</button>
+    <button type="button" data-mg="70">缶コーヒー</button>
+    <button type="button" data-mg="80">エナジードリンク</button>
+    <button type="button" data-mg="30">緑茶</button>
+    <button type="button" data-mg="45">紅茶</button>
+    <button type="button" data-mg="150">コーヒー2杯分</button>
+  </div>
+  <div class="slider-row"><label>カフェイン量 <output id="amountOut">95mg</output></label>
+    <input type="range" id="amount" min="0" max="400" step="5" value="95"></div>
+  <div class="time-row"><label>飲んだ時刻</label><input type="time" id="drinkTime"></div>
+  <div class="slider-row"><label>半減期（体質の目安） <output id="halfOut">5.0時間</output></label>
+    <input type="range" id="halfLife" min="4" max="7" step="0.5" value="5"></div>
+  <table id="detailTable"></table>
+  <p class="hint">カフェインは体内で半減期（約4〜7時間、平均5時間）で減っていきます。残量 = 飲んだ量 × 0.5^(経過時間 ÷ 半減期) で計算しています。体質・体調で大きく変わるため、あくまで目安です。寝る6時間前以降のカフェインは睡眠に影響しやすいと言われています。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 生活のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var amountEl=document.getElementById('amount'),halfEl=document.getElementById('halfLife'),
+timeEl=document.getElementById('drinkTime'),remainVal=document.getElementById('remainVal'),
+remainSub=document.getElementById('remainSub'),detailTable=document.getElementById('detailTable'),
+graph=document.getElementById('graph'),gctx=graph.getContext('2d'),
+presetRow=document.getElementById('presetRow');
+function remainingAt(amount,halfLife,elapsedHours){
+  return amount*Math.pow(0.5,elapsedHours/halfLife);
+}
+function timeToBelow(amount,halfLife,threshold){
+  if(amount<=threshold)return 0;
+  return halfLife*Math.log(amount/threshold)/Math.LN2;
+}
+function fmtHM(date){
+  return date.getHours()+'時'+String(date.getMinutes()).padStart(2,'0')+'分';
+}
+function drinkDate(){
+  var v=timeEl.value;
+  if(!v)return new Date();
+  var p=v.split(':'),d=new Date();
+  d.setHours(parseInt(p[0],10),parseInt(p[1],10),0,0);
+  if(d.getTime()>Date.now())d=new Date(d.getTime()-86400000);
+  return d;
+}
+function render(){
+  var amount=parseFloat(amountEl.value),half=parseFloat(halfEl.value);
+  document.getElementById('amountOut').textContent=amount+'mg';
+  document.getElementById('halfOut').textContent=half.toFixed(1)+'時間';
+  var d0=drinkDate(),now=new Date();
+  var elapsed=(now.getTime()-d0.getTime())/3600000;
+  var rem=remainingAt(amount,half,elapsed);
+  remainVal.textContent=Math.round(rem);
+  remainSub.textContent='飲んでから約'+elapsed.toFixed(1)+'時間経過（'+fmtHM(d0)+'に '+amount+'mg）';
+  var t50=timeToBelow(amount,half,50),t25=timeToBelow(amount,half,25);
+  var d50=new Date(d0.getTime()+t50*3600000),d25=new Date(d0.getTime()+t25*3600000);
+  detailTable.innerHTML=
+    '<tr><th>50mgを下回る時刻</th><td>'+(amount>50?fmtHM(d50)+'（あと約'+Math.max(0,t50-elapsed).toFixed(1)+'時間）':'すでに下回っています')+'</td></tr>'+
+    '<tr><th>25mgを下回る時刻</th><td>'+(amount>25?fmtHM(d25)+'（あと約'+Math.max(0,t25-elapsed).toFixed(1)+'時間）':'すでに下回っています')+'</td></tr>'+
+    '<tr><th>12時間後の残量</th><td>'+Math.round(remainingAt(amount,half,12))+' mg</td></tr>';
+  drawGraph(amount,half,elapsed);
+}
+function drawGraph(amount,half,elapsed){
+  var W=480,H=150,padL=34,padB=20,padT=10;
+  gctx.clearRect(0,0,W,H);
+  var maxV=Math.max(amount,50);
+  gctx.strokeStyle='#e6e8f0';gctx.lineWidth=1;
+  gctx.fillStyle='#64748b';gctx.font='11px sans-serif';gctx.textAlign='right';
+  [0,0.5,1].forEach(function(f){
+    var y=padT+(H-padT-padB)*(1-f);
+    gctx.beginPath();gctx.moveTo(padL,y);gctx.lineTo(W-8,y);gctx.stroke();
+    gctx.fillText(Math.round(maxV*f)+'mg',padL-4,y+4);
+  });
+  gctx.fillStyle='#4f46e5';
+  var bars=13;
+  for(var i=0;i<bars;i++){
+    var t=i,rem=remainingAt(amount,half,t);
+    var bw=(W-padL-8)/bars;
+    var bh=(H-padT-padB)*(rem/maxV);
+    var x=padL+i*bw+2,y=H-padB-bh;
+    gctx.fillRect(x,y,bw-4,bh);
+  }
+  gctx.fillStyle='#64748b';gctx.textAlign='center';
+  gctx.fillText('飲んだ直後',padL+30,H-6);
+  gctx.fillText('6時間後',padL+(W-padL-8)*0.5,H-6);
+  gctx.fillText('12時間後',W-34,H-6);
+  if(elapsed>=0&&elapsed<=12){
+    var nx=padL+(elapsed/12)*(W-padL-8);
+    gctx.strokeStyle='#ef4444';gctx.lineWidth=2;
+    gctx.beginPath();gctx.moveTo(nx,padT);gctx.lineTo(nx,H-padB);gctx.stroke();
+    gctx.fillStyle='#ef4444';gctx.fillText('今',nx,H-padB-16<14?14:H-padB-16);
+  }
+}
+presetRow.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  Array.prototype.forEach.call(presetRow.querySelectorAll('button'),function(x){x.classList.remove('active');});
+  b.classList.add('active');
+  amountEl.value=b.getAttribute('data-mg');render();
+});
+amountEl.addEventListener('input',function(){
+  Array.prototype.forEach.call(presetRow.querySelectorAll('button'),function(x){x.classList.remove('active');});
+  render();
+});
+halfEl.addEventListener('input',render);
+timeEl.addEventListener('change',render);
+(function initTime(){
+  var n=new Date();
+  timeEl.value=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+})();
+render();
+</script>
+</body>
+</html>

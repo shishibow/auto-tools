@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>体脂肪率計算ツール - 米海軍式で体脂肪率を計算</title>
+<meta name="description" content="身長・体重・ウエスト・首回りから体脂肪率を計算。米海軍式の計算式で体脂肪量と除脂肪体重、BMIも一緒に表示します。">
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#4338ca;--text:#0f172a;--text-muted:#64748b;--bg:#f6f7fb;--card-bg:#fff;--border:#e6e8f0;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);line-height:1.75;padding-bottom:90px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.site-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.site-nav a{text-decoration:none;font-weight:800;font-size:.85rem;color:var(--primary)}
+.site-nav .sn-cat{color:var(--text-muted);font-weight:700;font-size:.8rem;text-align:right}
+header{text-align:center;margin-bottom:20px;padding:12px 0 6px}
+h1{font-size:1.4rem;font-weight:800;color:var(--primary)}
+.subtitle{font-size:.8rem;color:var(--text-muted);margin-top:4px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.result-big{text-align:center;padding:6px 0 2px}
+.result-big .rb-label{font-size:.85rem;color:var(--text-muted);font-weight:700}
+.result-big .rb-val{font-size:2.6rem;font-weight:900;color:var(--primary);line-height:1.2;font-variant-numeric:tabular-nums}
+.result-big .rb-val small{font-size:1.2rem}
+.result-cat{text-align:center;font-weight:800;font-size:1.05rem;margin-top:2px}
+.seg-row{display:flex;gap:10px;margin-bottom:14px}
+.seg-row button{flex:1;min-height:52px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit;color:var(--text-muted)}
+.seg-row button.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+.slider-row{margin-top:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:.9rem;font-weight:700}
+.slider-row label output{color:var(--primary-dark);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-height:48px;accent-color:var(--primary)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:10px}
+th,td{padding:8px 2px;border-bottom:1px solid var(--border);text-align:left}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+th{color:var(--text-muted);font-weight:700}
+.hint{font-size:.82rem;color:var(--text-muted);margin-top:12px}
+.hidden{display:none}
+.site-foot{margin-top:18px;text-align:center}
+.site-foot a{color:var(--primary);font-weight:800;text-decoration:none;font-size:.85rem}
+.site-foot .sf-note{display:block;color:var(--text-muted);font-size:.74rem;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="site-nav"><a href="../">← 実用Webツール集</a><a class="sn-cat" href="../lifestyle.html">🏠 生活の一覧</a></nav>
+<header><h1>体脂肪率計算ツール</h1><p class="subtitle">身長と胴回りから体脂肪率を推定。体組成計がなくても目安が分かります</p></header>
+<div class="card">
+  <div class="result-big">
+    <div class="rb-label">推定 体脂肪率</div>
+    <div class="rb-val"><span id="bfVal">—</span><small>%</small></div>
+    <div class="result-cat" id="bfCat">—</div>
+  </div>
+  <table id="detailTable"></table>
+  <div class="seg-row" style="margin-top:16px">
+    <button type="button" id="maleBtn" class="active">男性</button>
+    <button type="button" id="femaleBtn">女性</button>
+  </div>
+  <div class="slider-row"><label>身長 <output id="heightOut">170cm</output></label>
+    <input type="range" id="height" min="140" max="200" step="1" value="170"></div>
+  <div class="slider-row"><label>体重 <output id="weightOut">70kg</output></label>
+    <input type="range" id="weight" min="40" max="120" step="0.5" value="70"></div>
+  <div class="slider-row"><label>ウエスト（おへその高さ） <output id="waistOut">80cm</output></label>
+    <input type="range" id="waist" min="50" max="130" step="0.5" value="80"></div>
+  <div class="slider-row"><label>首回り（のどの一番細いところ） <output id="neckOut">38cm</output></label>
+    <input type="range" id="neck" min="25" max="60" step="0.5" value="38"></div>
+  <div class="slider-row" id="hipRow"><label>ヒップ（一番太いところ） <output id="hipOut">90cm</output></label>
+    <input type="range" id="hip" min="60" max="140" step="0.5" value="90"></div>
+  <p class="hint">米海軍式（U.S. Navy）の計算式による推定値です。体組成計の測定値と数%のズレが出る場合があります。ウエストはおへその高さで、息を軽く吐いた状態で測ってください。</p>
+</div>
+<footer class="site-foot"><a href="../lifestyle.html">← 生活のツール一覧へ</a><span class="sf-note">実用Webツール集</span></footer>
+</div>
+<!-- 忍者AdMax広告コード -->
+<!-- admax -->
+<script src="https://adm.shinobi.jp/s/834438d30cf5170af175302bc084e665"></script>
+<!-- admax -->
+<script>
+var maleBtn=document.getElementById('maleBtn'),femaleBtn=document.getElementById('femaleBtn'),
+heightEl=document.getElementById('height'),weightEl=document.getElementById('weight'),
+waistEl=document.getElementById('waist'),neckEl=document.getElementById('neck'),hipEl=document.getElementById('hip'),
+hipRow=document.getElementById('hipRow'),bfVal=document.getElementById('bfVal'),
+bfCat=document.getElementById('bfCat'),detailTable=document.getElementById('detailTable');
+var isMale=true;
+function out(id,v,suffix){document.getElementById(id).textContent=v+suffix;}
+function log10(x){return Math.log(x)/Math.LN10;}
+function calcBF(){
+  var h=parseFloat(heightEl.value),w=parseFloat(weightEl.value),
+  waist=parseFloat(waistEl.value),neck=parseFloat(neckEl.value),hip=parseFloat(hipEl.value);
+  var bf;
+  if(isMale){
+    var d=waist-neck;
+    if(d<=0)return null;
+    bf=495/(1.0324-0.19077*log10(d)+0.15456*log10(h))-450;
+  }else{
+    var s=waist+hip-neck;
+    if(s<=0)return null;
+    bf=495/(1.29579-0.35004*log10(s)+0.22100*log10(h))-450;
+  }
+  return bf;
+}
+function category(bf){
+  if(isMale){
+    if(bf<6)return '必須脂肪域（かなり低い）';
+    if(bf<14)return 'アスリート並み';
+    if(bf<18)return 'フィットネス愛好家並み';
+    if(bf<25)return '平均的な範囲';
+    if(bf<30)return 'やや高め';
+    return '高め';
+  }
+  if(bf<14)return '必須脂肪域（かなり低い）';
+  if(bf<21)return 'アスリート並み';
+  if(bf<25)return 'フィットネス愛好家並み';
+  if(bf<32)return '平均的な範囲';
+  if(bf<39)return 'やや高め';
+  return '高め';
+}
+function render(){
+  out('heightOut',heightEl.value,'cm');
+  out('weightOut',weightEl.value,'kg');
+  out('waistOut',waistEl.value,'cm');
+  out('neckOut',neckEl.value,'cm');
+  out('hipOut',hipEl.value,'cm');
+  hipRow.classList.toggle('hidden',isMale);
+  var bf=calcBF();
+  if(bf==null||isNaN(bf)){bfVal.textContent='—';bfCat.textContent='測り直してください';detailTable.innerHTML='';return;}
+  bf=Math.max(2,Math.min(60,bf));
+  var w=parseFloat(weightEl.value),h=parseFloat(heightEl.value);
+  var fatKg=w*bf/100,leanKg=w-fatKg;
+  var bmi=w/Math.pow(h/100,2);
+  bfVal.textContent=bf.toFixed(1);
+  bfCat.textContent=category(bf);
+  detailTable.innerHTML=
+    '<tr><th>体脂肪量</th><td>'+fatKg.toFixed(1)+' kg</td></tr>'+
+    '<tr><th>除脂肪体重（筋肉・骨など）</th><td>'+leanKg.toFixed(1)+' kg</td></tr>'+
+    '<tr><th>BMI</th><td>'+bmi.toFixed(1)+'</td></tr>';
+}
+maleBtn.addEventListener('click',function(){isMale=true;maleBtn.classList.add('active');femaleBtn.classList.remove('active');render();});
+femaleBtn.addEventListener('click',function(){isMale=false;femaleBtn.classList.add('active');maleBtn.classList.remove('active');render();});
+[heightEl,weightEl,waistEl,neckEl,hipEl].forEach(function(el){el.addEventListener('input',render);});
+render();
+</script>
+</body>
+</html>
